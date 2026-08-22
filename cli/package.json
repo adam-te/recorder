@@ -1,0 +1,27 @@
+{
+  "name": "@te/recorder-cli",
+  "version": "1.0.0",
+  "private": true,
+  "bin": {
+    "te": "./bin.ts"
+  },
+  "type": "module",
+  "imports": {
+    "#recorder-cli/*": "./*"
+  },
+  "exports": {
+    ".": "./index.ts"
+  },
+  "scripts": {
+    "start": "node bin.ts"
+  },
+  "dependencies": {
+    "@te/recorder-core": "*",
+    "@te/recorder-runtime": "*",
+    "@te/recorder-utils": "*",
+    "playwright": "1.59.1"
+  },
+  "devDependencies": {
+    "@types/node": "^25.6.0"
+  }
+}

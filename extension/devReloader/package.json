@@ -1,0 +1,14 @@
+{
+  "name": "recorder-extension-dev-reloader",
+  "displayName": "Recorder Extension Development Reloader",
+  "version": "0.1.0",
+  "private": true,
+  "type": "commonjs",
+  "main": "./index.cjs",
+  "activationEvents": [
+    "onStartupFinished"
+  ],
+  "engines": {
+    "vscode": "^1.96.0"
+  }
+}

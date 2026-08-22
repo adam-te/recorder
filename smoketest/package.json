@@ -1,0 +1,14 @@
+{
+  "name": "@te/recorder-smoketest",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "imports": {
+    "#recorder-smoketest/*": "./*"
+  },
+  "dependencies": {
+    "@te/recorder-core": "*",
+    "@te/recorder-runtime": "*",
+    "playwright": "1.59.1"
+  }
+}

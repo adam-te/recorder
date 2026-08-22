@@ -1,0 +1,15 @@
+{
+  "name": "@te/recorder-core",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "imports": {
+    "#recorder-core/*": "./*"
+  },
+  "exports": {
+    ".": "./index.ts"
+  },
+  "dependencies": {
+    "zod": "^4.4.3"
+  }
+}

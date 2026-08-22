@@ -1,0 +1,9 @@
+Snapshot-backed selector generation
+
+- Capture a DOM snapshot for each retained interaction before navigation or DOM changes invalidate its state.
+- Correlate the interaction target and frame with a `backendNodeId` in the snapshot, rejecting stale or missing matches.
+- Store versioned snapshot artifacts separately from the recording document and reference them from recorded actions.
+- Generate the existing CSS locator candidates from snapshots and add parity coverage for frames and shadow roots.
+- Evaluate the client-side ARIA experiment for Playwright parity and performance across large DOM and shadow-root cases.
+- Add test ID selection after the client-side experiment is proven reliable.
+- Keep the synchronous CSS path until snapshot timing and target correlation are proven reliable.

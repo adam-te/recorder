@@ -1,0 +1,12 @@
+{
+  "name": "@te/recorder-utils",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "imports": {
+    "#recorder-utils/*": "./*"
+  },
+  "exports": {
+    ".": "./index.ts"
+  }
+}

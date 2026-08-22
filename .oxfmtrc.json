@@ -1,0 +1,15 @@
+{
+  "$schema": "./node_modules/oxfmt/configuration_schema.json",
+  "tabWidth": 2,
+  "useTabs": false,
+  "semi": false,
+  "arrowParens": "avoid",
+  "singleQuote": true,
+  "printWidth": 320,
+  "objectWrap": "preserve",
+  "sortImports": {
+    "newlinesBetween": true,
+    "customGroups": [{ "groupName": "recorder-packages", "elementNamePattern": ["@te/recorder-*", "@te/recorder-*/**"] }],
+    "groups": [["type-builtin", "value-builtin", "type-external", "value-external"], "recorder-packages", ["type-internal", "value-internal"], ["type-parent", "value-parent", "type-sibling", "value-sibling", "type-index", "value-index"], "unknown"]
+  }
+}

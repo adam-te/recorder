@@ -1,0 +1,5 @@
+export { captureDomSnapshot } from './recording/captureDomSnapshot.ts'
+export type { CapturedDomSnapshot } from './recording/captureDomSnapshot.ts'
+export { installRecordingCapture } from './recording/installRecordingCapture/index.ts'
+export type { CapturedInteraction, CapturedInteractionEvent, CapturedSelector, InstallRecordingCaptureArgs, RecordingCapture } from './recording/installRecordingCapture/index.ts'
+export { appendCapturedInteraction } from './recording/processing/appendCapturedInteraction.ts'
