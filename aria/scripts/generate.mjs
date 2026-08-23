@@ -10,10 +10,13 @@ const PLAYWRIGHT_LICENSE = join(ARIA_DIRECTORY, 'PLAYWRIGHT-LICENSE')
 const VENDOR_FILES = [
   ['packages/injected/src/ariaSnapshot.ts', 'injected/ariaSnapshot.ts'],
   ['packages/injected/src/roleUtils.ts', 'injected/roleUtils.ts'],
+  ['packages/injected/src/selectorUtils.ts', 'injected/selectorUtils.ts'],
   ['packages/injected/src/domUtils.ts', 'injected/domUtils.ts'],
   ['packages/playwright-core/src/utils/isomorphic/ariaSnapshot.ts', 'isomorphic/ariaSnapshot.ts'],
+  ['packages/playwright-core/src/utils/isomorphic/cssParser.ts', 'isomorphic/cssParser.ts'],
   ['packages/playwright-core/src/utils/isomorphic/stringUtils.ts', 'isomorphic/stringUtils.ts'],
   ['packages/playwright-core/src/utils/isomorphic/cssTokenizer.ts', 'isomorphic/cssTokenizer.ts'],
+  ['packages/playwright-core/src/utils/isomorphic/selectorParser.ts', 'isomorphic/selectorParser.ts'],
   ['packages/playwright-core/src/utils/isomorphic/yaml.ts', 'isomorphic/yaml.ts'],
 ]
 const IMPORT_REWRITES = {
@@ -28,6 +31,17 @@ const IMPORT_REWRITES = {
     '@isomorphic/ariaSnapshot': '../isomorphic/ariaSnapshot.ts',
     '@isomorphic/cssTokenizer': '../isomorphic/cssTokenizer.ts',
     './domUtils': './domUtils.ts',
+  },
+  'injected/selectorUtils.ts': {
+    '@isomorphic/selectorParser': '../isomorphic/selectorParser.ts',
+    '@isomorphic/stringUtils': '../isomorphic/stringUtils.ts',
+    './roleUtils': './roleUtils.ts',
+  },
+  'isomorphic/cssParser.ts': {
+    './cssTokenizer': './cssTokenizer.ts',
+  },
+  'isomorphic/selectorParser.ts': {
+    './cssParser': './cssParser.ts',
   },
 }
 const MODIFICATION_NOTICE = '// Modified from the Playwright source only to use local TypeScript import paths.\n'
@@ -64,7 +78,7 @@ function rewriteImports(contents, destination) {
     if (!contents.includes(original)) {
       throw new Error(`Expected ${destination} to import ${source}`)
     }
-    contents = contents.replace(original, `from '${replacement}'`)
+    contents = contents.replaceAll(original, `from '${replacement}'`)
   }
 
   return MODIFICATION_NOTICE + contents

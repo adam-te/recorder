@@ -1,6 +1,6 @@
 # ARIA browser utilities
 
-Browser-side utilities for generating Playwright-compatible AI ARIA snapshots and semantic locator candidates. The snapshot implementation uses vendored TypeScript sources from the Playwright version declared by this package's `playwright` development dependency; the locator candidate implementation remains local.
+Browser-side utilities for generating Playwright-compatible AI ARIA snapshots and semantic locator candidates. Both features use vendored TypeScript accessibility and selector utilities from the Playwright version declared by this package's `playwright` development dependency; the locator candidate selection algorithm remains local.
 
 Run `npm run generate:aria` in this workspace to refresh the committed Playwright sources, or run the command with the same name at the repository root to refresh both the sources and downstream injected runtime. The generator downloads the pinned Apache-2.0 Playwright sources and verifies that every consumer uses the same version. Runtime consumers do not need network access.
 

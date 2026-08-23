@@ -10,9 +10,6 @@
   "scripts": {
     "generate:aria": "node scripts/generate.mjs"
   },
-  "dependencies": {
-    "dom-accessibility-api": "0.7.1"
-  },
   "devDependencies": {
     "playwright": "1.59.1",
     "yaml": "2.8.3"

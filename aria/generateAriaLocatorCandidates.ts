@@ -1,12 +1,24 @@
-import { computeAccessibleName, getRole, isInaccessible } from 'dom-accessibility-api'
-
 import type { AriaLocatorCandidate, AriaLocatorOptions, AriaLocatorStep } from './types.ts'
+import { beginAriaCaches, endAriaCaches, getAriaRole, getElementAccessibleName, isElementHiddenForAria } from './vendor/playwright/injected/roleUtils.ts'
+import { getElementLabels, type ElementText } from './vendor/playwright/injected/selectorUtils.ts'
+import { normalizeWhiteSpace } from './vendor/playwright/isomorphic/stringUtils.ts'
 
 export { generateAriaLocatorCandidates }
 
 function generateAriaLocatorCandidates(options: AriaLocatorOptions): AriaLocatorCandidate[] {
+  beginAriaCaches()
+  try {
+    return generateAriaLocatorCandidatesInternal(options)
+  } finally {
+    endAriaCaches()
+  }
+}
+
+function generateAriaLocatorCandidatesInternal(options: AriaLocatorOptions): AriaLocatorCandidate[] {
   const elementCache = new Map<Node, Element[]>()
   const inaccessibleCache = new Map<Element, boolean>()
+  const labelCache = new Map<Element, string[]>()
+  const labelTextCache = new Map<Element | ShadowRoot, ElementText>()
   const nameCache = new Map<Element, string>()
   const roleCache = new Map<Element, string | null>()
   const getShadowRoot = options.getShadowRoot ?? (element => element.shadowRoot)
@@ -39,19 +51,17 @@ function generateAriaLocatorCandidates(options: AriaLocatorOptions): AriaLocator
   function resolveStep(scope: Element, step: AriaLocatorStep): Element[] {
     const elements = getElements(scope)
 
-    return step.method === 'role'
-      ? elements.filter(element => getElementRole(element) === step.role && !elementIsInaccessible(element) && (step.name === undefined || getName(element) === step.name))
-      : elements.filter(element => hasLabelSource(element) && !elementIsInaccessible(element) && getName(element) === step.text)
+    return step.method === 'role' ? elements.filter(element => getElementRole(element) === step.role && !elementIsInaccessible(element) && (step.name === undefined || getName(element) === step.name)) : elements.filter(element => getLabels(element).includes(step.text))
   }
 
   function getTargetSteps(element: Element): AriaLocatorStep[] {
     const name = getName(element)
     const role = getElementRole(element)
     const namedRole = name && role ? [{ exact: true as const, method: 'role' as const, name, role }] : []
-    const label = name && hasLabelSource(element) ? [{ exact: true as const, method: 'label' as const, text: name }] : []
+    const labels = getLabels(element).map(text => ({ exact: true as const, method: 'label' as const, text }))
     const unnamedRole = role ? [{ method: 'role' as const, role }] : []
 
-    return [...namedRole, ...label, ...unnamedRole]
+    return [...namedRole, ...labels, ...unnamedRole]
   }
 
   function getAccessibleAncestors(element: Element): Element[] {
@@ -96,7 +106,7 @@ function generateAriaLocatorCandidates(options: AriaLocatorOptions): AriaLocator
       return cached
     }
 
-    const name = computeAccessibleName(element).replace(/\s+/g, ' ').trim()
+    const name = normalizeWhiteSpace(getElementAccessibleName(element, false))
 
     nameCache.set(element, name)
     return name
@@ -107,7 +117,7 @@ function generateAriaLocatorCandidates(options: AriaLocatorOptions): AriaLocator
       return roleCache.get(element) ?? null
     }
 
-    const role = getRole(element)
+    const role = getAriaRole(element)
 
     roleCache.set(element, role)
     return role
@@ -118,16 +128,29 @@ function generateAriaLocatorCandidates(options: AriaLocatorOptions): AriaLocator
       return inaccessibleCache.get(element) ?? false
     }
 
-    const inaccessible = isInaccessible(element)
+    const inaccessible = isElementHiddenForAria(element)
 
     inaccessibleCache.set(element, inaccessible)
     return inaccessible
   }
 
-  function hasLabelSource(element: Element): boolean {
-    const labels = 'labels' in element ? (element as HTMLInputElement).labels : null
+  function getLabels(element: Element): string[] {
+    const cached = labelCache.get(element)
 
-    return Boolean(labels?.length || element.hasAttribute('aria-label') || element.hasAttribute('aria-labelledby'))
+    if (cached) {
+      return cached
+    }
+
+    const labels = [
+      ...new Set(
+        getElementLabels(labelTextCache, element)
+          .map(label => label.normalized)
+          .filter(Boolean),
+      ),
+    ]
+
+    labelCache.set(element, labels)
+    return labels
   }
 
   function getParent(element: Element): Element | undefined {

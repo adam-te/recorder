@@ -76,7 +76,7 @@ describe('recording playback', () => {
   })
 
   test('selects and plays back label locators', async () => {
-    const html = `<label for="password">Password</label><input id="password" type="password" onclick="document.body.dataset.clicked = 'true'">`
+    const html = `<div aria-label="Password" onclick="document.body.dataset.clicked = 'true'">Password field</div>`
     const document = await recordTest({ fixture, html, interact: page => page.getByLabel('Password').click(), startUrl: 'https://recorder.test/content' })
     const action = document?.actions[1]
 
@@ -111,6 +111,54 @@ describe('recording playback', () => {
     const action = document?.actions[1]
 
     expect(action && 'locatorCandidates' in action ? action.locatorCandidates[0] : undefined).toStrictEqual({ kind: 'aria', steps: [{ exact: true, method: 'role', name: 'Result', role: 'status' }] })
+
+    const playbackPage = await playTestRecording({ document, fixture, html })
+
+    expect(await playbackPage.locator('body').getAttribute('data-clicked')).toBe('true')
+  })
+
+  test('uses Playwright fallback role semantics', async () => {
+    const html = `<button id="target" role="unknown button" onclick="document.body.dataset.clicked = 'true'">Save</button>`
+    const document = await recordTest({ fixture, html, interact: page => page.locator('#target').click(), startUrl: 'https://recorder.test/content' })
+    const action = document?.actions[1]
+
+    expect(action && 'locatorCandidates' in action ? action.locatorCandidates[0] : undefined).toStrictEqual({ kind: 'aria', steps: [{ exact: true, method: 'role', name: 'Save', role: 'button' }] })
+
+    const playbackPage = await playTestRecording({ document, fixture, html })
+
+    expect(await playbackPage.locator('body').getAttribute('data-clicked')).toBe('true')
+  })
+
+  test('includes CSS generated content in accessible names', async () => {
+    const html = `<style>#target::before { content: "Prefix "; }</style><button id="target" onclick="document.body.dataset.clicked = 'true'">Save</button>`
+    const document = await recordTest({ fixture, html, interact: page => page.locator('#target').click(), startUrl: 'https://recorder.test/content' })
+    const action = document?.actions[1]
+
+    expect(action && 'locatorCandidates' in action ? action.locatorCandidates[0] : undefined).toStrictEqual({ kind: 'aria', steps: [{ exact: true, method: 'role', name: 'Prefix Save', role: 'button' }] })
+
+    const playbackPage = await playTestRecording({ document, fixture, html })
+
+    expect(await playbackPage.locator('body').getAttribute('data-clicked')).toBe('true')
+  })
+
+  test('uses individual Playwright label alternatives', async () => {
+    const html = `<span id="first">First</span><span id="second">Second</span><div id="target" aria-labelledby="first second" onclick="document.body.dataset.clicked = 'true'">Content</div>`
+    const document = await recordTest({ fixture, html, interact: page => page.getByLabel('First', { exact: true }).click(), startUrl: 'https://recorder.test/content' })
+    const action = document?.actions[1]
+
+    expect(action && 'locatorCandidates' in action ? action.locatorCandidates[0] : undefined).toStrictEqual({ kind: 'aria', steps: [{ exact: true, method: 'label', text: 'First' }] })
+
+    const playbackPage = await playTestRecording({ document, fixture, html })
+
+    expect(await playbackPage.locator('body').getAttribute('data-clicked')).toBe('true')
+  })
+
+  test('does not generate ARIA locators through hidden shadow hosts', async () => {
+    const html = `<div id="host" aria-hidden="true"></div><script>document.querySelector('#host').attachShadow({ mode: 'open' }).innerHTML = '<button id="target" onclick="document.body.dataset.clicked = true">Save</button>'</script>`
+    const document = await recordTest({ fixture, html, interact: page => page.locator('#target').click(), startUrl: 'https://recorder.test/content' })
+    const action = document?.actions[1]
+
+    expect(action && 'locatorCandidates' in action ? action.locatorCandidates[0] : undefined).toMatchObject({ kind: 'css' })
 
     const playbackPage = await playTestRecording({ document, fixture, html })
 

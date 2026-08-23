@@ -14,11 +14,10 @@ async function generate() {
   const [ariaPackage, runtimePackage] = await Promise.all([readJson(join(ROOT_DIRECTORY, 'aria', 'package.json')), readJson(join(RUNTIME_DIRECTORY, 'package.json'))])
   const playwrightVersion = ariaPackage.devDependencies?.playwright
   const runtimePlaywrightVersion = runtimePackage.peerDependencies?.playwright
-  const domAccessibilityApiVersion = ariaPackage.dependencies?.['dom-accessibility-api']
   const exactVersion = /^\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?$/
 
-  if (!exactVersion.test(playwrightVersion ?? '') || !exactVersion.test(domAccessibilityApiVersion ?? '')) {
-    throw new Error('Expected exact playwright and dom-accessibility-api versions in package metadata')
+  if (!exactVersion.test(playwrightVersion ?? '')) {
+    throw new Error('Expected an exact playwright version in the ARIA package metadata')
   }
   if (runtimePlaywrightVersion !== playwrightVersion) {
     throw new Error(`Playwright version mismatch: ARIA uses ${playwrightVersion}, but runtime requires ${runtimePlaywrightVersion ?? 'nothing'}`)
@@ -26,7 +25,7 @@ async function generate() {
 
   const bundled = (
     await build({
-      banner: { js: `/*! Playwright v${playwrightVersion} | Apache-2.0 | Copyright Microsoft Corporation; dom-accessibility-api v${domAccessibilityApiVersion} | MIT | Copyright 2020 Sebastian Silbermann */` },
+      banner: { js: `/*! Playwright v${playwrightVersion} | Apache-2.0 | Copyright Microsoft Corporation */` },
       bundle: true,
       entryPoints: [join(ROOT_DIRECTORY, 'aria', 'browser.ts')],
       format: 'iife',
