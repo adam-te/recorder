@@ -1,14 +1,17 @@
-import type { DomAccessibilityApi } from './experiment-aria/generateAriaLocatorCandidates.ts'
+import { computeAccessibleDescription, computeAccessibleName, getRole, isDisabled, isInaccessible } from 'dom-accessibility-api'
+
+import type { AriaSnapshot, AriaTraversalOptions } from './types.ts'
 
 export { generateAriaSnapshot }
-export type { CapturedAriaSnapshot }
 
-function generateAriaSnapshot(args: GenerateAriaSnapshotArgs): CapturedAriaSnapshot {
+function generateAriaSnapshot(options: AriaTraversalOptions): AriaSnapshot {
   const inaccessibleCache = new Map<Element, boolean>()
   const visited = new Set<Node>()
   const refs = new Map<Element, string>()
   const lines: string[] = []
-  const root = args.target.ownerDocument.body ?? args.target.ownerDocument.documentElement
+  const root = options.target.ownerDocument.body ?? options.target.ownerDocument.documentElement
+  const getShadowRoot = options.getShadowRoot ?? (element => element.shadowRoot)
+  const isExcluded = options.excludeElement ?? (() => false)
   const ownedBy = root ? createOwnershipMap(root) : new Map<Element, Element>()
   let nextRef = 1
 
@@ -16,17 +19,17 @@ function generateAriaSnapshot(args: GenerateAriaSnapshotArgs): CapturedAriaSnaps
     visitElement(root, 0, false)
   }
 
-  return { ariaSnapshot: lines.join('\n'), ref: refs.get(args.target) }
+  return { snapshot: lines.join('\n'), targetRef: refs.get(options.target) }
 
   function visitElement(element: Element, depth: number, suppressText: boolean): void {
-    if (visited.has(element) || isExcluded(element) || isInaccessible(element)) {
+    if (visited.has(element) || isExcluded(element) || elementIsInaccessible(element)) {
       return
     }
 
     visited.add(element)
-    const role = args.api.getRole(element)
+    const role = getRole(element)
     const renderedRole = role && role !== 'none' && role !== 'presentation' ? role : undefined
-    const name = renderedRole ? normalize(args.api.computeAccessibleName(element)) : ''
+    const name = renderedRole ? normalize(computeAccessibleName(element)) : ''
     const currentDepth = renderedRole ? depth + 1 : depth
     const suppressDescendantText = isTextRepresentedByName(renderedRole, name) || (!renderedRole && suppressText)
 
@@ -52,7 +55,7 @@ function generateAriaSnapshot(args: GenerateAriaSnapshotArgs): CapturedAriaSnaps
   }
 
   function getComposedChildren(element: Element): Node[] {
-    const shadowRoot = args.getShadowRoot(element)
+    const shadowRoot = getShadowRoot(element)
     let children: Node[]
 
     if (shadowRoot) {
@@ -73,10 +76,6 @@ function generateAriaSnapshot(args: GenerateAriaSnapshotArgs): CapturedAriaSnaps
 
   function getRootChildren(rootValue: ShadowRoot): Node[] {
     return [...rootValue.childNodes].flatMap(child => (child instanceof HTMLSlotElement ? getComposedChildren(child) : [child]))
-  }
-
-  function isExcluded(element: Element): boolean {
-    return element.hasAttribute(args.recorderUiAttribute) || Boolean(element.closest(`[${args.recorderUiAttribute}]`))
   }
 
   function createOwnershipMap(rootElement: Element): Map<Element, Element> {
@@ -108,20 +107,20 @@ function generateAriaSnapshot(args: GenerateAriaSnapshotArgs): CapturedAriaSnaps
       for (const child of element.children) {
         collect(child)
       }
-      for (const child of args.getShadowRoot(element)?.children ?? []) {
+      for (const child of getShadowRoot(element)?.children ?? []) {
         collect(child)
       }
     }
   }
 
-  function isInaccessible(element: Element): boolean {
+  function elementIsInaccessible(element: Element): boolean {
     const cached = inaccessibleCache.get(element)
 
     if (cached !== undefined) {
       return cached
     }
 
-    const inaccessible = args.api.isInaccessible(element)
+    const inaccessible = isInaccessible(element)
 
     inaccessibleCache.set(element, inaccessible)
     return inaccessible
@@ -129,7 +128,7 @@ function generateAriaSnapshot(args: GenerateAriaSnapshotArgs): CapturedAriaSnaps
 
   function renderProperties(element: Element, role: string): string {
     const properties: string[] = []
-    const description = normalize(args.api.computeAccessibleDescription(element))
+    const description = normalize(computeAccessibleDescription(element))
     const checked = getAriaBooleanOrMixed(element, 'aria-checked', element instanceof HTMLInputElement && ['checkbox', 'radio'].includes(element.type) ? (element.indeterminate ? 'mixed' : element.checked) : undefined)
     const selected = getAriaBoolean(element, 'aria-selected', element instanceof HTMLOptionElement ? element.selected : undefined)
     const expanded = getAriaBoolean(element, 'aria-expanded')
@@ -144,7 +143,7 @@ function generateAriaSnapshot(args: GenerateAriaSnapshotArgs): CapturedAriaSnaps
     addProperty('selected', selected)
     addProperty('expanded', expanded)
     addProperty('pressed', pressed)
-    addProperty('disabled', args.api.isDisabled(element) || undefined)
+    addProperty('disabled', isDisabled(element) || undefined)
     addProperty('required', getBooleanState(element, 'required', 'aria-required'))
     addProperty('readonly', getBooleanState(element, 'readOnly', 'aria-readonly'))
     addProperty('invalid', getInvalidState(element))
@@ -245,16 +244,4 @@ function generateAriaSnapshot(args: GenerateAriaSnapshotArgs): CapturedAriaSnaps
   function normalize(value: string): string {
     return value.replace(/\s+/g, ' ').trim()
   }
-}
-
-interface CapturedAriaSnapshot {
-  ariaSnapshot: string
-  ref?: string
-}
-
-interface GenerateAriaSnapshotArgs {
-  api: DomAccessibilityApi
-  getShadowRoot: (element: Element) => ShadowRoot | null
-  recorderUiAttribute: string
-  target: Element
 }

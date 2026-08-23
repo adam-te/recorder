@@ -1,7 +1,5 @@
+import { ariaRuntimeSource } from '#recorder-runtime/recording/injected/ariaRuntimeSource.ts'
 import { RECORDER_UI_ATTRIBUTE } from '#recorder-runtime/recording/injected/constants.ts'
-import { domAccessibilityApiSource } from '#recorder-runtime/recording/injected/experiment-aria/domAccessibilityApiSource.ts'
-import { generateAriaLocatorCandidates } from '#recorder-runtime/recording/injected/experiment-aria/generateAriaLocatorCandidates.ts'
-import { generateAriaSnapshot } from '#recorder-runtime/recording/injected/generateAriaSnapshot.ts'
 import { generateSelectorCandidates, SELECTOR_GENERATOR_NAME } from '#recorder-runtime/recording/injected/generateSelectorCandidates.ts'
 import { recordPageInteractions } from '#recorder-runtime/recording/injected/recordPageInteractions.ts'
 import type { CapturedInteractionEvent, CapturedSelector, SerializedInteraction } from '#recorder-runtime/recording/injected/types.ts'
@@ -44,7 +42,7 @@ async function installPageInteractionBridge(args: InstallPageInteractionBridgeAr
 function createInjectedRecorderSource(): string {
   const injectedArgs = JSON.stringify({ bindingName: INTERACTION_BINDING_NAME, recorderUiAttribute: RECORDER_UI_ATTRIBUTE, selectorGeneratorName: SELECTOR_GENERATOR_NAME })
 
-  return `${domAccessibilityApiSource};(${recordPageInteractions.toString()})(${injectedArgs}, ${generateSelectorCandidates.toString()}, ${generateAriaLocatorCandidates.toString()}, ${generateAriaSnapshot.toString()}, domAccessibilityApi)`
+  return `(()=>{${ariaRuntimeSource};(${recordPageInteractions.toString()})(${injectedArgs}, ${generateSelectorCandidates.toString()}, ariaRuntime)})()`
 }
 
 interface CapturedInteraction {

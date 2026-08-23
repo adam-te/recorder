@@ -1,47 +1,52 @@
-import type { CapturedAriaSelector, CapturedAriaSelectorStep } from '#recorder-runtime/recording/injected/types.ts'
+import { computeAccessibleName, getRole, isInaccessible } from 'dom-accessibility-api'
+
+import type { AriaLocatorCandidate, AriaLocatorStep, AriaTraversalOptions } from './types.ts'
 
 export { generateAriaLocatorCandidates }
-export type { DomAccessibilityApi }
 
-function generateAriaLocatorCandidates(args: GenerateAriaLocatorCandidatesArgs): CapturedAriaSelector[] {
+function generateAriaLocatorCandidates(options: AriaTraversalOptions): AriaLocatorCandidate[] {
   const elementCache = new Map<Node, Element[]>()
   const inaccessibleCache = new Map<Element, boolean>()
   const nameCache = new Map<Element, string>()
   const roleCache = new Map<Element, string | null>()
+  const getShadowRoot = options.getShadowRoot ?? (element => element.shadowRoot)
+  const isExcluded = options.excludeElement ?? (() => false)
 
-  if (isInaccessible(args.target)) {
+  if (isExcluded(options.target) || elementIsInaccessible(options.target)) {
     return []
   }
 
-  const targetSteps = getTargetSteps(args.target)
-  const candidates: CapturedAriaSelector[] = [
-    ...targetSteps.map<CapturedAriaSelector>(step => ({ kind: 'aria', steps: [step] })),
-    ...getAccessibleAncestors(args.target).flatMap(ancestor => {
+  const targetSteps = getTargetSteps(options.target)
+  const candidates: AriaLocatorCandidate[] = [
+    ...targetSteps.map<AriaLocatorCandidate>(step => ({ steps: [step] })),
+    ...getAccessibleAncestors(options.target).flatMap(ancestor => {
       const name = getName(ancestor)
-      const role = getRole(ancestor)
+      const role = getElementRole(ancestor)
 
-      return name && role ? targetSteps.map<CapturedAriaSelector>(step => ({ kind: 'aria', steps: [{ exact: true, method: 'role', name, role }, step] })) : []
+      return name && role ? targetSteps.map<AriaLocatorCandidate>(step => ({ steps: [{ exact: true, method: 'role', name, role }, step] })) : []
     }),
   ]
   const candidate = candidates.find(uniquelyMatchesTarget)
 
   return candidate ? [candidate] : []
 
-  function uniquelyMatchesTarget(candidate: CapturedAriaSelector): boolean {
-    const matches = candidate.steps.reduce<Element[]>((scopes, step) => [...new Set(scopes.flatMap(scope => resolveStep(scope, step)))], [args.target.ownerDocument.documentElement])
+  function uniquelyMatchesTarget(candidate: AriaLocatorCandidate): boolean {
+    const matches = candidate.steps.reduce<Element[]>((scopes, step) => [...new Set(scopes.flatMap(scope => resolveStep(scope, step)))], [options.target.ownerDocument.documentElement])
 
-    return matches.length === 1 && matches[0] === args.target
+    return matches.length === 1 && matches[0] === options.target
   }
 
-  function resolveStep(scope: Element, step: CapturedAriaSelectorStep): Element[] {
+  function resolveStep(scope: Element, step: AriaLocatorStep): Element[] {
     const elements = getElements(scope)
 
-    return step.method === 'role' ? elements.filter(element => getRole(element) === step.role && !isInaccessible(element) && (step.name === undefined || getName(element) === step.name)) : elements.filter(element => hasLabelSource(element) && !isInaccessible(element) && getName(element) === step.text)
+    return step.method === 'role'
+      ? elements.filter(element => getElementRole(element) === step.role && !elementIsInaccessible(element) && (step.name === undefined || getName(element) === step.name))
+      : elements.filter(element => hasLabelSource(element) && !elementIsInaccessible(element) && getName(element) === step.text)
   }
 
-  function getTargetSteps(element: Element): CapturedAriaSelectorStep[] {
+  function getTargetSteps(element: Element): AriaLocatorStep[] {
     const name = getName(element)
-    const role = getRole(element)
+    const role = getElementRole(element)
     const namedRole = name && role ? [{ exact: true as const, method: 'role' as const, name, role }] : []
     const label = name && hasLabelSource(element) ? [{ exact: true as const, method: 'label' as const, text: name }] : []
     const unnamedRole = role ? [{ method: 'role' as const, role }] : []
@@ -54,7 +59,7 @@ function generateAriaLocatorCandidates(args: GenerateAriaLocatorCandidatesArgs):
     let current = getParent(element)
 
     while (current && ancestors.length < 5) {
-      if (!isInaccessible(current)) {
+      if (!isExcluded(current) && !elementIsInaccessible(current)) {
         ancestors.push(current)
       }
       current = getParent(current)
@@ -70,11 +75,13 @@ function generateAriaLocatorCandidates(args: GenerateAriaLocatorCandidatesArgs):
       return cached
     }
 
-    const elements = [...scope.querySelectorAll('*')]
+    const elements = [...scope.querySelectorAll('*')].filter(element => !isExcluded(element))
 
     for (const element of elements.slice()) {
-      if (element.shadowRoot) {
-        elements.push(...getElements(element.shadowRoot))
+      const shadowRoot = getShadowRoot(element)
+
+      if (shadowRoot) {
+        elements.push(...getElements(shadowRoot))
       }
     }
 
@@ -89,29 +96,29 @@ function generateAriaLocatorCandidates(args: GenerateAriaLocatorCandidatesArgs):
       return cached
     }
 
-    const name = args.api.computeAccessibleName(element).replace(/\s+/g, ' ').trim()
+    const name = computeAccessibleName(element).replace(/\s+/g, ' ').trim()
 
     nameCache.set(element, name)
     return name
   }
 
-  function getRole(element: Element): string | null {
+  function getElementRole(element: Element): string | null {
     if (roleCache.has(element)) {
       return roleCache.get(element) ?? null
     }
 
-    const role = args.api.getRole(element)
+    const role = getRole(element)
 
     roleCache.set(element, role)
     return role
   }
 
-  function isInaccessible(element: Element): boolean {
+  function elementIsInaccessible(element: Element): boolean {
     if (inaccessibleCache.has(element)) {
       return inaccessibleCache.get(element) ?? false
     }
 
-    const inaccessible = args.api.isInaccessible(element)
+    const inaccessible = isInaccessible(element)
 
     inaccessibleCache.set(element, inaccessible)
     return inaccessible
@@ -128,19 +135,6 @@ function generateAriaLocatorCandidates(args: GenerateAriaLocatorCandidatesArgs):
 
     return element.parentElement ?? (root instanceof ShadowRoot ? root.host : undefined)
   }
-}
-
-interface DomAccessibilityApi {
-  computeAccessibleDescription: (element: Element) => string
-  computeAccessibleName: (element: Element) => string
-  getRole: (element: Element) => string | null
-  isDisabled: (element: Element) => boolean
-  isInaccessible: (element: Element) => boolean
-}
-
-interface GenerateAriaLocatorCandidatesArgs {
-  api: DomAccessibilityApi
-  target: Element
 }
 
 type QueryScope = Element | ShadowRoot

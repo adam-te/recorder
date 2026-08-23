@@ -1,17 +1,10 @@
-import type { DomAccessibilityApi } from '#recorder-runtime/recording/injected/experiment-aria/generateAriaLocatorCandidates.ts'
-import type { CapturedAriaSnapshot } from '#recorder-runtime/recording/injected/generateAriaSnapshot.ts'
+import type { AriaRuntime } from '@te/aria'
 
-import type { CapturedAriaSelector, CapturedInteractionEvent, CapturedSelector, SerializedInteraction } from './types.ts'
+import type { CapturedInteractionEvent, CapturedSelector, SerializedInteraction } from './types.ts'
 
 export { recordPageInteractions }
 
-function recordPageInteractions(
-  args: RecordPageInteractionsArgs,
-  generateSelectorCandidates: (element: Element) => CapturedSelector[],
-  generateAriaLocatorCandidates: (args: { api: DomAccessibilityApi; target: Element }) => CapturedAriaSelector[],
-  generateAriaSnapshot: (args: { api: DomAccessibilityApi; getShadowRoot: (element: Element) => ShadowRoot | null; recorderUiAttribute: string; target: Element }) => CapturedAriaSnapshot,
-  domAccessibilityApi: DomAccessibilityApi,
-): void {
+function recordPageInteractions(args: RecordPageInteractionsArgs, generateSelectorCandidates: (element: Element) => CapturedSelector[], ariaRuntime: AriaRuntime): void {
   const reportInteraction = (globalThis as unknown as Record<string, (value: SerializedInteraction) => Promise<void>>)[args.bindingName]
   const capturedEvents = new WeakSet<Event>()
   const eventSerializers: EventSerializers = {
@@ -45,9 +38,15 @@ function recordPageInteractions(
 
     if (target && !isRecorderUiEvent && !capturedEvents.has(event)) {
       capturedEvents.add(event)
-      const snapshot = generateAriaSnapshot({ api: domAccessibilityApi, getShadowRoot: element => element.shadowRoot ?? closedShadowRoots.get(element) ?? null, recorderUiAttribute: args.recorderUiAttribute, target })
+      const traversalOptions = {
+        excludeElement: (element: Element) => element.hasAttribute(args.recorderUiAttribute) || Boolean(element.closest(`[${args.recorderUiAttribute}]`)),
+        getShadowRoot: (element: Element) => element.shadowRoot ?? closedShadowRoots.get(element) ?? null,
+        target,
+      }
+      const { snapshot: ariaSnapshot, targetRef: ref } = ariaRuntime.generateAriaSnapshot(traversalOptions)
+      const ariaSelectors = ariaRuntime.generateAriaLocatorCandidates(traversalOptions).map(candidate => ({ ...candidate, kind: 'aria' as const }))
 
-      void reportInteraction({ ...snapshot, event: serialize(event as never), selectors: [...generateAriaLocatorCandidates({ api: domAccessibilityApi, target }), ...generateSelectorCandidates(target)] })
+      void reportInteraction({ ariaSnapshot, event: serialize(event as never), ref, selectors: [...ariaSelectors, ...generateSelectorCandidates(target)] })
     }
   }
 }

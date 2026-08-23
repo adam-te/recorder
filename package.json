@@ -4,6 +4,7 @@
   "private": true,
   "description": "Record and replay ThousandEyes browser transactions.",
   "workspaces": [
+    "aria",
     "cli",
     "core",
     "extension",

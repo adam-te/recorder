@@ -1,3 +1,5 @@
+import type { AriaLocatorStep } from '@te/aria'
+
 export type { CapturedAriaSelector, CapturedAriaSelectorStep, CapturedCssSelector, CapturedInteractionEvent, CapturedSelector, SerializedInteraction }
 
 interface CapturedChangeEvent {
@@ -20,19 +22,6 @@ interface CapturedKeydownEvent {
   repeat: boolean
 }
 
-interface CapturedAriaLabelSelectorStep {
-  exact?: boolean
-  method: 'label'
-  text: string
-}
-
-interface CapturedAriaRoleSelectorStep {
-  exact?: boolean
-  method: 'role'
-  name?: string
-  role: string
-}
-
 interface CapturedAriaSelector {
   kind: 'aria'
   steps: CapturedAriaSelectorStep[]
@@ -51,5 +40,5 @@ interface SerializedInteraction {
 }
 
 type CapturedInteractionEvent = CapturedChangeEvent | CapturedClickEvent | CapturedInputEvent | CapturedKeydownEvent
-type CapturedAriaSelectorStep = CapturedAriaLabelSelectorStep | CapturedAriaRoleSelectorStep
+type CapturedAriaSelectorStep = AriaLocatorStep
 type CapturedSelector = CapturedAriaSelector | CapturedCssSelector

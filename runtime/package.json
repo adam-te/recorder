@@ -11,15 +11,15 @@
     "./capture": "./capture.ts"
   },
   "scripts": {
-    "generate:experiment-aria": "node recording/injected/experiment-aria/generateDomAccessibilityApiSource.cjs"
+    "generate:aria-runtime": "node recording/injected/generateAriaRuntimeSource.cjs"
   },
   "dependencies": {
+    "@te/aria": "*",
     "@te/recorder-core": "*",
     "@te/recorder-utils": "*",
     "devtools-protocol": "^0.0.1627472"
   },
   "devDependencies": {
-    "dom-accessibility-api": "0.7.1",
     "esbuild": "0.27.7"
   },
   "peerDependencies": {
