@@ -23,12 +23,10 @@ describe('ARIA interaction snapshots', () => {
     expect(interaction.ariaSnapshot).toContain('- heading "Profile"')
     expect(interaction.ariaSnapshot).toContain('[level=2]')
     expect(interaction.ariaSnapshot).toContain('- textbox "Email"')
-    expect(interaction.ariaSnapshot).toContain('[description="Used for notifications"]')
-    expect(interaction.ariaSnapshot).toContain('[value="ada@example.com"]')
-    expect(interaction.ariaSnapshot).toContain('[readonly]')
-    expect(interaction.ariaSnapshot).toContain('[required]')
+    expect(interaction.ariaSnapshot).toContain(': ada@example.com')
+    expect(interaction.ariaSnapshot).toContain('- text: Used for notifications')
     expect(interaction.ariaSnapshot).toContain('- button "Open settings"')
-    expect(interaction.ariaSnapshot).toContain('[expanded=false]')
+    expect(interaction.ariaSnapshot).not.toContain('[expanded]')
     expect(interaction.ariaSnapshot).toContain('- button "Unavailable"')
     expect(interaction.ariaSnapshot).toContain('[disabled]')
     expect(interaction.ariaSnapshot).not.toContain('Changed')
@@ -52,7 +50,7 @@ describe('ARIA interaction snapshots', () => {
     expect(interaction.ariaSnapshot).not.toContain('Parent content')
   })
 
-  test('traverses open and closed shadow roots', async () => {
+  test('traverses open shadow roots without exposing closed shadow roots', async () => {
     const html = `
       <div id="open-host"></div>
       <div id="closed-host"></div>
@@ -68,7 +66,8 @@ describe('ARIA interaction snapshots', () => {
     const interaction = await captureInteraction({ expectedKind: 'click', fixture, html, interact: clickClosedShadowButton })
 
     expect(interaction.ariaSnapshot).toContain('- button "Open shadow action"')
-    expect(interaction.ariaSnapshot).toContain('- button "Closed shadow action"')
+    expect(interaction.ariaSnapshot).not.toContain('- button "Closed shadow action"')
+    expect(interaction.ref).toBeUndefined()
   })
 })
 

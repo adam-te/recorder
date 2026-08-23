@@ -58,7 +58,7 @@ describe('recording playback', () => {
     expect(document?.actions).toStrictEqual([
       { kind: 'goto', pageUrl: 'about:blank', url: 'https://recorder.test/content' },
       {
-        ariaSnapshot: '- button "Click" [ref=e1]',
+        ariaSnapshot: '- button "Click" [active] [ref=e2]',
         kind: 'click',
         locatorCandidates: [
           { framePath: ['#action-frame'], kind: 'aria', steps: [{ exact: true, method: 'role', name: 'Click', role: 'button' }] },
@@ -66,7 +66,7 @@ describe('recording playback', () => {
           { framePath: ['#action-frame'], kind: 'css', value: 'button' },
         ],
         pageUrl: 'https://recorder.test/content',
-        ref: 'e1',
+        ref: 'e2',
       },
     ])
 

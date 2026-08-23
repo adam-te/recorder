@@ -6,6 +6,7 @@
   "arrowParens": "avoid",
   "singleQuote": true,
   "printWidth": 320,
+  "ignorePatterns": ["aria/generated/**"],
   "objectWrap": "preserve",
   "sortImports": {
     "newlinesBetween": true,

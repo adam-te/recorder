@@ -7,7 +7,13 @@
     ".": "./index.ts",
     "./browser": "./browser.ts"
   },
+  "scripts": {
+    "generate:playwright": "node generatePlaywrightAriaSnapshot.cjs"
+  },
   "dependencies": {
     "dom-accessibility-api": "0.7.1"
+  },
+  "devDependencies": {
+    "esbuild": "0.27.7"
   }
 }

@@ -3,7 +3,7 @@ const { writeFileSync } = require('node:fs')
 const { join } = require('node:path')
 
 const bundled = buildSync({
-  banner: { js: '/*! dom-accessibility-api v0.7.1 | MIT License | Copyright 2020 Sebastian Silbermann */' },
+  banner: { js: '/*! Playwright v1.59.1 | Apache-2.0 | Copyright Microsoft Corporation; dom-accessibility-api v0.7.1 | MIT | Copyright 2020 Sebastian Silbermann */' },
   bundle: true,
   entryPoints: [require.resolve('@te/aria/browser')],
   format: 'iife',
