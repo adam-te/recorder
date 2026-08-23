@@ -1,6 +1,6 @@
 {
   "$schema": "./node_modules/oxlint/configuration_schema.json",
-  "ignorePatterns": ["aria/generated/**"],
+  "ignorePatterns": ["aria/vendor/playwright/**"],
   "plugins": ["unicorn"],
   "rules": {
     "unicorn/prefer-module": "error"

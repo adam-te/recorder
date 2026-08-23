@@ -6,7 +6,7 @@
   "arrowParens": "avoid",
   "singleQuote": true,
   "printWidth": 320,
-  "ignorePatterns": ["aria/generated/**"],
+  "ignorePatterns": ["aria/vendor/playwright/**"],
   "objectWrap": "preserve",
   "sortImports": {
     "newlinesBetween": true,
