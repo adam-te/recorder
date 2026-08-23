@@ -1,3 +1,3 @@
-import type { AriaSnapshot, AriaTraversalOptions } from '../types.ts'
+import type { AriaSnapshot, AriaSnapshotOptions } from '../types.ts'
 
-export declare function generateAriaSnapshot(options: AriaTraversalOptions): AriaSnapshot
+export declare function generateAriaSnapshot(options: AriaSnapshotOptions): AriaSnapshot

@@ -38,13 +38,14 @@ function recordPageInteractions(args: RecordPageInteractionsArgs, generateSelect
 
     if (target && !isRecorderUiEvent && !capturedEvents.has(event)) {
       capturedEvents.add(event)
-      const traversalOptions = {
+      const snapshotOptions = { target }
+      const locatorOptions = {
         excludeElement: (element: Element) => element.hasAttribute(args.recorderUiAttribute) || Boolean(element.closest(`[${args.recorderUiAttribute}]`)),
         getShadowRoot: (element: Element) => element.shadowRoot ?? closedShadowRoots.get(element) ?? null,
         target,
       }
-      const { snapshot: ariaSnapshot, targetRef: ref } = ariaRuntime.generateAriaSnapshot(traversalOptions)
-      const ariaSelectors = ariaRuntime.generateAriaLocatorCandidates(traversalOptions).map(candidate => ({ ...candidate, kind: 'aria' as const }))
+      const { snapshot: ariaSnapshot, targetRef: ref } = ariaRuntime.generateAriaSnapshot(snapshotOptions)
+      const ariaSelectors = ariaRuntime.generateAriaLocatorCandidates(locatorOptions).map(candidate => ({ ...candidate, kind: 'aria' as const }))
 
       void reportInteraction({ ariaSnapshot, event: serialize(event as never), ref, selectors: [...ariaSelectors, ...generateSelectorCandidates(target)] })
     }

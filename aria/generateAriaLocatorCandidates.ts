@@ -1,10 +1,10 @@
 import { computeAccessibleName, getRole, isInaccessible } from 'dom-accessibility-api'
 
-import type { AriaLocatorCandidate, AriaLocatorStep, AriaTraversalOptions } from './types.ts'
+import type { AriaLocatorCandidate, AriaLocatorOptions, AriaLocatorStep } from './types.ts'
 
 export { generateAriaLocatorCandidates }
 
-function generateAriaLocatorCandidates(options: AriaTraversalOptions): AriaLocatorCandidate[] {
+function generateAriaLocatorCandidates(options: AriaLocatorOptions): AriaLocatorCandidate[] {
   const elementCache = new Map<Node, Element[]>()
   const inaccessibleCache = new Map<Element, boolean>()
   const nameCache = new Map<Element, string>()

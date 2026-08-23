@@ -1,4 +1,4 @@
-export type { AriaLocatorCandidate, AriaLocatorStep, AriaRuntime, AriaSnapshot, AriaTraversalOptions }
+export type { AriaLocatorCandidate, AriaLocatorOptions, AriaLocatorStep, AriaRuntime, AriaSnapshot, AriaSnapshotOptions }
 
 interface AriaLabelLocatorStep {
   exact?: boolean
@@ -18,8 +18,8 @@ interface AriaLocatorCandidate {
 }
 
 interface AriaRuntime {
-  generateAriaLocatorCandidates: (options: AriaTraversalOptions) => AriaLocatorCandidate[]
-  generateAriaSnapshot: (options: AriaTraversalOptions) => AriaSnapshot
+  generateAriaLocatorCandidates: (options: AriaLocatorOptions) => AriaLocatorCandidate[]
+  generateAriaSnapshot: (options: AriaSnapshotOptions) => AriaSnapshot
 }
 
 interface AriaSnapshot {
@@ -27,10 +27,13 @@ interface AriaSnapshot {
   targetRef?: string
 }
 
-interface AriaTraversalOptions {
+interface AriaSnapshotOptions {
+  target: Element
+}
+
+interface AriaLocatorOptions extends AriaSnapshotOptions {
   excludeElement?: (element: Element) => boolean
   getShadowRoot?: (element: Element) => ShadowRoot | null
-  target: Element
 }
 
 type AriaLocatorStep = AriaLabelLocatorStep | AriaRoleLocatorStep
