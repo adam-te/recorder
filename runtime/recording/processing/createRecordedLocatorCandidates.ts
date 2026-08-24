@@ -7,7 +7,7 @@ import type { RecordedLocator } from '@te/recorder-core'
 
 export { createRecordedLocatorCandidates }
 
-async function createRecordedLocatorCandidates(interaction: CapturedInteraction): Promise<RecordedLocator[]> {
+async function createRecordedLocatorCandidates(interaction: CapturedInteraction): Promise<[RecordedLocator, ...RecordedLocator[]]> {
   const maxCandidates = 3
   let framePath: string[] = []
   let frame = interaction.frame
@@ -21,11 +21,15 @@ async function createRecordedLocatorCandidates(interaction: CapturedInteraction)
     parentFrame = frame.parentFrame()
   }
 
-  if (!interaction.selectors.length) {
+  const [firstSelector, ...remainingSelectors] = interaction.selectors
+
+  if (!firstSelector) {
     throw new Error('Recorder did not capture a selector for the interaction.')
   }
 
-  return interaction.selectors.map(locator => ({ ...locator, ...(framePath.length ? { framePath } : {}) })).slice(0, maxCandidates)
+  const withFramePath = (locator: RecordedLocator): RecordedLocator => ({ ...locator, ...(framePath.length ? { framePath } : {}) })
+
+  return [withFramePath(firstSelector), ...remainingSelectors.slice(0, maxCandidates - 1).map(withFramePath)]
 
   async function getFrameSelector(currentFrame: Frame): Promise<CapturedCssSelector> {
     const selectors = await (await currentFrame.frameElement()).evaluate((element, selectorGeneratorName) => (globalThis as unknown as Record<string, (value: Element) => CapturedCssSelector[]>)[selectorGeneratorName](element as Element), SELECTOR_GENERATOR_NAME)

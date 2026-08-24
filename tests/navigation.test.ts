@@ -3,7 +3,7 @@ import { describe, expect, test } from 'vitest'
 import { createRecordingSession } from '@te/recorder-core'
 import { appendCapturedInteraction, installRecordingCapture } from '@te/recorder-runtime/capture'
 
-import { useBrowserTestHarness } from './utils.ts'
+import { getOnlyAction, useBrowserTestHarness } from './utils.ts'
 
 describe('navigation recording', () => {
   const browser = useBrowserTestHarness()
@@ -27,11 +27,10 @@ describe('navigation recording', () => {
     await page.locator('#target').click()
     await recorded.promise
 
-    const action = recordingSession.snapshot().actions.find(currentAction => currentAction.kind === 'click')
+    const click = getOnlyAction(recordingSession.snapshot(), 'click')
 
-    expect(action?.kind).toBe('click')
-    expect(action?.kind === 'click' ? action.locatorCandidates[0] : undefined).toStrictEqual({ kind: 'aria', steps: [{ method: 'role', name: 'Continue', role: 'link' }] })
-    expect(action && 'locatorCandidates' in action ? action.locatorCandidates : []).toContainEqual({ kind: 'css', value: '#target' })
+    expect(click.locatorCandidates[0]).toStrictEqual({ kind: 'aria', steps: [{ method: 'role', name: 'Continue', role: 'link' }] })
+    expect(click.locatorCandidates).toContainEqual({ kind: 'css', value: '#target' })
   })
 
   test('uses the requested start URL when it redirects', async () => {

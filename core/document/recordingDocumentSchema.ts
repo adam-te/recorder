@@ -49,7 +49,7 @@ const recordedAriaSnapshotSchema = recordedAriaNodeSchema.superRefine((snapshot,
     node.children?.forEach(child => typeof child !== 'string' && visit(child))
   }
 })
-const recordedActionLocatorContextSchema = { locatorCandidates: z.array(recordedLocatorSchema).min(1) }
+const recordedActionLocatorContextSchema = { locatorCandidates: z.tuple([recordedLocatorSchema], recordedLocatorSchema) }
 
 const recordedActionSchema = z.discriminatedUnion('kind', [
   z.object({ ...recordedActionContextSchema, kind: z.literal('goto'), url: z.url() }),

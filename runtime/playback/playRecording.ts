@@ -19,18 +19,18 @@ async function playRecording(args: PlayRecordingArgs): Promise<PlaybackResult> {
 
 async function executeAction(args: ExecuteActionArgs): Promise<void> {
   await matchBy(args.action, 'kind', {
-    'assert-visible': action => resolveLocator(args.page, action.locatorCandidates[0]!).waitFor({ state: 'visible' }),
-    check: action => resolveLocator(args.page, action.locatorCandidates[0]!)[action.checked ? 'check' : 'uncheck'](),
-    click: action => resolveLocator(args.page, action.locatorCandidates[0]!).click({ button: action.button, clickCount: action.clickCount, modifiers: action.modifiers, position: action.position }),
-    fill: async action => resolveLocator(args.page, action.locatorCandidates[0]!).fill(await resolveValue(action.value, args.resolveSecret)),
+    'assert-visible': action => resolveLocator(args.page, action.locatorCandidates[0]).waitFor({ state: 'visible' }),
+    check: action => resolveLocator(args.page, action.locatorCandidates[0])[action.checked ? 'check' : 'uncheck'](),
+    click: action => resolveLocator(args.page, action.locatorCandidates[0]).click({ button: action.button, clickCount: action.clickCount, modifiers: action.modifiers, position: action.position }),
+    fill: async action => resolveLocator(args.page, action.locatorCandidates[0]).fill(await resolveValue(action.value, args.resolveSecret)),
     'go-back': () => args.page.goBack().then(() => undefined),
     'go-forward': () => args.page.goForward().then(() => undefined),
     goto: action => args.page.goto(action.url).then(() => undefined),
-    hover: action => resolveLocator(args.page, action.locatorCandidates[0]!).hover({ position: action.position }),
-    press: action => resolveLocator(args.page, action.locatorCandidates[0]!).press([...(action.modifiers ?? []), action.key].join('+')),
+    hover: action => resolveLocator(args.page, action.locatorCandidates[0]).hover({ position: action.position }),
+    press: action => resolveLocator(args.page, action.locatorCandidates[0]).press([...(action.modifiers ?? []), action.key].join('+')),
     reload: () => args.page.reload().then(() => undefined),
-    select: action => resolveLocator(args.page, action.locatorCandidates[0]!).selectOption(action.options),
-    'set-input-files': action => resolveLocator(args.page, action.locatorCandidates[0]!).setInputFiles(action.files),
+    select: action => resolveLocator(args.page, action.locatorCandidates[0]).selectOption(action.options),
+    'set-input-files': action => resolveLocator(args.page, action.locatorCandidates[0]).setInputFiles(action.files),
   })
 }
 
