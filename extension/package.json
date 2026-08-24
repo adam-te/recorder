@@ -19,7 +19,7 @@
     "@te/recorder-core": "*",
     "@te/recorder-runtime": "*",
     "@te/recorder-utils": "*",
-    "playwright": "1.59.1"
+    "playwright": "1.62.1"
   },
   "devDependencies": {
     "@types/vscode": "1.96.0",

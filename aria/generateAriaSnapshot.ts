@@ -40,6 +40,7 @@ function compactAriaTree(root: PlaywrightAriaNode): { nodesByRef: Map<string, Ar
       ...(node.box.cursor === 'pointer' ? { cursor: 'pointer' as const } : {}),
       ...(node.disabled ? { disabled: true } : {}),
       ...(node.expanded ? { expanded: true } : {}),
+      ...(node.invalid ? { invalid: node.invalid } : {}),
       ...(node.level !== undefined ? { level: node.level } : {}),
       ...(node.pressed ? { pressed: node.pressed } : {}),
       ...(node.ref !== undefined ? { ref: node.ref } : {}),

@@ -5,7 +5,7 @@ import type { AriaNode as PlaywrightAriaNode } from './vendor/playwright/isomorp
 export { renderAriaSnapshot }
 
 function renderAriaSnapshot(snapshot: AriaSnapshot): string {
-  const tree: PlaywrightAriaSnapshot = { elements: new Map(), iframeRefs: [], refs: new Map(), root: toPlaywrightAriaNode(snapshot) }
+  const tree: PlaywrightAriaSnapshot = { iframeRefs: [], info: new Map(), refs: new Map(), root: toPlaywrightAriaNode(snapshot) }
 
   return renderAriaTree(tree, { mode: 'ai' }).text
 }

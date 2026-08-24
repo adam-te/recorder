@@ -25,6 +25,7 @@ const recordedAriaNodeSchema: z.ZodType<RecordedAriaNode> = z.lazy(() =>
     cursor: z.literal('pointer').optional(),
     disabled: z.boolean().optional(),
     expanded: z.boolean().optional(),
+    invalid: z.union([z.boolean(), z.literal('grammar'), z.literal('spelling')]).optional(),
     level: z.number().optional(),
     name: z.string(),
     pressed: z.union([z.boolean(), z.literal('mixed')]).optional(),

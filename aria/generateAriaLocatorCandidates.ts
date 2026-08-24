@@ -1,5 +1,5 @@
 import type { AriaLocatorCandidate, AriaLocatorOptions, AriaLocatorStep } from './types.ts'
-import { beginAriaCaches, endAriaCaches, getAriaRole, getElementAccessibleName, isElementHiddenForAria } from './vendor/playwright/injected/roleUtils.ts'
+import { beginAriaCaches, endAriaCaches, getAriaRole, getElementAccessibleNameText, isElementHiddenForAria } from './vendor/playwright/injected/roleUtils.ts'
 import { getElementLabels, type ElementText } from './vendor/playwright/injected/selectorUtils.ts'
 import { normalizeWhiteSpace } from './vendor/playwright/isomorphic/stringUtils.ts'
 
@@ -106,7 +106,7 @@ function generateAriaLocatorCandidatesInternal(options: AriaLocatorOptions): Ari
       return cached
     }
 
-    const name = normalizeWhiteSpace(getElementAccessibleName(element, false))
+    const name = normalizeWhiteSpace(getElementAccessibleNameText(element, false))
 
     nameCache.set(element, name)
     return name

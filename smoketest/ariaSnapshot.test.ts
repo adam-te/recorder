@@ -11,7 +11,7 @@ describe('ARIA interaction snapshots', () => {
     const html = `
       <main aria-label="Account settings">
         <h2>Profile</h2>
-        <input aria-describedby="email-help" aria-label="Email" readonly required value="ada@example.com">
+        <input aria-describedby="email-help" aria-invalid="grammar" aria-label="Email" readonly required value="ada@example.com">
         <span id="email-help">Used for notifications</span>
         <button id="target" aria-expanded="false" onclick="this.textContent = 'Changed'; this.setAttribute('aria-expanded', 'true')">Open settings</button>
         <button disabled>Unavailable</button>
@@ -26,6 +26,7 @@ describe('ARIA interaction snapshots', () => {
     expect(yaml).toContain('- heading "Profile"')
     expect(yaml).toContain('[level=2]')
     expect(yaml).toContain('- textbox "Email"')
+    expect(yaml).toContain('[invalid=grammar]')
     expect(yaml).toContain(': ada@example.com')
     expect(yaml).toContain('- text: Used for notifications')
     expect(yaml).toContain('- button "Open settings"')

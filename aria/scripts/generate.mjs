@@ -9,23 +9,30 @@ const VENDOR_DIRECTORY = join(ARIA_DIRECTORY, 'vendor', 'playwright')
 const PLAYWRIGHT_LICENSE = join(ARIA_DIRECTORY, 'PLAYWRIGHT-LICENSE')
 const VENDOR_FILES = [
   ['packages/injected/src/ariaSnapshot.ts', 'injected/ariaSnapshot.ts'],
+  ['packages/injected/src/ariaSnapshotDistiller.ts', 'injected/ariaSnapshotDistiller.ts'],
   ['packages/injected/src/roleUtils.ts', 'injected/roleUtils.ts'],
   ['packages/injected/src/selectorUtils.ts', 'injected/selectorUtils.ts'],
   ['packages/injected/src/domUtils.ts', 'injected/domUtils.ts'],
-  ['packages/playwright-core/src/utils/isomorphic/ariaSnapshot.ts', 'isomorphic/ariaSnapshot.ts'],
-  ['packages/playwright-core/src/utils/isomorphic/cssParser.ts', 'isomorphic/cssParser.ts'],
-  ['packages/playwright-core/src/utils/isomorphic/stringUtils.ts', 'isomorphic/stringUtils.ts'],
-  ['packages/playwright-core/src/utils/isomorphic/cssTokenizer.ts', 'isomorphic/cssTokenizer.ts'],
-  ['packages/playwright-core/src/utils/isomorphic/selectorParser.ts', 'isomorphic/selectorParser.ts'],
-  ['packages/playwright-core/src/utils/isomorphic/yaml.ts', 'isomorphic/yaml.ts'],
+  ['packages/isomorphic/ariaSnapshot.ts', 'isomorphic/ariaSnapshot.ts'],
+  ['packages/isomorphic/cssParser.ts', 'isomorphic/cssParser.ts'],
+  ['packages/isomorphic/stringUtils.ts', 'isomorphic/stringUtils.ts'],
+  ['packages/isomorphic/cssTokenizer.ts', 'isomorphic/cssTokenizer.ts'],
+  ['packages/isomorphic/selectorParser.ts', 'isomorphic/selectorParser.ts'],
+  ['packages/isomorphic/yaml.ts', 'isomorphic/yaml.ts'],
 ]
 const IMPORT_REWRITES = {
   'injected/ariaSnapshot.ts': {
     '@isomorphic/ariaSnapshot': '../isomorphic/ariaSnapshot.ts',
     '@isomorphic/stringUtils': '../isomorphic/stringUtils.ts',
     '@isomorphic/yaml': '../isomorphic/yaml.ts',
+    './ariaSnapshotDistiller': './ariaSnapshotDistiller.ts',
     './domUtils': './domUtils.ts',
     './roleUtils': './roleUtils.ts',
+  },
+  'injected/ariaSnapshotDistiller.ts': {
+    '@isomorphic/ariaSnapshot': '../isomorphic/ariaSnapshot.ts',
+    '@isomorphic/stringUtils': '../isomorphic/stringUtils.ts',
+    './ariaSnapshot': './ariaSnapshot.ts',
   },
   'injected/roleUtils.ts': {
     '@isomorphic/ariaSnapshot': '../isomorphic/ariaSnapshot.ts',
