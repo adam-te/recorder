@@ -57,7 +57,7 @@ function normalizeRefs(snapshot: string): string {
 function allNodesHaveCompactShape(node: AriaSnapshot): boolean {
   const states = [node.active, node.checked, node.disabled, node.expanded, node.pressed, node.selected]
 
-  return !('ariaVisible' in node) && !('box' in node) && !('receivesPointerEvents' in node) && !states.includes(false) && node.children.every(child => typeof child === 'string' || allNodesHaveCompactShape(child))
+  return !('ariaVisible' in node) && !('box' in node) && !('receivesPointerEvents' in node) && !states.includes(false) && (node.children ?? []).every(child => typeof child === 'string' || allNodesHaveCompactShape(child))
 }
 
 function findNodeByRef(node: AriaSnapshot, ref: string | undefined): AriaSnapshot | undefined {
@@ -65,5 +65,5 @@ function findNodeByRef(node: AriaSnapshot, ref: string | undefined): AriaSnapsho
     return node
   }
 
-  return node.children.flatMap(child => (typeof child === 'string' ? [] : [findNodeByRef(child, ref)])).find(child => child !== undefined)
+  return (node.children ?? []).flatMap(child => (typeof child === 'string' ? [] : [findNodeByRef(child, ref)])).find(child => child !== undefined)
 }

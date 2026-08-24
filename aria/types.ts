@@ -31,7 +31,7 @@ interface GeneratedAriaSnapshot {
 }
 
 interface AriaNode extends Omit<PlaywrightAriaNode, 'box' | 'children' | 'receivesPointerEvents'> {
-  children: (AriaNode | string)[]
+  children?: (AriaNode | string)[]
   cursor?: 'pointer'
 }
 

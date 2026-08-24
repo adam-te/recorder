@@ -29,13 +29,14 @@ function compactAriaTree(root: PlaywrightAriaNode): { nodesByRef: Map<string, Ar
   return { nodesByRef, root: visit(root) }
 
   function visit(node: PlaywrightAriaNode): AriaNode {
+    const children = node.children.map(child => (typeof child === 'string' ? child : visit(child)))
     const result: AriaNode = {
-      children: node.children.map(child => (typeof child === 'string' ? child : visit(child))),
       name: node.name,
       props: { ...node.props },
       role: node.role,
       ...(node.active ? { active: true } : {}),
       ...(node.checked ? { checked: node.checked } : {}),
+      ...(children.length ? { children } : {}),
       ...(node.box.cursor === 'pointer' ? { cursor: 'pointer' as const } : {}),
       ...(node.disabled ? { disabled: true } : {}),
       ...(node.expanded ? { expanded: true } : {}),

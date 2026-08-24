@@ -21,7 +21,7 @@ const recordedAriaNodeSchema: z.ZodType<RecordedAriaNode> = z.lazy(() =>
   z.object({
     active: z.boolean().optional(),
     checked: z.union([z.boolean(), z.literal('mixed')]).optional(),
-    children: z.array(z.union([recordedAriaNodeSchema, z.string()])),
+    children: z.array(z.union([recordedAriaNodeSchema, z.string()])).optional(),
     cursor: z.literal('pointer').optional(),
     disabled: z.boolean().optional(),
     expanded: z.boolean().optional(),
@@ -66,5 +66,5 @@ type RecordedValue = z.infer<typeof recordedValueSchema>
 type RecordingDocument = z.infer<typeof recordingDocumentSchema>
 
 interface RecordedAriaNode extends Omit<AriaNode, 'children'> {
-  children: (RecordedAriaNode | string)[]
+  children?: (RecordedAriaNode | string)[]
 }

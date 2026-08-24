@@ -16,7 +16,7 @@ function toPlaywrightAriaNode(node: AriaNode): PlaywrightAriaNode {
   return {
     ...playwrightNode,
     box: { cursor, inline: false, visible: true },
-    children: node.children.map(child => (typeof child === 'string' ? child : toPlaywrightAriaNode(child))),
+    children: (node.children ?? []).map(child => (typeof child === 'string' ? child : toPlaywrightAriaNode(child))),
     receivesPointerEvents: true,
   }
 }

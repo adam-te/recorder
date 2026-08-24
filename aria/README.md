@@ -1,6 +1,6 @@
 # ARIA browser utilities
 
-Browser-side utilities for generating Playwright-compatible AI ARIA snapshots and semantic locator candidates. Snapshots are compact JSON-safe tree DTOs that retain semantic content, refs, and the pointer-cursor hint; `renderAriaSnapshot` reconstructs Playwright's AI-mode YAML from a stored tree.
+Browser-side utilities for generating Playwright-compatible AI ARIA snapshots and semantic locator candidates. Snapshots are compact JSON-safe tree DTOs that retain semantic content, refs, and the pointer-cursor hint while omitting empty leaf `children`; `renderAriaSnapshot` reconstructs Playwright's AI-mode YAML from a stored tree.
 
 Both features use vendored TypeScript accessibility and selector utilities from the Playwright version declared by this package's `playwright` development dependency; the locator candidate selection algorithm remains local. The snapshot generator accepts the event's element-only composed path so it can select the nearest ARIA-visible, non-generic ancestor with a Playwright ref at capture time; recording consumers store that `targetRef` on the interaction or action rather than in the tree.
 

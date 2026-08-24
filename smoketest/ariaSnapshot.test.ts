@@ -82,6 +82,7 @@ describe('ARIA interaction snapshots', () => {
     const target = findNodes(interaction.ariaSnapshot).find(node => node.ref === interaction.targetRef)
 
     expect(target).toMatchObject({ name: 'Save', role: 'button' })
+    expect(target).not.toHaveProperty('children')
   })
 })
 
@@ -90,5 +91,5 @@ async function clickClosedShadowButton(page: Page): Promise<void> {
 }
 
 function findNodes(root: AriaNode): AriaNode[] {
-  return [root, ...root.children.flatMap(child => (typeof child === 'string' ? [] : findNodes(child)))]
+  return [root, ...(root.children ?? []).flatMap(child => (typeof child === 'string' ? [] : findNodes(child)))]
 }
