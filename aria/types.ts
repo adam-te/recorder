@@ -30,9 +30,9 @@ interface GeneratedAriaSnapshot {
   targetRef?: string
 }
 
-interface AriaNode extends Omit<PlaywrightAriaNode, 'children'> {
-  ariaVisible: boolean
+interface AriaNode extends Omit<PlaywrightAriaNode, 'box' | 'children' | 'receivesPointerEvents'> {
   children: (AriaNode | string)[]
+  cursor?: 'pointer'
 }
 
 interface AriaSnapshotOptions {

@@ -71,7 +71,7 @@ describe('recording playback', () => {
     const recordedAction = document?.actions[1] && 'ariaSnapshot' in document.actions[1] ? document.actions[1] : undefined
 
     expect(recordedAction?.targetRef).toMatch(/^e\d+$/)
-    expect(recordedAction?.ariaSnapshot).toMatchObject({ ariaVisible: true, role: 'fragment' })
+    expect(recordedAction?.ariaSnapshot).toMatchObject({ role: 'fragment' })
     expect(recordedAction?.ariaSnapshot).not.toHaveProperty('targetRef')
     expect(recordedAction?.ariaSnapshot && renderAriaSnapshot(recordedAction.ariaSnapshot)).toBe(`- button "Click" [active] [ref=${recordedAction?.targetRef}]`)
 

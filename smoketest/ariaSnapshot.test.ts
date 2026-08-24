@@ -36,7 +36,7 @@ describe('ARIA interaction snapshots', () => {
     expect(yaml).not.toContain('Secret content')
     expect(interaction.targetRef).toMatch(/^e\d+$/)
     expect(yaml).toContain(`[ref=${interaction.targetRef}]`)
-    expect(findNodes(interaction.ariaSnapshot).find(node => node.role === 'button' && !node.ariaVisible)).toBeDefined()
+    expect(findNodes(interaction.ariaSnapshot).every(node => !('ariaVisible' in node) && !('box' in node) && !('receivesPointerEvents' in node))).toBe(true)
   })
 
   test('captures the interaction frame without including the parent frame', async () => {
@@ -81,7 +81,7 @@ describe('ARIA interaction snapshots', () => {
     const interaction = await captureInteraction({ expectedKind: 'click', fixture, html, interact: page => page.locator('#target').click() })
     const target = findNodes(interaction.ariaSnapshot).find(node => node.ref === interaction.targetRef)
 
-    expect(target).toMatchObject({ ariaVisible: true, name: 'Save', role: 'button' })
+    expect(target).toMatchObject({ name: 'Save', role: 'button' })
   })
 })
 

@@ -20,17 +20,15 @@ const recordedAriaRoleSchema = z
 const recordedAriaNodeSchema: z.ZodType<RecordedAriaNode> = z.lazy(() =>
   z.object({
     active: z.boolean().optional(),
-    ariaVisible: z.boolean(),
-    box: z.object({ cursor: z.string().optional(), inline: z.boolean(), visible: z.boolean() }),
     checked: z.union([z.boolean(), z.literal('mixed')]).optional(),
     children: z.array(z.union([recordedAriaNodeSchema, z.string()])),
+    cursor: z.literal('pointer').optional(),
     disabled: z.boolean().optional(),
     expanded: z.boolean().optional(),
     level: z.number().optional(),
     name: z.string(),
     pressed: z.union([z.boolean(), z.literal('mixed')]).optional(),
     props: z.record(z.string(), z.string()),
-    receivesPointerEvents: z.boolean(),
     ref: z.string().min(1).optional(),
     role: recordedAriaRoleSchema,
     selected: z.boolean().optional(),

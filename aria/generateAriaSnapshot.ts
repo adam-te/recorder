@@ -14,47 +14,35 @@ function generateAriaSnapshot(options: AriaSnapshotOptions): GeneratedAriaSnapsh
 
   const treeOptions = { mode: 'ai' } as const
   const tree = generateAriaTree(root, treeOptions)
-  const { nodesByRef, root: annotatedRoot } = annotateAriaVisibility(tree.root)
+  const { nodesByRef, root: snapshot } = compactAriaTree(tree.root)
   const targetRef = findTargetRef(nodesByRef, tree.refs, options.targetPath ?? elementAncestry(options.target))
 
   return {
-    snapshot: annotatedRoot,
+    snapshot,
     ...(targetRef ? { targetRef } : {}),
   }
 }
 
-function annotateAriaVisibility(root: PlaywrightAriaNode): { nodesByRef: Map<string, AriaNode>; root: AriaNode } {
+function compactAriaTree(root: PlaywrightAriaNode): { nodesByRef: Map<string, AriaNode>; root: AriaNode } {
   const nodesByRef = new Map<string, AriaNode>()
 
-  beginAriaCaches()
-  try {
-    return { nodesByRef, root: visit(root) }
-  } finally {
-    endAriaCaches()
-  }
+  return { nodesByRef, root: visit(root) }
 
   function visit(node: PlaywrightAriaNode): AriaNode {
-    const element = ariaNodeElement(node)
     const result: AriaNode = {
-      ariaVisible: !isElementHiddenForAria(element),
-      box: {
-        inline: node.box.inline,
-        visible: node.box.visible,
-        ...(node.box.cursor !== undefined ? { cursor: node.box.cursor } : {}),
-      },
       children: node.children.map(child => (typeof child === 'string' ? child : visit(child))),
       name: node.name,
       props: { ...node.props },
-      receivesPointerEvents: node.receivesPointerEvents,
       role: node.role,
-      ...(node.active !== undefined ? { active: node.active } : {}),
-      ...(node.checked !== undefined ? { checked: node.checked } : {}),
-      ...(node.disabled !== undefined ? { disabled: node.disabled } : {}),
-      ...(node.expanded !== undefined ? { expanded: node.expanded } : {}),
+      ...(node.active ? { active: true } : {}),
+      ...(node.checked ? { checked: node.checked } : {}),
+      ...(node.box.cursor === 'pointer' ? { cursor: 'pointer' as const } : {}),
+      ...(node.disabled ? { disabled: true } : {}),
+      ...(node.expanded ? { expanded: true } : {}),
       ...(node.level !== undefined ? { level: node.level } : {}),
-      ...(node.pressed !== undefined ? { pressed: node.pressed } : {}),
+      ...(node.pressed ? { pressed: node.pressed } : {}),
       ...(node.ref !== undefined ? { ref: node.ref } : {}),
-      ...(node.selected !== undefined ? { selected: node.selected } : {}),
+      ...(node.selected ? { selected: true } : {}),
     }
 
     if (result.ref) {
@@ -63,18 +51,6 @@ function annotateAriaVisibility(root: PlaywrightAriaNode): { nodesByRef: Map<str
 
     return result
   }
-}
-
-function ariaNodeElement(node: PlaywrightAriaNode): Element {
-  for (const symbol of Object.getOwnPropertySymbols(node)) {
-    const value = (node as unknown as Record<symbol, unknown>)[symbol]
-
-    if (value instanceof Element) {
-      return value
-    }
-  }
-
-  throw new Error('Playwright did not associate an Element with an ARIA node.')
 }
 
 function elementAncestry(target: Element): Element[] {
@@ -91,13 +67,18 @@ function elementAncestry(target: Element): Element[] {
 }
 
 function findTargetRef(nodesByRef: Map<string, AriaNode>, refs: Map<Element, string>, targetPath: Element[]): string | undefined {
-  for (const element of targetPath) {
-    const ref = refs.get(element)
-    const node = ref ? nodesByRef.get(ref) : undefined
+  beginAriaCaches()
+  try {
+    for (const element of targetPath) {
+      const ref = refs.get(element)
+      const node = ref ? nodesByRef.get(ref) : undefined
 
-    if (node && node.role !== 'generic' && node.ariaVisible) {
-      return ref
+      if (node && node.role !== 'generic' && !isElementHiddenForAria(element)) {
+        return ref
+      }
     }
+  } finally {
+    endAriaCaches()
   }
 
   return undefined
