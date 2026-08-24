@@ -1,12 +1,11 @@
-import { PLAYWRIGHT_VERSION } from './playwrightVersion.ts'
-import type { AriaNode, AriaSnapshot, AriaSnapshotOptions } from './types.ts'
+import type { AriaNode, AriaSnapshotOptions, GeneratedAriaSnapshot } from './types.ts'
 import { generateAriaTree } from './vendor/playwright/injected/ariaSnapshot.ts'
 import { beginAriaCaches, endAriaCaches, isElementHiddenForAria } from './vendor/playwright/injected/roleUtils.ts'
 import type { AriaNode as PlaywrightAriaNode } from './vendor/playwright/isomorphic/ariaSnapshot.ts'
 
 export { generateAriaSnapshot }
 
-function generateAriaSnapshot(options: AriaSnapshotOptions): AriaSnapshot {
+function generateAriaSnapshot(options: AriaSnapshotOptions): GeneratedAriaSnapshot {
   const root = options.target.ownerDocument.body ?? options.target.ownerDocument.documentElement
 
   if (!root) {
@@ -19,9 +18,7 @@ function generateAriaSnapshot(options: AriaSnapshotOptions): AriaSnapshot {
   const targetRef = findTargetRef(nodesByRef, tree.refs, options.targetPath ?? elementAncestry(options.target))
 
   return {
-    playwrightVersion: PLAYWRIGHT_VERSION,
-    root: annotatedRoot,
-    schemaVersion: 1,
+    snapshot: annotatedRoot,
     ...(targetRef ? { targetRef } : {}),
   }
 }

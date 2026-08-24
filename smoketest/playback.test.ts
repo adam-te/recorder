@@ -68,10 +68,12 @@ describe('recording playback', () => {
         pageUrl: 'https://recorder.test/content',
       },
     ])
-    const recordedSnapshot = document?.actions[1] && 'ariaSnapshot' in document.actions[1] ? document.actions[1].ariaSnapshot : undefined
+    const recordedAction = document?.actions[1] && 'ariaSnapshot' in document.actions[1] ? document.actions[1] : undefined
 
-    expect(recordedSnapshot?.targetRef).toMatch(/^e\d+$/)
-    expect(recordedSnapshot && renderAriaSnapshot(recordedSnapshot)).toBe(`- button "Click" [active] [ref=${recordedSnapshot?.targetRef}]`)
+    expect(recordedAction?.targetRef).toMatch(/^e\d+$/)
+    expect(recordedAction?.ariaSnapshot).toMatchObject({ ariaVisible: true, role: 'fragment' })
+    expect(recordedAction?.ariaSnapshot).not.toHaveProperty('targetRef')
+    expect(recordedAction?.ariaSnapshot && renderAriaSnapshot(recordedAction.ariaSnapshot)).toBe(`- button "Click" [active] [ref=${recordedAction?.targetRef}]`)
 
     const playbackPage = await playTestRecording({ document, documents, fixture })
 

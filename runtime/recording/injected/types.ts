@@ -36,6 +36,7 @@ interface SerializedInteraction {
   ariaSnapshot: AriaSnapshot
   event: CapturedInteractionEvent
   selectors: CapturedSelector[]
+  targetRef?: string
 }
 
 type CapturedInteractionEvent = CapturedChangeEvent | CapturedClickEvent | CapturedInputEvent | CapturedKeydownEvent

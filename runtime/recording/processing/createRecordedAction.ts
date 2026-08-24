@@ -20,6 +20,7 @@ async function createRecordedAction(interaction: CapturedInteraction): Promise<R
       kind: 'click',
       locatorCandidates: await createRecordedLocatorCandidates(currentInteraction),
       pageUrl: currentInteraction.pageUrl,
+      ...(currentInteraction.targetRef ? { targetRef: currentInteraction.targetRef } : {}),
     }
   }
 
@@ -30,6 +31,7 @@ async function createRecordedAction(interaction: CapturedInteraction): Promise<R
       kind: 'press',
       locatorCandidates: await createRecordedLocatorCandidates(currentInteraction),
       pageUrl: currentInteraction.pageUrl,
+      ...(currentInteraction.targetRef ? { targetRef: currentInteraction.targetRef } : {}),
     }
   }
 }

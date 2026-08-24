@@ -36,8 +36,8 @@ const recordedAriaNodeSchema: z.ZodType<RecordedAriaNode> = z.lazy(() =>
     selected: z.boolean().optional(),
   }),
 )
-const recordedAriaSnapshotSchema = z.object({ playwrightVersion: z.string().min(1), root: recordedAriaNodeSchema, schemaVersion: z.literal(1), targetRef: z.string().min(1).optional() })
-const recordedActionLocatorContextSchema = { ariaSnapshot: recordedAriaSnapshotSchema.optional(), locatorCandidates: z.array(recordedLocatorSchema).min(1) }
+const recordedAriaSnapshotSchema = recordedAriaNodeSchema
+const recordedActionLocatorContextSchema = { ariaSnapshot: recordedAriaSnapshotSchema.optional(), locatorCandidates: z.array(recordedLocatorSchema).min(1), targetRef: z.string().min(1).optional() }
 
 const recordedActionSchema = z.discriminatedUnion('kind', [
   z.object({ ...recordedActionContextSchema, kind: z.literal('goto'), url: z.url() }),

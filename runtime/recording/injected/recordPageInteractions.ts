@@ -45,10 +45,10 @@ function recordPageInteractions(args: RecordPageInteractionsArgs, generateSelect
         getShadowRoot: (element: Element) => element.shadowRoot ?? closedShadowRoots.get(element) ?? null,
         target,
       }
-      const ariaSnapshot = ariaRuntime.generateAriaSnapshot(snapshotOptions)
+      const { snapshot: ariaSnapshot, targetRef } = ariaRuntime.generateAriaSnapshot(snapshotOptions)
       const ariaSelectors = ariaRuntime.generateAriaLocatorCandidates(locatorOptions).map(candidate => ({ ...candidate, kind: 'aria' as const }))
 
-      void reportInteraction({ ariaSnapshot, event: serialize(event as never), selectors: [...ariaSelectors, ...generateSelectorCandidates(target)] })
+      void reportInteraction({ ariaSnapshot, event: serialize(event as never), selectors: [...ariaSelectors, ...generateSelectorCandidates(target)], ...(targetRef ? { targetRef } : {}) })
     }
   }
 }

@@ -24,11 +24,12 @@ describe('Playwright ARIA snapshot parity', () => {
 
     await page.goto('https://recorder.test/content')
     await page.addScriptTag({ content: `${ariaRuntimeSource};globalThis.__testAriaRuntime=ariaRuntime` })
-    const actual = await page.evaluate(() => {
+    const generated = await page.evaluate(() => {
       const runtime = (globalThis as unknown as { __testAriaRuntime: AriaRuntime }).__testAriaRuntime
 
       return runtime.generateAriaSnapshot({ target: document.querySelector('#target')! })
     })
+    const actual = generated.snapshot
     const expected = await page.ariaSnapshot({ mode: 'ai' })
     const rendered = renderAriaSnapshot(actual)
     const deserialized = JSON.parse(JSON.stringify(actual)) as AriaSnapshot
@@ -36,11 +37,14 @@ describe('Playwright ARIA snapshot parity', () => {
     expect(normalizeRefs(rendered)).toBe(normalizeRefs(expected))
     expect(renderAriaSnapshot(deserialized)).toBe(rendered)
     expect(deserialized).toStrictEqual(actual)
-    expect(actual.schemaVersion).toBe(1)
-    expect(actual.playwrightVersion).toBe('1.59.1')
-    expect(actual.targetRef).toMatch(/^e\d+$/)
-    expect(rendered).toContain(`[ref=${actual.targetRef}]`)
-    expect(allNodesHaveAriaVisibility(actual.root)).toBe(true)
+    expect(actual).toMatchObject({ ariaVisible: true, role: 'fragment' })
+    expect(actual).not.toHaveProperty('playwrightVersion')
+    expect(actual).not.toHaveProperty('root')
+    expect(actual).not.toHaveProperty('schemaVersion')
+    expect(actual).not.toHaveProperty('targetRef')
+    expect(generated.targetRef).toMatch(/^e\d+$/)
+    expect(rendered).toContain(`[ref=${generated.targetRef}]`)
+    expect(allNodesHaveAriaVisibility(actual)).toBe(true)
   })
 })
 
@@ -48,6 +52,6 @@ function normalizeRefs(snapshot: string): string {
   return snapshot.replace(/ref=e\d+/g, 'ref=eN')
 }
 
-function allNodesHaveAriaVisibility(node: AriaSnapshot['root']): boolean {
+function allNodesHaveAriaVisibility(node: AriaSnapshot): boolean {
   return typeof node.ariaVisible === 'boolean' && node.children.every(child => typeof child === 'string' || allNodesHaveAriaVisibility(child))
 }

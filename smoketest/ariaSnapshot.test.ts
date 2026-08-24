@@ -34,9 +34,9 @@ describe('ARIA interaction snapshots', () => {
     expect(yaml).toContain('[disabled]')
     expect(yaml).not.toContain('Changed')
     expect(yaml).not.toContain('Secret content')
-    expect(interaction.ariaSnapshot.targetRef).toMatch(/^e\d+$/)
-    expect(yaml).toContain(`[ref=${interaction.ariaSnapshot.targetRef}]`)
-    expect(findNodes(interaction.ariaSnapshot.root).find(node => node.role === 'button' && !node.ariaVisible)).toBeDefined()
+    expect(interaction.targetRef).toMatch(/^e\d+$/)
+    expect(yaml).toContain(`[ref=${interaction.targetRef}]`)
+    expect(findNodes(interaction.ariaSnapshot).find(node => node.role === 'button' && !node.ariaVisible)).toBeDefined()
   })
 
   test('captures the interaction frame without including the parent frame', async () => {
@@ -73,13 +73,13 @@ describe('ARIA interaction snapshots', () => {
 
     expect(yaml).toContain('- button "Open shadow action"')
     expect(yaml).not.toContain('- button "Closed shadow action"')
-    expect(interaction.ariaSnapshot.targetRef).toBeUndefined()
+    expect(interaction.targetRef).toBeUndefined()
   })
 
   test('selects the nearest actionable ARIA ancestor of the raw event target', async () => {
     const html = '<button id="action"><span id="target">Save</span></button>'
     const interaction = await captureInteraction({ expectedKind: 'click', fixture, html, interact: page => page.locator('#target').click() })
-    const target = findNodes(interaction.ariaSnapshot.root).find(node => node.ref === interaction.ariaSnapshot.targetRef)
+    const target = findNodes(interaction.ariaSnapshot).find(node => node.ref === interaction.targetRef)
 
     expect(target).toMatchObject({ ariaVisible: true, name: 'Save', role: 'button' })
   })

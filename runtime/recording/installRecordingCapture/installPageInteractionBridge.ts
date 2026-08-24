@@ -52,6 +52,7 @@ interface CapturedInteraction {
   frame: Frame
   pageUrl: string
   selectors: CapturedSelector[]
+  targetRef?: string
 }
 
 interface InstallPageInteractionBridgeArgs {
