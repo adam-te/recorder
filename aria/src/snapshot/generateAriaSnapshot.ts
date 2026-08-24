@@ -1,7 +1,8 @@
-import type { AriaNode, AriaSnapshotOptions, GeneratedAriaSnapshot } from './types.ts'
-import { generateAriaTree } from './vendor/playwright/injected/ariaSnapshot.ts'
-import { beginAriaCaches, endAriaCaches, isElementHiddenForAria } from './vendor/playwright/injected/roleUtils.ts'
-import type { AriaNode as PlaywrightAriaNode } from './vendor/playwright/isomorphic/ariaSnapshot.ts'
+import { generateAriaTree } from '../../vendor/playwright/injected/ariaSnapshot.ts'
+import { beginAriaCaches, endAriaCaches, isElementHiddenForAria } from '../../vendor/playwright/injected/roleUtils.ts'
+import type { AriaNode as PlaywrightAriaNode } from '../../vendor/playwright/isomorphic/ariaSnapshot.ts'
+import type { AriaSnapshotOptions, GeneratedAriaSnapshot } from '../types/browser.ts'
+import type { AriaNode } from '../types/snapshot.ts'
 
 export { generateAriaSnapshot }
 

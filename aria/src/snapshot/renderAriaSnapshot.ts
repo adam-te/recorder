@@ -1,6 +1,6 @@
-import type { AriaNode, AriaSnapshot } from './types.ts'
-import { renderAriaTree, type AriaSnapshot as PlaywrightAriaSnapshot } from './vendor/playwright/injected/ariaSnapshot.ts'
-import type { AriaNode as PlaywrightAriaNode } from './vendor/playwright/isomorphic/ariaSnapshot.ts'
+import { renderAriaTree, type AriaSnapshot as PlaywrightAriaSnapshot } from '../../vendor/playwright/injected/ariaSnapshot.ts'
+import type { AriaNode as PlaywrightAriaNode } from '../../vendor/playwright/isomorphic/ariaSnapshot.ts'
+import type { AriaNode, AriaSnapshot } from '../types/snapshot.ts'
 
 export { renderAriaSnapshot }
 

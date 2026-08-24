@@ -1,4 +1,4 @@
-import type { AriaLocatorOptions, AriaRuntime } from '@te/aria'
+import type { AriaLocatorOptions, AriaRuntime } from '@te/aria/browser'
 
 import type { CapturedCssSelector, CapturedSelector } from './types.ts'
 

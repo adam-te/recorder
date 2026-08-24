@@ -4,8 +4,8 @@
   "private": true,
   "type": "module",
   "exports": {
-    ".": "./index.ts",
-    "./browser": "./browser.ts"
+    ".": "./src/index.ts",
+    "./browser": "./src/browser.ts"
   },
   "scripts": {
     "generate:aria": "node scripts/generate.mjs"

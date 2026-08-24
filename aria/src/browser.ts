@@ -1,0 +1,5 @@
+export { generateAriaLocatorCandidates } from './locators/generateAriaLocatorCandidates.ts'
+export { generateAriaSnapshot } from './snapshot/generateAriaSnapshot.ts'
+export type { AriaLocatorOptions, AriaRuntime, AriaSnapshotOptions, GeneratedAriaSnapshot } from './types/browser.ts'
+export type { AriaLocatorCandidate, AriaLocatorStep } from './types/locators.ts'
+export type { AriaNode, AriaSnapshot } from './types/snapshot.ts'

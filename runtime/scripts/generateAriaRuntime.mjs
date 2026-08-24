@@ -27,7 +27,7 @@ async function generate() {
     await build({
       banner: { js: `/*! Playwright v${playwrightVersion} | Apache-2.0 | Copyright Microsoft Corporation */` },
       bundle: true,
-      entryPoints: [join(ROOT_DIRECTORY, 'aria', 'browser.ts')],
+      entryPoints: [join(ROOT_DIRECTORY, 'aria', 'src', 'browser.ts')],
       format: 'iife',
       globalName: 'ariaRuntime',
       legalComments: 'none',
