@@ -2,7 +2,8 @@ import { randomUUID } from 'node:crypto'
 import { commands, env, Uri, ViewColumn, window, workspace, type CustomTextEditorProvider, type Disposable, type ExtensionContext, type TextDocument, type WebviewPanel } from 'vscode'
 
 import { getRecordingSnapshotFileName, parseRecordingDocument, parseRecordingSnapshot, type RecordingDocument } from '@te/recorder-core'
-import type { RecordingEditorUiMessage } from '@te/recorder-ui/recording-editor'
+import type { RecordingEditorHostMessage, RecordingEditorUiMessage } from '@te/recorder-ui/recording-editor'
+import { createRecordingEditorHost } from '@te/recorder-ui/recording-editor-host'
 import { renderRecordingSnapshot } from '@te/recorder-ui/render-recording-snapshot'
 
 export { createRecordingEditorProvider, recordingEditorViewType }
@@ -21,9 +22,20 @@ function createRecordingEditorProvider(args: CreateRecordingEditorProviderArgs):
 function resolveRecordingEditor(args: ResolveRecordingEditorArgs): void {
   const webviewDirectory = Uri.joinPath(args.context.extensionUri, 'dist', 'webview')
   const nonce = randomUUID()
-  let selectedActionIndex = 0
   let decisionInProgress = false
   let disposed = false
+
+  const host = createRecordingEditorHost({
+    isPending: () => args.isPending(args.document.uri),
+    readDocument,
+    readSnapshot: async actionIndex => {
+      const snapshotUri = Uri.joinPath(args.document.uri, '..', 'snapshots', getRecordingSnapshotFileName(actionIndex))
+      const contents = await workspace.fs.readFile(snapshotUri)
+      const snapshot = parseRecordingSnapshot(JSON.parse(decoder.decode(contents)))
+
+      return renderRecordingSnapshot(snapshot)
+    },
+  })
 
   args.panel.webview.options = { enableScripts: true, localResourceRoots: [webviewDirectory] }
   args.panel.webview.html = getEditorHtml({ nonce, scriptUri: args.panel.webview.asWebviewUri(Uri.joinPath(webviewDirectory, 'recordingEditor.js')), styleUri: args.panel.webview.asWebviewUri(Uri.joinPath(webviewDirectory, 'recordingEditor.css')), webviewSource: args.panel.webview.cspSource })
@@ -45,14 +57,13 @@ function resolveRecordingEditor(args: ResolveRecordingEditorArgs): void {
   })
 
   async function handleMessage(message: RecordingEditorUiMessage): Promise<void> {
+    const hostMessages = await host.handleMessage(message)
+    if (hostMessages) {
+      await postMessages(hostMessages)
+      return
+    }
+
     switch (message.type) {
-      case 'ready':
-        await publishDocument()
-        break
-      case 'selectAction':
-        selectedActionIndex = message.actionIndex
-        await publishSnapshot()
-        break
       case 'copy':
         await env.clipboard.writeText(message.text)
         break
@@ -90,29 +101,11 @@ function resolveRecordingEditor(args: ResolveRecordingEditorArgs): void {
   }
 
   async function publishDocument(): Promise<void> {
-    await withErrorMessage(async () => {
-      const document = readDocument()
-      selectedActionIndex = Math.min(selectedActionIndex, Math.max(0, document.actions.length - 1))
-      await args.panel.webview.postMessage({ type: 'document', document, pending: args.isPending(args.document.uri), selectedActionIndex })
-      await publishSnapshot(document)
-    }, true)
+    await postMessages(await host.publishDocument())
   }
 
-  async function publishSnapshot(document = readDocument()): Promise<void> {
-    const action = document.actions[selectedActionIndex]
-    if (!action || !('locatorCandidates' in action)) {
-      await args.panel.webview.postMessage({ type: 'snapshot', actionIndex: selectedActionIndex })
-      return
-    }
-
-    try {
-      const snapshotUri = Uri.joinPath(args.document.uri, '..', 'snapshots', getRecordingSnapshotFileName(selectedActionIndex))
-      const contents = await workspace.fs.readFile(snapshotUri)
-      const snapshot = parseRecordingSnapshot(JSON.parse(decoder.decode(contents)))
-      await args.panel.webview.postMessage({ type: 'snapshot', actionIndex: selectedActionIndex, ...renderRecordingSnapshot(snapshot) })
-    } catch (error) {
-      await args.panel.webview.postMessage({ type: 'snapshot', actionIndex: selectedActionIndex, error: getErrorMessage(error) })
-    }
+  async function postMessages(messages: RecordingEditorHostMessage[]): Promise<void> {
+    for (const message of messages) await args.panel.webview.postMessage(message)
   }
 
   async function handleClosedDraft(): Promise<void> {
@@ -136,16 +129,12 @@ function resolveRecordingEditor(args: ResolveRecordingEditorArgs): void {
     return parseRecordingDocument(JSON.parse(args.document.getText()))
   }
 
-  async function withErrorMessage(operation: () => Promise<void>, publish = false): Promise<void> {
+  async function withErrorMessage(operation: () => Promise<void>): Promise<void> {
     try {
       await operation()
     } catch (error) {
       const message = getErrorMessage(error)
-      if (publish) {
-        await args.panel.webview.postMessage({ type: 'error', message })
-      } else {
-        await window.showErrorMessage(message)
-      }
+      await window.showErrorMessage(message)
     }
   }
 }

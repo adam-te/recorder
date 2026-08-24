@@ -18,6 +18,7 @@
   "dependencies": {
     "@te/recorder-core": "*",
     "@te/recorder-runtime": "*",
+    "@te/recorder-ui": "*",
     "@te/recorder-utils": "*",
     "playwright": "1.62.1"
   },

@@ -7,6 +7,7 @@ import { getRecordingSnapshotFileName, parseRecordingDocument, parseRecordingSna
 import { createRecorder, type Recorder } from '@te/recorder-runtime'
 import { matchBy, tryTo } from '@te/recorder-utils'
 
+import { runRecordingEditor } from '../ui/runRecordingEditor.ts'
 import { parseRecorderCliCommand, type RecorderCliCommand } from './parseRecorderCliCommand.ts'
 
 export { runRecorderCli }
@@ -17,7 +18,8 @@ const HELP = `Usage: te <command>
 Commands:
   record <url> <directory>  Record a browser transaction
   play <directory>          Play a recorded browser transaction
-  help                 Show this help
+  ui <directory>            Open a recording in the standalone editor
+  help                      Show this help
 `
 
 async function runRecorderCli(args: RunRecorderCliArgs): Promise<number> {
@@ -50,6 +52,9 @@ async function executeCommand(args: ExecuteCommandArgs): Promise<void> {
 
       await args.recorder.play({ document })
       await args.stdout.write(`Played ${document.actions.length} recorded actions.\n`)
+    },
+    ui: async command => {
+      await runRecordingEditor({ directoryPath: command.directoryPath, onPlay: document => args.recorder.play({ document }), stdout: args.stdout })
     },
     record: async command => {
       const snapshots = new Map<number, RecordedAriaSnapshot>()

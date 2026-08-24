@@ -14,6 +14,9 @@ function parseRecorderCliCommand(argv: readonly string[]): RecorderCliCommand {
   } else if (commandName === 'play') {
     assertArgumentCount(commandArguments, 1, 'te play <directory>')
     command = { directoryPath: commandArguments[0], kind: 'play' }
+  } else if (commandName === 'ui') {
+    assertArgumentCount(commandArguments, 1, 'te ui <directory>')
+    command = { directoryPath: commandArguments[0], kind: 'ui' }
   } else {
     throw new Error(`Unknown command "${commandName}". Run "te help" for usage.`)
   }
@@ -27,4 +30,4 @@ function assertArgumentCount(positionals: readonly string[], expectedCount: numb
   }
 }
 
-type RecorderCliCommand = { directoryPath: string; kind: 'play' } | { directoryPath: string; kind: 'record'; url: string } | { kind: 'help' }
+type RecorderCliCommand = { directoryPath: string; kind: 'play' } | { directoryPath: string; kind: 'ui' } | { directoryPath: string; kind: 'record'; url: string } | { kind: 'help' }
