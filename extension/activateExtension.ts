@@ -1,7 +1,7 @@
 import { createRecorderView } from '#recorder-extension/createRecorderView.ts'
 import { createRecorderController } from '#recorder-extension/recording/createRecorderController.ts'
 import { createRecordingEditorProvider } from '#recorder-extension/recording/createRecordingEditorProvider.ts'
-import { commands, type ExtensionContext } from 'vscode'
+import { commands, window, type ExtensionContext } from 'vscode'
 
 import { tryTo } from '@te/recorder-utils'
 
@@ -32,9 +32,20 @@ function activateExtension(args: ActivateExtensionArgs): ActiveExtension {
     recorderState = 'starting'
     await recorderStateReady
     await updateRecorderContext()
+    const startUrl = await window.showInputBox({
+      ignoreFocusOut: true,
+      placeHolder: 'https://example.com',
+      prompt: 'Enter the initial URL for the transaction recording.',
+      validateInput: validateStartUrl,
+    })
+    if (startUrl === undefined) {
+      await setRecorderState('idle')
+      return
+    }
+
     await tryTo(
       async () => {
-        await controller.start()
+        await controller.start(startUrl.trim())
         await setRecorderState('recording')
       },
       async error => {
@@ -65,6 +76,15 @@ function activateExtension(args: ActivateExtensionArgs): ActiveExtension {
 
   async function updateRecorderContext(): Promise<void> {
     await commands.executeCommand('setContext', 'thousandeyesRecorder.state', recorderState)
+  }
+}
+
+function validateStartUrl(value: string): string | undefined {
+  try {
+    new URL(value.trim())
+    return undefined
+  } catch {
+    return 'Enter a valid absolute URL.'
   }
 }
 

@@ -17,10 +17,8 @@ async function installRecordingCapture(args: InstallRecordingCaptureArgs): Promi
       recordingOverlay = await installRecordingOverlay({ context: args.context, onStopRequested: args.onStopRequested, page: args.page })
       const capture = await captureBrowserNavigation({ onDocumentChanged: args.onDocumentChanged, page: args.page, recordingSession: args.recordingSession })
 
-      if (args.startUrl) {
-        await args.page.goto(args.startUrl)
-        await capture.flush()
-      }
+      await args.page.goto(args.startUrl)
+      await capture.flush()
 
       return capture
     },
@@ -47,7 +45,7 @@ interface InstallRecordingCaptureArgs {
   onStopRequested?: () => Promise<void> | void
   page: Page
   recordingSession: RecordingSession
-  startUrl?: string
+  startUrl: string
 }
 
 interface RecordingCapture {

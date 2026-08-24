@@ -17,7 +17,7 @@ function createRecorderController(args: CreateRecorderControllerArgs): RecorderC
 
   return { discardPending, dispose, isPending, play, savePending, start, stop }
 
-  async function start(): Promise<void> {
+  async function start(startUrl: string): Promise<void> {
     if (stagingDirectory) {
       throw new Error('A recording is already in progress.')
     }
@@ -26,7 +26,7 @@ function createRecorderController(args: CreateRecorderControllerArgs): RecorderC
     await workspace.fs.createDirectory(Uri.joinPath(stagingDirectory, 'snapshots'))
 
     try {
-      await recorder.start({ onSnapshotCaptured: stageSnapshot, onStopRequested: args.onStopRequested })
+      await recorder.start({ onSnapshotCaptured: stageSnapshot, onStopRequested: args.onStopRequested, startUrl })
     } catch (error) {
       await discardStagingDirectory()
       throw error
@@ -230,7 +230,7 @@ interface RecorderController {
   isPending: (documentUri: Uri) => boolean
   play: (document?: RecordingDocument) => Promise<void>
   savePending: (documentUri: Uri) => Promise<Uri | undefined>
-  start: () => Promise<void>
+  start: (startUrl: string) => Promise<void>
   stop: () => Promise<void>
 }
 

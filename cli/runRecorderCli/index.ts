@@ -73,7 +73,7 @@ async function executeCommand(args: ExecuteCommandArgs): Promise<void> {
           snapshots.set(snapshot.actionIndex, snapshot.ariaSnapshot)
         },
         onStopRequested: stopRequest.request,
-        url: command.url,
+        startUrl: command.url,
       })
       await args.stdout.write('Recording started. Press Enter or click Stop recording in the browser to stop and save.\n')
       await stopRequest.wait(args.args.waitForStop ?? waitForEnter)

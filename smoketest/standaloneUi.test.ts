@@ -41,6 +41,7 @@ describe('standalone recording editor', () => {
     const document = createRecordingDocument({ startUrl: 'https://example.com', title: 'Example recording' })
     const openedDirectories: string[] = []
     const output: string[] = []
+    let recordedStartUrl: string | undefined
     let terminalWaitAborted = false
     const exitCode = await runRecorderCli({
       argv: ['record', 'https://example.com'],
@@ -48,7 +49,8 @@ describe('standalone recording editor', () => {
         dispose: async () => undefined,
         play: async () => undefined,
         start: async args => {
-          await args?.onStopRequested?.()
+          recordedStartUrl = args.startUrl
+          await args.onStopRequested?.()
         },
         stop: async () => document,
       },
@@ -72,6 +74,7 @@ describe('standalone recording editor', () => {
     const directoryPath = join(workingDirectory, 'example.recording')
 
     expect(exitCode).toBe(0)
+    expect(recordedStartUrl).toBe('https://example.com')
     expect(terminalWaitAborted).toBe(true)
     expect(openedDirectories).toEqual([directoryPath])
     expect(JSON.parse(await readFile(join(directoryPath, 'recording.json'), 'utf8'))).toEqual(JSON.parse(serializeRecordingDocument(document)))

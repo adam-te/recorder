@@ -13,40 +13,39 @@ function createRecorder(args: CreateRecorderArgs = {}): Recorder {
   const createSession = args.createBrowserSession ?? createBrowserSession
   let browserSession: BrowserSession | undefined
   let capture: RecordingCapture | undefined
-  let recordingInitialized = false
   let recordingSession: RecordingSession | undefined
 
   return { dispose, play, start, stop }
 
-  async function start(args: StartArgs = {}): Promise<void> {
+  async function start(args: StartArgs): Promise<void> {
     if (browserSession) {
       throw new Error('A recorder browser session is already active.')
     }
 
-    const currentRecordingSession = createRecordingSession({ startUrl: 'about:blank', title: 'New recording' })
+    const startUrl = new URL(args.startUrl)
+    const currentRecordingSession = createRecordingSession({ startUrl: args.startUrl, title: startUrl.hostname || args.startUrl })
     let pendingDocumentChange = Promise.resolve()
     const currentBrowserSession = await createSession()
 
     browserSession = currentBrowserSession
-    recordingInitialized = false
     recordingSession = currentRecordingSession
     await tryTo(
       async () => {
         capture = await installRecordingCapture({
           context: currentBrowserSession.context,
-          onDocumentChanged: recordDocumentChange,
+          onDocumentChanged: notifyDocumentChanged,
           onInteraction: async interaction => {
             const appendedInteraction = await appendCapturedInteraction({ interaction, recordingSession: currentRecordingSession })
 
             if (appendedInteraction) {
               await args.onSnapshotCaptured?.({ actionIndex: appendedInteraction.actionIndex, ariaSnapshot: appendedInteraction.ariaSnapshot })
-              await recordDocumentChange(appendedInteraction.document)
+              await notifyDocumentChanged(appendedInteraction.document)
             }
           },
           onStopRequested: args.onStopRequested ?? stopFromOverlay,
           page: currentBrowserSession.page,
           recordingSession: currentRecordingSession,
-          startUrl: args.url,
+          startUrl: args.startUrl,
         })
       },
       async error => {
@@ -60,24 +59,6 @@ function createRecorder(args: CreateRecorderArgs = {}): Recorder {
 
       return pendingDocumentChange
     }
-
-    async function recordDocumentChange(document: RecordingDocument): Promise<void> {
-      let currentDocument = document
-
-      if (!recordingInitialized) {
-        const initialNavigation = document.actions.find(action => action.kind === 'goto')
-        if (!initialNavigation) {
-          return
-        }
-
-        const url = new URL(initialNavigation.url)
-
-        recordingInitialized = true
-        currentDocument = currentRecordingSession.updateMetadata({ startUrl: initialNavigation.url, title: url.hostname || initialNavigation.url })
-      }
-
-      await notifyDocumentChanged(currentDocument)
-    }
   }
 
   async function stop(): Promise<RecordingDocument | undefined> {
@@ -86,7 +67,7 @@ function createRecorder(args: CreateRecorderArgs = {}): Recorder {
     return await tryTo(
       async () => {
         await disposeCaptures()
-        return recordingInitialized ? currentRecordingSession?.snapshot() : undefined
+        return currentRecordingSession?.snapshot()
       },
       undefined,
       closeBrowserSession,
@@ -113,7 +94,6 @@ function createRecorder(args: CreateRecorderArgs = {}): Recorder {
     const currentBrowserSession = browserSession
 
     browserSession = undefined
-    recordingInitialized = false
     recordingSession = undefined
     await currentBrowserSession?.close()
   }
@@ -136,7 +116,7 @@ interface PlayArgs {
 interface Recorder {
   dispose: () => Promise<void>
   play: (args: PlayArgs) => Promise<void>
-  start: (args?: StartArgs) => Promise<void>
+  start: (args: StartArgs) => Promise<void>
   stop: () => Promise<RecordingDocument | undefined>
 }
 
@@ -144,7 +124,7 @@ interface StartArgs {
   onDocumentChanged?: (document: RecordingDocument) => Promise<void> | void
   onStopRequested?: () => Promise<void> | void
   onSnapshotCaptured?: (snapshot: CapturedSnapshot) => Promise<void> | void
-  url?: string
+  startUrl: string
 }
 
 interface CapturedSnapshot {

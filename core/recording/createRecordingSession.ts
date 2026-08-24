@@ -7,7 +7,7 @@ export type { RecordingSession }
 function createRecordingSession(args: CreateRecordingSessionArgs): RecordingSession {
   let document = createRecordingDocument(args)
 
-  return { append, replaceLast, snapshot, updateMetadata }
+  return { append, replaceLast, snapshot }
 
   function append(action: RecordedAction): RecordingDocument {
     document = recordingDocumentSchema.parse({ ...document, actions: [...document.actions, action] })
@@ -28,12 +28,6 @@ function createRecordingSession(args: CreateRecordingSessionArgs): RecordingSess
   function snapshot(): RecordingDocument {
     return document
   }
-
-  function updateMetadata(args: RecordingMetadata): RecordingDocument {
-    document = recordingDocumentSchema.parse({ ...document, ...args })
-
-    return document
-  }
 }
 
 interface CreateRecordingSessionArgs {
@@ -46,10 +40,4 @@ interface RecordingSession {
   append: (action: RecordedAction) => RecordingDocument
   replaceLast: (action: RecordedAction) => RecordingDocument
   snapshot: () => RecordingDocument
-  updateMetadata: (args: RecordingMetadata) => RecordingDocument
-}
-
-interface RecordingMetadata {
-  startUrl: string
-  title: string
 }

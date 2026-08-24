@@ -61,7 +61,7 @@ async function recordTest(args: RecordTestArgs): Promise<RecordingDocument | und
   const page = await createPage({ context: args.fixture.context, documents: args.documents, html: args.html })
   const recorder = createTestRecorder({ browser: args.fixture.browser, context: args.fixture.context, page })
 
-  await recorder.start({ onDocumentChanged: args.onDocumentChanged, onSnapshotCaptured: args.onSnapshotCaptured, url: args.startUrl })
+  await recorder.start({ onDocumentChanged: args.onDocumentChanged, onSnapshotCaptured: args.onSnapshotCaptured, startUrl: args.startUrl })
   await args.interact(page)
   return recorder.stop()
 }
@@ -141,7 +141,7 @@ interface RecordTestArgs {
   interact: (page: Page) => Promise<unknown>
   onDocumentChanged?: (document: RecordingDocument) => Promise<void> | void
   onSnapshotCaptured?: (snapshot: { actionIndex: number; ariaSnapshot: RecordedAriaSnapshot }) => Promise<void> | void
-  startUrl?: string
+  startUrl: string
 }
 
 type TestHook = (callback: () => Promise<void>) => void

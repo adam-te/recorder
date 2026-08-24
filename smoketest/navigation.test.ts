@@ -54,18 +54,18 @@ describe('navigation recording', () => {
     expect(await playbackPage.locator('body').getAttribute('data-clicked')).toBe('true')
   })
 
-  test('records browser address entry and ignores Back, Forward, and Reload', async () => {
+  test('records subsequent browser address entry and ignores Back, Forward, and Reload', async () => {
     const documents = { 'https://recorder.test/after': '<p>After</p>', 'https://recorder.test/content': '<p>Before</p>' }
     const document = await recordTest({
       documents,
       fixture,
       interact: async page => {
-        await page.goto('https://recorder.test/content')
         await page.goto('https://recorder.test/after')
         await page.goBack()
         await page.goForward()
         await page.reload()
       },
+      startUrl: 'https://recorder.test/content',
     })
 
     expect(document?.actions).toStrictEqual([
