@@ -30,12 +30,12 @@ function generateAriaLocatorCandidatesInternal(options: AriaLocatorOptions): Ari
 
   const targetSteps = getTargetSteps(options.target)
   const candidates: AriaLocatorCandidate[] = [
-    ...targetSteps.map<AriaLocatorCandidate>(step => ({ steps: [step] })),
+    ...targetSteps.flatMap(step => withNecessaryExactness([step])),
     ...getAccessibleAncestors(options.target).flatMap(ancestor => {
       const name = getName(ancestor)
       const role = getElementRole(ancestor)
 
-      return name && role ? targetSteps.map<AriaLocatorCandidate>(step => ({ steps: [{ exact: true, method: 'role', name, role }, step] })) : []
+      return name && role ? targetSteps.flatMap(step => withNecessaryExactness([{ method: 'role', name, role }, step])) : []
     }),
   ]
   const candidate = candidates.find(uniquelyMatchesTarget)
@@ -51,17 +51,49 @@ function generateAriaLocatorCandidatesInternal(options: AriaLocatorOptions): Ari
   function resolveStep(scope: Element, step: AriaLocatorStep): Element[] {
     const elements = getElements(scope)
 
-    return step.method === 'role' ? elements.filter(element => getElementRole(element) === step.role && !elementIsInaccessible(element) && (step.name === undefined || getName(element) === step.name)) : elements.filter(element => getLabels(element).includes(step.text))
+    return step.method === 'role'
+      ? elements.filter(element => getElementRole(element) === step.role && !elementIsInaccessible(element) && (step.name === undefined || textMatches(getName(element), step.name, step.exact)))
+      : elements.filter(element => getLabels(element).some(label => textMatches(label, step.text, step.exact)))
   }
 
   function getTargetSteps(element: Element): AriaLocatorStep[] {
     const name = getName(element)
     const role = getElementRole(element)
-    const namedRole = name && role ? [{ exact: true as const, method: 'role' as const, name, role }] : []
-    const labels = getLabels(element).map(text => ({ exact: true as const, method: 'label' as const, text }))
+    const namedRole = name && role ? [{ method: 'role' as const, name, role }] : []
+    const labels = getLabels(element).map(text => ({ method: 'label' as const, text }))
     const unnamedRole = role ? [{ method: 'role' as const, role }] : []
 
     return [...namedRole, ...labels, ...unnamedRole]
+  }
+
+  function withNecessaryExactness(steps: AriaLocatorStep[]): AriaLocatorCandidate[] {
+    const exactableStepIndexes = steps.flatMap((step, index) => (step.method === 'label' || step.name !== undefined ? [index] : []))
+    const candidates: AriaLocatorCandidate[] = []
+
+    for (let exactCount = 0; exactCount <= exactableStepIndexes.length; exactCount++) {
+      addCombinations(exactableStepIndexes.length - 1, exactCount, [])
+    }
+
+    return candidates
+
+    function addCombinations(index: number, remaining: number, exactIndexes: number[]): void {
+      if (remaining === 0) {
+        const exactIndexSet = new Set(exactIndexes)
+        candidates.push({ steps: steps.map((step, stepIndex) => (exactIndexSet.has(stepIndex) ? { ...step, exact: true } : step)) })
+        return
+      }
+
+      if (index < 0 || index + 1 < remaining) {
+        return
+      }
+
+      addCombinations(index - 1, remaining - 1, [...exactIndexes, exactableStepIndexes[index]])
+      addCombinations(index - 1, remaining, exactIndexes)
+    }
+  }
+
+  function textMatches(value: string, expected: string, exact: boolean | undefined): boolean {
+    return exact ? value === expected : value.toLowerCase().includes(expected.toLowerCase())
   }
 
   function getAccessibleAncestors(element: Element): Element[] {

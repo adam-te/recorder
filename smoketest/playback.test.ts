@@ -72,7 +72,7 @@ describe('recording playback', () => {
       {
         kind: 'click',
         locatorCandidates: [
-          { framePath: ['#action-frame'], kind: 'aria', steps: [{ exact: true, method: 'role', name: 'Click', role: 'button' }] },
+          { framePath: ['#action-frame'], kind: 'aria', steps: [{ method: 'role', name: 'Click', role: 'button' }] },
           { framePath: ['#action-frame'], kind: 'css', value: '#target' },
           { framePath: ['#action-frame'], kind: 'css', value: 'button' },
         ],
@@ -98,7 +98,7 @@ describe('recording playback', () => {
     const document = await recordTest({ fixture, html, interact: page => page.getByLabel('Password').click(), startUrl: 'https://recorder.test/content' })
     const action = document?.actions[1]
 
-    expect(action && 'locatorCandidates' in action ? action.locatorCandidates[0] : undefined).toStrictEqual({ kind: 'aria', steps: [{ exact: true, method: 'label', text: 'Password' }] })
+    expect(action && 'locatorCandidates' in action ? action.locatorCandidates[0] : undefined).toStrictEqual({ kind: 'aria', steps: [{ method: 'label', text: 'Password' }] })
 
     const playbackPage = await playTestRecording({ document, fixture, html })
 
@@ -113,8 +113,8 @@ describe('recording playback', () => {
     expect(action && 'locatorCandidates' in action ? action.locatorCandidates[0] : undefined).toStrictEqual({
       kind: 'aria',
       steps: [
-        { exact: true, method: 'role', name: 'Settings', role: 'dialog' },
-        { exact: true, method: 'role', name: 'Save', role: 'button' },
+        { method: 'role', name: 'Settings', role: 'dialog' },
+        { method: 'role', name: 'Save', role: 'button' },
       ],
     })
 
@@ -123,12 +123,60 @@ describe('recording playback', () => {
     expect(await playbackPage.locator('body').getAttribute('data-clicked')).toBe('settings')
   })
 
+  test('uses exact matching when default matching is ambiguous', async () => {
+    const html = `<button id="target" onclick="document.body.dataset.clicked = 'true'">Save</button><button>Save changes</button>`
+    const document = await recordTest({ fixture, html, interact: page => page.locator('#target').click(), startUrl: 'https://recorder.test/content' })
+    const action = document?.actions[1]
+
+    expect(action && 'locatorCandidates' in action ? action.locatorCandidates[0] : undefined).toStrictEqual({ kind: 'aria', steps: [{ exact: true, method: 'role', name: 'Save', role: 'button' }] })
+
+    const playbackPage = await playTestRecording({ document, fixture, html })
+
+    expect(await playbackPage.locator('body').getAttribute('data-clicked')).toBe('true')
+  })
+
+  test('adds exact only to the target step that needs it', async () => {
+    const html = `<div role="dialog" aria-label="Settings"><button id="target" onclick="document.body.dataset.clicked = 'true'">Save</button><button>Save changes</button></div><div role="dialog" aria-label="Profile"><button>Save</button></div>`
+    const document = await recordTest({ fixture, html, interact: page => page.locator('#target').click(), startUrl: 'https://recorder.test/content' })
+    const action = document?.actions[1]
+
+    expect(action && 'locatorCandidates' in action ? action.locatorCandidates[0] : undefined).toStrictEqual({
+      kind: 'aria',
+      steps: [
+        { method: 'role', name: 'Settings', role: 'dialog' },
+        { exact: true, method: 'role', name: 'Save', role: 'button' },
+      ],
+    })
+
+    const playbackPage = await playTestRecording({ document, fixture, html })
+
+    expect(await playbackPage.locator('body').getAttribute('data-clicked')).toBe('true')
+  })
+
+  test('adds exact only to the ancestor step that needs it', async () => {
+    const html = `<div role="dialog" aria-label="Settings"><button id="target" onclick="document.body.dataset.clicked = 'true'">Save</button></div><div role="dialog" aria-label="Settings advanced"><button>Save</button></div>`
+    const document = await recordTest({ fixture, html, interact: page => page.locator('#target').click(), startUrl: 'https://recorder.test/content' })
+    const action = document?.actions[1]
+
+    expect(action && 'locatorCandidates' in action ? action.locatorCandidates[0] : undefined).toStrictEqual({
+      kind: 'aria',
+      steps: [
+        { exact: true, method: 'role', name: 'Settings', role: 'dialog' },
+        { method: 'role', name: 'Save', role: 'button' },
+      ],
+    })
+
+    const playbackPage = await playTestRecording({ document, fixture, html })
+
+    expect(await playbackPage.locator('body').getAttribute('data-clicked')).toBe('true')
+  })
+
   test('uses library-derived implicit roles and accessible names', async () => {
     const html = `<span id="result-name">Result</span><output aria-labelledby="result-name" onclick="document.body.dataset.clicked = 'true'">Ready</output>`
     const document = await recordTest({ fixture, html, interact: page => page.locator('output').click(), startUrl: 'https://recorder.test/content' })
     const action = document?.actions[1]
 
-    expect(action && 'locatorCandidates' in action ? action.locatorCandidates[0] : undefined).toStrictEqual({ kind: 'aria', steps: [{ exact: true, method: 'role', name: 'Result', role: 'status' }] })
+    expect(action && 'locatorCandidates' in action ? action.locatorCandidates[0] : undefined).toStrictEqual({ kind: 'aria', steps: [{ method: 'role', name: 'Result', role: 'status' }] })
 
     const playbackPage = await playTestRecording({ document, fixture, html })
 
@@ -140,7 +188,7 @@ describe('recording playback', () => {
     const document = await recordTest({ fixture, html, interact: page => page.locator('#target').click(), startUrl: 'https://recorder.test/content' })
     const action = document?.actions[1]
 
-    expect(action && 'locatorCandidates' in action ? action.locatorCandidates[0] : undefined).toStrictEqual({ kind: 'aria', steps: [{ exact: true, method: 'role', name: 'Save', role: 'button' }] })
+    expect(action && 'locatorCandidates' in action ? action.locatorCandidates[0] : undefined).toStrictEqual({ kind: 'aria', steps: [{ method: 'role', name: 'Save', role: 'button' }] })
 
     const playbackPage = await playTestRecording({ document, fixture, html })
 
@@ -152,7 +200,7 @@ describe('recording playback', () => {
     const document = await recordTest({ fixture, html, interact: page => page.locator('#target').click(), startUrl: 'https://recorder.test/content' })
     const action = document?.actions[1]
 
-    expect(action && 'locatorCandidates' in action ? action.locatorCandidates[0] : undefined).toStrictEqual({ kind: 'aria', steps: [{ exact: true, method: 'role', name: 'Prefix Save', role: 'button' }] })
+    expect(action && 'locatorCandidates' in action ? action.locatorCandidates[0] : undefined).toStrictEqual({ kind: 'aria', steps: [{ method: 'role', name: 'Prefix Save', role: 'button' }] })
 
     const playbackPage = await playTestRecording({ document, fixture, html })
 
@@ -164,7 +212,7 @@ describe('recording playback', () => {
     const document = await recordTest({ fixture, html, interact: page => page.getByLabel('First', { exact: true }).click(), startUrl: 'https://recorder.test/content' })
     const action = document?.actions[1]
 
-    expect(action && 'locatorCandidates' in action ? action.locatorCandidates[0] : undefined).toStrictEqual({ kind: 'aria', steps: [{ exact: true, method: 'label', text: 'First' }] })
+    expect(action && 'locatorCandidates' in action ? action.locatorCandidates[0] : undefined).toStrictEqual({ kind: 'aria', steps: [{ method: 'label', text: 'First' }] })
 
     const playbackPage = await playTestRecording({ document, fixture, html })
 

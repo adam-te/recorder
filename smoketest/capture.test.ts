@@ -69,7 +69,7 @@ describe('interaction capture', () => {
     const cdpSession = await fixture.context.newCDPSession(page)
     const overlaySnapshot = await cdpSession.send('DOMSnapshot.captureSnapshot', { computedStyles: [], includeDOMRects: false, includePaintOrder: false })
 
-    expect(overlaySnapshot.strings).toContain('getByRole("button", { name: "Click", exact: true })')
+    expect(overlaySnapshot.strings).toContain('getByRole("button", { name: "Click" })')
     await page.locator('body').dispatchEvent('mousemove')
     await page.evaluate(() => new Promise<void>(resolve => requestAnimationFrame(() => resolve())))
     const fallbackSnapshot = await cdpSession.send('DOMSnapshot.captureSnapshot', { computedStyles: [], includeDOMRects: false, includePaintOrder: false })

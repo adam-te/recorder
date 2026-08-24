@@ -30,7 +30,7 @@ describe('navigation recording', () => {
     const action = recordingSession.snapshot().actions.find(currentAction => currentAction.kind === 'click')
 
     expect(action?.kind).toBe('click')
-    expect(action?.kind === 'click' ? action.locatorCandidates[0] : undefined).toStrictEqual({ kind: 'aria', steps: [{ exact: true, method: 'role', name: 'Continue', role: 'link' }] })
+    expect(action?.kind === 'click' ? action.locatorCandidates[0] : undefined).toStrictEqual({ kind: 'aria', steps: [{ method: 'role', name: 'Continue', role: 'link' }] })
     expect(action && 'locatorCandidates' in action ? action.locatorCandidates : []).toContainEqual({ kind: 'css', value: '#target' })
   })
 
