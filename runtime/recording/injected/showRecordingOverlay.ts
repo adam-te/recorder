@@ -1,13 +1,23 @@
-import type { CapturedCssSelector } from './types.ts'
+import type { AriaRuntime } from '@te/aria'
+
+import type { GenerateLocatorCandidates } from './generateLocatorCandidates.ts'
+import type { CapturedCssSelector, CapturedSelector } from './types.ts'
 
 export { RECORDING_OVERLAY_STYLES, showRecordingOverlay }
 
-function showRecordingOverlay(args: ShowRecordingOverlayArgs, generateSelectorCandidates: (element: Element, maxCandidates?: number) => CapturedCssSelector[], overlayStyles: string): void {
+function showRecordingOverlay(
+  args: ShowRecordingOverlayArgs,
+  generateLocatorCandidates: GenerateLocatorCandidates,
+  generateCssSelectorCandidates: (element: Element, maxCandidates?: number) => CapturedCssSelector[],
+  ariaRuntime: AriaRuntime,
+  formatLocator: (locator: CapturedSelector) => string,
+  overlayStyles: string,
+): void {
   if (document.querySelector(`[${args.recorderUiAttribute}]`)) {
     return
   }
   if (!document.documentElement) {
-    document.addEventListener('DOMContentLoaded', () => showRecordingOverlay(args, generateSelectorCandidates, overlayStyles), { once: true })
+    document.addEventListener('DOMContentLoaded', () => showRecordingOverlay(args, generateLocatorCandidates, generateCssSelectorCandidates, ariaRuntime, formatLocator, overlayStyles), { once: true })
     return
   }
 
@@ -23,6 +33,8 @@ function showRecordingOverlay(args: ShowRecordingOverlayArgs, generateSelectorCa
   const button = showsControls ? document.createElement('button') : undefined
   const resizeObserver = new ResizeObserver(queueRender)
   let hoveredElement: Element | undefined
+  let locatorElement: Element | undefined
+  let locatorText = ''
   let animationFrame: number | undefined
 
   host.setAttribute(args.recorderUiAttribute, '')
@@ -90,10 +102,15 @@ function showRecordingOverlay(args: ShowRecordingOverlayArgs, generateSelectorCa
     }
 
     const rect = hoveredElement.getBoundingClientRect()
-    const selector = generateSelectorCandidates(hoveredElement, 1)[0]?.value ?? hoveredElement.tagName.toLowerCase()
+    if (locatorElement !== hoveredElement) {
+      locatorElement = hoveredElement
+      const locator = generateLocatorCandidates(hoveredElement, generateCssSelectorCandidates, ariaRuntime)[0]
+
+      locatorText = locator ? formatLocator(locator) : `locator(${JSON.stringify(hoveredElement.tagName.toLowerCase())})`
+    }
 
     Object.assign(highlight.style, { display: 'block', height: `${rect.height}px`, left: `${rect.left}px`, top: `${rect.top}px`, width: `${rect.width}px` })
-    tooltip.textContent = selector
+    tooltip.textContent = locatorText
     tooltip.style.display = 'block'
     tooltip.style.visibility = 'hidden'
 

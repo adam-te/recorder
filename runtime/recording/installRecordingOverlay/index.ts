@@ -1,4 +1,7 @@
+import { ariaRuntimeSource } from '#recorder-runtime/recording/injected/ariaRuntimeSource.ts'
 import { RECORDER_UI_ATTRIBUTE } from '#recorder-runtime/recording/injected/constants.ts'
+import { formatLocator } from '#recorder-runtime/recording/injected/formatLocator.ts'
+import { generateLocatorCandidates } from '#recorder-runtime/recording/injected/generateLocatorCandidates.ts'
 import { generateSelectorCandidates } from '#recorder-runtime/recording/injected/generateSelectorCandidates.ts'
 import { RECORDING_OVERLAY_STYLES, showRecordingOverlay } from '#recorder-runtime/recording/injected/showRecordingOverlay.ts'
 import type { BrowserContext, Page } from 'playwright'
@@ -41,7 +44,7 @@ async function installRecordingOverlay(args: InstallRecordingOverlayArgs): Promi
 function createInjectedOverlaySource(showsControls: boolean): string {
   const injectedArgs = JSON.stringify({ disposeFunctionName: DISPOSE_FUNCTION_NAME, recorderUiAttribute: RECORDER_UI_ATTRIBUTE, stopBindingName: showsControls ? STOP_BINDING_NAME : undefined })
 
-  return `(${showRecordingOverlay.toString()})(${injectedArgs}, ${generateSelectorCandidates.toString()}, ${JSON.stringify(RECORDING_OVERLAY_STYLES)})`
+  return `(()=>{${ariaRuntimeSource};(${showRecordingOverlay.toString()})(${injectedArgs}, ${generateLocatorCandidates.toString()}, ${generateSelectorCandidates.toString()}, ariaRuntime, ${formatLocator.toString()}, ${JSON.stringify(RECORDING_OVERLAY_STYLES)})})()`
 }
 
 interface InstallRecordingOverlayArgs {

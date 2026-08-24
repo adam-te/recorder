@@ -1,10 +1,11 @@
 import type { AriaRuntime } from '@te/aria'
 
-import type { CapturedInteractionEvent, CapturedSelector, SerializedInteraction } from './types.ts'
+import type { GenerateLocatorCandidates } from './generateLocatorCandidates.ts'
+import type { CapturedCssSelector, CapturedInteractionEvent, SerializedInteraction } from './types.ts'
 
 export { recordPageInteractions }
 
-function recordPageInteractions(args: RecordPageInteractionsArgs, generateSelectorCandidates: (element: Element) => CapturedSelector[], ariaRuntime: AriaRuntime): void {
+function recordPageInteractions(args: RecordPageInteractionsArgs, generateSelectorCandidates: (element: Element) => CapturedCssSelector[], generateLocatorCandidates: GenerateLocatorCandidates, ariaRuntime: AriaRuntime): void {
   const reportInteraction = (globalThis as unknown as Record<string, (value: SerializedInteraction) => Promise<void>>)[args.bindingName]
   const capturedEvents = new WeakSet<Event>()
   const eventSerializers: EventSerializers = {
@@ -16,7 +17,7 @@ function recordPageInteractions(args: RecordPageInteractionsArgs, generateSelect
   const attachShadow = Element.prototype.attachShadow
   const closedShadowRoots = new WeakMap<Element, ShadowRoot>()
 
-  ;(globalThis as unknown as Record<string, (element: Element) => CapturedSelector[]>)[args.selectorGeneratorName] = generateSelectorCandidates
+  ;(globalThis as unknown as Record<string, (element: Element) => CapturedCssSelector[]>)[args.selectorGeneratorName] = generateSelectorCandidates
 
   Element.prototype.attachShadow = function recorderAttachShadow(init: ShadowRootInit): ShadowRoot {
     const shadowRoot = attachShadow.call(this, init)
@@ -46,9 +47,9 @@ function recordPageInteractions(args: RecordPageInteractionsArgs, generateSelect
         target,
       }
       const { snapshot: ariaSnapshot, targetRef } = ariaRuntime.generateAriaSnapshot(snapshotOptions)
-      const ariaSelectors = ariaRuntime.generateAriaLocatorCandidates(locatorOptions).map(candidate => ({ ...candidate, kind: 'aria' as const }))
+      const selectors = generateLocatorCandidates(target, generateSelectorCandidates, ariaRuntime, locatorOptions)
 
-      void reportInteraction({ ariaSnapshot, event: serialize(event as never), selectors: [...ariaSelectors, ...generateSelectorCandidates(target)], ...(targetRef ? { targetRef } : {}) })
+      void reportInteraction({ ariaSnapshot, event: serialize(event as never), selectors, ...(targetRef ? { targetRef } : {}) })
     }
   }
 }

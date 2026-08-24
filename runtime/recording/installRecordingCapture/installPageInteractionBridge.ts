@@ -1,5 +1,6 @@
 import { ariaRuntimeSource } from '#recorder-runtime/recording/injected/ariaRuntimeSource.ts'
 import { RECORDER_UI_ATTRIBUTE } from '#recorder-runtime/recording/injected/constants.ts'
+import { generateLocatorCandidates } from '#recorder-runtime/recording/injected/generateLocatorCandidates.ts'
 import { generateSelectorCandidates, SELECTOR_GENERATOR_NAME } from '#recorder-runtime/recording/injected/generateSelectorCandidates.ts'
 import { recordPageInteractions } from '#recorder-runtime/recording/injected/recordPageInteractions.ts'
 import type { CapturedInteractionEvent, CapturedSelector, SerializedInteraction } from '#recorder-runtime/recording/injected/types.ts'
@@ -43,7 +44,7 @@ async function installPageInteractionBridge(args: InstallPageInteractionBridgeAr
 function createInjectedRecorderSource(): string {
   const injectedArgs = JSON.stringify({ bindingName: INTERACTION_BINDING_NAME, recorderUiAttribute: RECORDER_UI_ATTRIBUTE, selectorGeneratorName: SELECTOR_GENERATOR_NAME })
 
-  return `(()=>{${ariaRuntimeSource};(${recordPageInteractions.toString()})(${injectedArgs}, ${generateSelectorCandidates.toString()}, ariaRuntime)})()`
+  return `(()=>{${ariaRuntimeSource};(${recordPageInteractions.toString()})(${injectedArgs}, ${generateSelectorCandidates.toString()}, ${generateLocatorCandidates.toString()}, ariaRuntime)})()`
 }
 
 interface CapturedInteraction {
