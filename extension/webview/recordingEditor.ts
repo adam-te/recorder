@@ -1,4 +1,3 @@
-import '@te/recorder-ui/recording-editor.css'
 import { createRecordingEditor, type RecordingEditorHostMessage, type RecordingEditorUiMessage } from '@te/recorder-ui/recording-editor'
 
 import './vscodeRecordingEditor.css'

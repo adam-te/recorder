@@ -21,12 +21,13 @@
     "generate:aria": "npm run generate:aria --workspace @te/aria && npm run generate:aria-runtime --workspace @te/recorder-runtime",
     "lint": "oxlint --deny-warnings .",
     "smoke": "vitest run",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit && svelte-check --tsconfig ./tsconfig.json"
   },
   "devDependencies": {
     "@types/node": "^25.6.0",
     "oxfmt": "^0.47.0",
     "oxlint": "^1.62.0",
+    "svelte-check": "4.7.6",
     "typescript": "^6.0.3",
     "vitest": "^4.1.10"
   }
