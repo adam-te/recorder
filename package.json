@@ -7,11 +7,11 @@
     "aria",
     "cli",
     "core",
-    "extension",
     "runtime",
-    "smoketest",
+    "tests",
     "ui",
-    "utils"
+    "utils",
+    "vscode-extension"
   ],
   "type": "module",
   "scripts": {

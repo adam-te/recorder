@@ -5,7 +5,7 @@
       "label": "watch: recorder extension",
       "type": "npm",
       "script": "watch",
-      "path": "extension",
+      "path": "vscode-extension",
       "isBackground": true,
       "problemMatcher": {
         "owner": "esbuild",

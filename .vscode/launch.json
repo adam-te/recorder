@@ -6,11 +6,11 @@
       "type": "extensionHost",
       "request": "launch",
       "runtimeExecutable": "${execPath}",
-      "args": ["--extensionDevelopmentPath=${workspaceFolder}/extension", "--extensionDevelopmentPath=${workspaceFolder}/extension/devReloader"],
+      "args": ["--extensionDevelopmentPath=${workspaceFolder}/vscode-extension", "--extensionDevelopmentPath=${workspaceFolder}/vscode-extension/devReloader"],
       "env": {
-        "RECORDER_EXTENSION_BUNDLE": "${workspaceFolder}/extension/dist/extension.cjs"
+        "RECORDER_EXTENSION_BUNDLE": "${workspaceFolder}/vscode-extension/dist/extension.cjs"
       },
-      "outFiles": ["${workspaceFolder}/extension/dist/**/*.cjs"],
+      "outFiles": ["${workspaceFolder}/vscode-extension/dist/**/*.cjs"],
       "preLaunchTask": "watch: recorder extension"
     }
   ]

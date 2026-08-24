@@ -22,9 +22,9 @@ const sveltePlugin = {
 
 await build({
   bundle: true,
-  entryPoints: ['browser/recordingEditor.ts'],
+  entryPoints: ['standalone/recordingEditor.ts'],
   format: 'esm',
-  outfile: 'dist/browser/recordingEditor.js',
+  outfile: 'dist/standalone/recordingEditor.js',
   platform: 'browser',
   plugins: [sveltePlugin],
 })

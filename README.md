@@ -26,4 +26,4 @@ npm install
 npm run check
 ```
 
-The check formats, lints, and type-checks the entire workspace, builds the extension, and runs the browser-backed smoke tests in `smoketest/`.
+The check formats, lints, and type-checks the entire workspace, builds the extension, and runs the browser-backed tests in `tests/`.

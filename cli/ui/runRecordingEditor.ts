@@ -14,7 +14,7 @@ import { renderRecordingSnapshot } from '@te/recorder-ui/render-recording-snapsh
 export { runRecordingEditor }
 export type { RunRecordingEditorArgs }
 
-const assetDirectory = fileURLToPath(new URL('../../ui/dist/browser/', import.meta.url))
+const assetDirectory = fileURLToPath(new URL('../../ui/dist/standalone/', import.meta.url))
 
 async function runRecordingEditor(args: RunRecordingEditorArgs): Promise<void> {
   const documentPath = join(args.directoryPath, 'recording.json')
