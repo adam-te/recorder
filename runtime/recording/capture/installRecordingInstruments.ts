@@ -1,6 +1,6 @@
 import { captureBrowserNavigation, type CapturedBrowserNavigation } from '#recorder-runtime/recording/capture/captureBrowserNavigation.ts'
-import { installPageInteractionBridge } from '#recorder-runtime/recording/capture/installPageInteractionBridge.ts'
 import type { CapturedInteraction } from '#recorder-runtime/recording/capture/types.ts'
+import { installInjectedRecorder } from '#recorder-runtime/recording/injected/installInjectedRecorder.ts'
 import type { BrowserContext, Page } from 'playwright'
 
 import { tryTo } from '@te/recorder-utils'
@@ -9,11 +9,11 @@ export { installRecordingInstruments }
 export type { InstallRecordingInstrumentsArgs, RecordingInstruments }
 
 async function installRecordingInstruments(args: InstallRecordingInstrumentsArgs): Promise<RecordingInstruments> {
-  const interactionCapture = await installPageInteractionBridge({ context: args.context, onInteraction: args.onInteraction })
+  const injectedRecorder = await installInjectedRecorder({ context: args.context, onInteraction: args.onInteraction, onStopRequested: args.onStopRequested, page: args.page })
   const navigationCapture = await tryTo(
     () => captureBrowserNavigation({ onNavigation: args.onNavigation, page: args.page }),
     async error => {
-      await interactionCapture.dispose()
+      await injectedRecorder.dispose()
       throw error
     },
   )
@@ -22,7 +22,7 @@ async function installRecordingInstruments(args: InstallRecordingInstrumentsArgs
 
   async function dispose(): Promise<void> {
     await navigationCapture.dispose()
-    await interactionCapture.dispose()
+    await injectedRecorder.dispose()
   }
 }
 
@@ -30,6 +30,7 @@ interface InstallRecordingInstrumentsArgs {
   context: BrowserContext
   onInteraction: (interaction: CapturedInteraction) => Promise<void> | void
   onNavigation?: (navigation: CapturedBrowserNavigation) => Promise<void> | void
+  onStopRequested?: () => Promise<void> | void
   page: Page
 }
 

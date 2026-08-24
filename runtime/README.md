@@ -12,9 +12,9 @@ Recording begins by navigating to the required initial URL. Subsequent browser a
 
 - `recording/createRecorder.ts` owns the public recording lifecycle.
 - `recording/capture/` reports browser navigation and page interactions without owning recorder state.
+- `recording/injected/` installs the shared in-page recorder runtime and manages its browser bindings.
 - `recording/actions/` and `recording/locators/` turn captured interactions into recording-domain values.
-- `recording/overlay/` installs and removes the in-page recording controls supplied by `@te/recorder-ui`.
-- `injected/` contains browser-only capture, overlay integration, and locator code. Its entry points are bundled into `injected/generated/` by `npm run generate:injected-runtime`.
+- `injected/` contains browser-only capture, overlay integration, and locator code. A single entry point is bundled into `injected/generated/` by `npm run generate:injected-runtime` so those features share ARIA and locator dependencies.
 - `playback/` resolves locators and executes completed recording documents.
 - `snapshots/` contains independent browser snapshot utilities.
 

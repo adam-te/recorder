@@ -2,7 +2,6 @@ import { createBrowserSession, type BrowserSession } from '#recorder-runtime/bro
 import { playRecording } from '#recorder-runtime/playback/playRecording.ts'
 import { appendCapturedInteraction } from '#recorder-runtime/recording/actions/appendCapturedInteraction.ts'
 import { installRecordingInstruments } from '#recorder-runtime/recording/capture/installRecordingInstruments.ts'
-import { installRecordingOverlay, type RecordingOverlay } from '#recorder-runtime/recording/overlay/installRecordingOverlay.ts'
 
 import { createRecordingSession, type RecordedAriaSnapshot, type RecordingDocument, type RecordingSession } from '@te/recorder-core'
 import { tryTo } from '@te/recorder-utils'
@@ -41,17 +40,11 @@ function createRecorder(args: CreateRecorderArgs = {}): Recorder {
             }
           },
           onNavigation: navigation => notifyDocumentChanged(currentRecordingSession.append({ kind: 'goto', ...navigation })),
+          onStopRequested: args.onStopRequested ?? stopFromOverlay,
           page: currentBrowserSession.page,
         })
-        let recordingOverlay: RecordingOverlay | undefined
 
-        currentRecording.capture = {
-          dispose: async () => {
-            await recordingOverlay?.dispose()
-            await instruments.dispose()
-          },
-        }
-        recordingOverlay = await installRecordingOverlay({ context: currentBrowserSession.context, onStopRequested: args.onStopRequested ?? stopFromOverlay, page: currentBrowserSession.page })
+        currentRecording.capture = instruments
         await currentBrowserSession.page.goto(args.startUrl)
         await instruments.flush()
       },

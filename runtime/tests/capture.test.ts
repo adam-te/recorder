@@ -81,6 +81,25 @@ describe('interaction capture', () => {
     await capture.dispose()
   })
 
+  test('highlights nested-frame elements but shows controls only in the top frame', async () => {
+    const documents = { 'https://frame.test/content': '<button id="target">Frame action</button>' }
+    const page = await browser.page({ documents, html: '<iframe src="https://frame.test/content"></iframe>' })
+    const recordingSession = createRecordingSession({ startUrl: 'https://recorder.test/content', title: 'Smoke test' })
+    const capture = await installRecordingCapture({ context: browser.context, onInteraction: () => undefined, onStopRequested: () => undefined, page, recordingSession, startUrl: 'https://recorder.test/content' })
+
+    await page.frameLocator('iframe').locator('#target').hover()
+    const cdpSession = await browser.context.newCDPSession(page)
+    const overlaySnapshot = await cdpSession.send('DOMSnapshot.captureSnapshot', { computedStyles: [], includeDOMRects: false, includePaintOrder: false })
+    const stopDocuments = findDocumentsContainingText(overlaySnapshot, 'Stop recording')
+    const frameTooltipDocuments = findDocumentsContainingText(overlaySnapshot, 'getByRole("button", { name: "Frame action" })')
+
+    expect(stopDocuments).toHaveLength(1)
+    expect(frameTooltipDocuments).toHaveLength(1)
+    expect(frameTooltipDocuments[0]).not.toBe(stopDocuments[0])
+    await cdpSession.detach()
+    await capture.dispose()
+  })
+
   test('stops from the recording panel without capturing its click', async () => {
     const page = await browser.page({ html: '<button>Page button</button>' })
     const recordingSession = createRecordingSession({ startUrl: 'https://recorder.test/content', title: 'Smoke test' })
@@ -119,4 +138,15 @@ interface EventCase {
   html: string
   interact: (page: Page) => Promise<unknown>
   name: string
+}
+
+function findDocumentsContainingText(snapshot: DomSnapshot, text: string): number[] {
+  const stringIndex = snapshot.strings.indexOf(text)
+
+  return stringIndex === -1 ? [] : snapshot.documents.flatMap((document, documentIndex) => (document.nodes.nodeValue?.includes(stringIndex) ? [documentIndex] : []))
+}
+
+interface DomSnapshot {
+  documents: { nodes: { nodeValue?: number[] } }[]
+  strings: string[]
 }

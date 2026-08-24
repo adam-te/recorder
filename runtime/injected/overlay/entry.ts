@@ -2,11 +2,9 @@ import { formatLocator } from '#recorder-runtime/injected/locators/formatLocator
 import { generateLocatorCandidates } from '#recorder-runtime/injected/locators/generateLocatorCandidates.ts'
 import { generateSelectorCandidates } from '#recorder-runtime/injected/locators/generateSelectorCandidates.ts'
 import { DISPOSE_OVERLAY_FUNCTION_NAME, OVERLAY_CONFIG_NAME, RECORDER_UI_ATTRIBUTE, STOP_BINDING_NAME } from '#recorder-runtime/injected/protocol.ts'
-import type { AriaRuntime } from '@te/aria/browser'
+import * as ariaRuntime from '@te/aria/browser'
 
 import { createRecordingOverlay, type RecordingOverlay } from '@te/recorder-ui/recording-overlay'
-
-declare const ariaRuntime: AriaRuntime
 
 const globalRecord = globalThis as unknown as Record<string, unknown>
 const config = globalRecord[OVERLAY_CONFIG_NAME] as OverlayConfig | undefined

@@ -16,7 +16,7 @@ async function captureInteraction(args: CaptureInteractionArgs): Promise<Interac
   const page = await createPage({ context: args.fixture.context, documents: args.documents, headers: args.headers, html: args.html })
   const recordingSession = createRecordingSession({ startUrl: defaultStartUrl, title: 'Smoke test' })
 
-  await installRecordingCapture({
+  const recordingCapture = await installRecordingCapture({
     context: args.fixture.context,
     onInteraction: async interaction => {
       if (interaction.event.kind === args.expectedKind) {
@@ -27,9 +27,12 @@ async function captureInteraction(args: CaptureInteractionArgs): Promise<Interac
     recordingSession,
     startUrl: defaultStartUrl,
   })
-
-  await args.interact(page)
-  return captured.promise
+  try {
+    await args.interact(page)
+    return await captured.promise
+  } finally {
+    await recordingCapture.dispose()
+  }
 }
 
 async function createPage(args: CreatePageArgs): Promise<Page> {

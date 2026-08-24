@@ -1,4 +1,5 @@
-import { ariaRuntimeSource } from '#recorder-runtime/injected/generated/ariaRuntimeSource.generated.ts'
+import { recordingRuntimeSource } from '#recorder-runtime/injected/generated/recordingRuntimeSource.generated.ts'
+import { DISPOSE_OVERLAY_FUNCTION_NAME } from '#recorder-runtime/injected/protocol.ts'
 import { type AriaSnapshot, renderAriaSnapshot } from '@te/aria'
 import type { AriaRuntime } from '@te/aria/browser'
 import { describe, expect, test } from 'vitest'
@@ -23,9 +24,10 @@ describe('Playwright ARIA snapshot parity', () => {
     })
 
     await page.goto('https://recorder.test/content')
-    await page.addScriptTag({ content: `${ariaRuntimeSource};globalThis.__testAriaRuntime=ariaRuntime` })
+    await page.addScriptTag({ content: recordingRuntimeSource })
+    await page.evaluate(name => (globalThis as unknown as Record<string, (() => Promise<void> | void) | undefined>)[name]?.(), DISPOSE_OVERLAY_FUNCTION_NAME)
     const generated = await page.evaluate(() => {
-      const runtime = (globalThis as unknown as { __testAriaRuntime: AriaRuntime }).__testAriaRuntime
+      const runtime = (globalThis as unknown as { ariaRuntime: AriaRuntime }).ariaRuntime
 
       return runtime.generateAriaSnapshot({ target: document.querySelector('#target')! })
     })

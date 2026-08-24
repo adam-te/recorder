@@ -1,8 +1,6 @@
 import { recordPageInteractions } from '#recorder-runtime/injected/capture/recordPageInteractions.ts'
 import { INTERACTION_BINDING_NAME, RECORDER_UI_ATTRIBUTE, SELECTOR_GENERATOR_NAME } from '#recorder-runtime/injected/protocol.ts'
-import type { AriaRuntime } from '@te/aria/browser'
-
-declare const ariaRuntime: AriaRuntime
+import * as ariaRuntime from '@te/aria/browser'
 
 recordPageInteractions(
   {

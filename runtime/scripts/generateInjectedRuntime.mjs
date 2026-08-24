@@ -40,13 +40,12 @@ async function generate() {
     throw new Error(`Playwright version mismatch: ARIA uses ${playwrightVersion}, but runtime requires ${runtimePlaywrightVersion ?? 'nothing'}`)
   }
 
-  const [ariaRuntimeSource, recordingCaptureSource, recordingOverlaySource] = await Promise.all([
-    bundle(join(ROOT_DIRECTORY, 'aria', 'src', 'browser.ts'), { banner: `/*! Playwright v${playwrightVersion} | Apache-2.0 | Copyright Microsoft Corporation */`, globalName: 'ariaRuntime' }),
-    bundle(join(RUNTIME_DIRECTORY, 'injected', 'capture', 'entry.ts')),
-    bundle(join(RUNTIME_DIRECTORY, 'injected', 'overlay', 'entry.ts')),
-  ])
+  const recordingRuntimeSource = await bundle(join(RUNTIME_DIRECTORY, 'injected', 'entry.ts'), {
+    banner: `/*! Playwright v${playwrightVersion} | Apache-2.0 | Copyright Microsoft Corporation */`,
+    globalName: 'ariaRuntime',
+  })
 
-  await Promise.all([writeGeneratedSource('ariaRuntimeSource', ariaRuntimeSource), writeGeneratedSource('recordingCaptureSource', recordingCaptureSource), writeGeneratedSource('recordingOverlaySource', recordingOverlaySource)])
+  await writeGeneratedSource('recordingRuntimeSource', recordingRuntimeSource)
   process.stdout.write(`Generated injected recorder runtime from Playwright ${playwrightVersion}\n`)
 }
 
