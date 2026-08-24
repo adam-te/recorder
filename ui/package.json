@@ -19,6 +19,7 @@
   "dependencies": {
     "@te/aria": "*",
     "@te/recorder-core": "*",
+    "@te/recorder-utils": "*",
     "svelte": "5.56.10"
   },
   "devDependencies": {

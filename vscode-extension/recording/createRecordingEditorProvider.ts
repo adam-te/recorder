@@ -5,6 +5,7 @@ import { getRecordingSnapshotFileName, parseRecordingDocument, parseRecordingSna
 import type { RecordingEditorHostMessage, RecordingEditorUiMessage } from '@te/recorder-ui/recording-editor'
 import { createRecordingEditorHost } from '@te/recorder-ui/recording-editor-host'
 import { renderRecordingSnapshot } from '@te/recorder-ui/render-recording-snapshot'
+import { matchBy } from '@te/recorder-utils'
 
 export { createRecordingEditorProvider, recordingEditorViewType }
 
@@ -57,24 +58,25 @@ function resolveRecordingEditor(args: ResolveRecordingEditorArgs): void {
   })
 
   async function handleMessage(message: RecordingEditorUiMessage): Promise<void> {
-    const hostMessages = await host.handleMessage(message)
-    if (hostMessages) {
-      await postMessages(hostMessages)
-      return
-    }
-
-    switch (message.type) {
-      case 'copy':
-        await env.clipboard.writeText(message.text)
-        break
-      case 'openJson':
+    await matchBy(message, 'type', {
+      copy: async current => {
+        await env.clipboard.writeText(current.text)
+      },
+      discard: async () => {
+        if (decisionInProgress) return
+        decisionInProgress = true
+        if (await args.onDiscard(args.document.uri)) args.panel.dispose()
+        decisionInProgress = false
+      },
+      openJson: async () => {
         await commands.executeCommand('vscode.openWith', args.document.uri, 'default', ViewColumn.Beside)
-        break
-      case 'play':
+      },
+      play: async () => {
         await withErrorMessage(async () => args.onPlay(readDocument()))
-        break
-      case 'save': {
-        if (decisionInProgress) break
+      },
+      ready: handleHostMessage,
+      save: async () => {
+        if (decisionInProgress) return
         decisionInProgress = true
         let savedDocumentUri: Uri | undefined
         await withErrorMessage(async () => {
@@ -89,15 +91,14 @@ function resolveRecordingEditor(args: ResolveRecordingEditorArgs): void {
         } else {
           await args.panel.webview.postMessage({ type: 'decisionCancelled' })
         }
-        break
-      }
-      case 'discard':
-        if (decisionInProgress) break
-        decisionInProgress = true
-        if (await args.onDiscard(args.document.uri)) args.panel.dispose()
-        decisionInProgress = false
-        break
-    }
+      },
+      selectAction: handleHostMessage,
+    })
+  }
+
+  async function handleHostMessage(message: Extract<RecordingEditorUiMessage, { type: 'ready' | 'selectAction' }>): Promise<void> {
+    const hostMessages = await host.handleMessage(message)
+    if (hostMessages) await postMessages(hostMessages)
   }
 
   async function publishDocument(): Promise<void> {

@@ -1,35 +1,24 @@
 import type { RecordedAction, RecordedLocator, RecordedValue } from '@te/recorder-core'
+import { matchBy } from '@te/recorder-utils'
 
 export { actionKindLabel, actionProperties, displayUrl, formatDate, formatLocator, summarizeAction }
 
 function summarizeAction(action: RecordedAction): string {
   const target = locatorTarget('locatorCandidates' in action ? action.locatorCandidates[0] : undefined)
-  switch (action.kind) {
-    case 'goto':
-      return `Navigate to ${displayUrl(action.url)}`
-    case 'go-back':
-      return 'Go back'
-    case 'go-forward':
-      return 'Go forward'
-    case 'reload':
-      return 'Reload the page'
-    case 'click':
-      return `Click ${target}`
-    case 'fill':
-      return `Fill ${target}`
-    case 'check':
-      return `${action.checked ? 'Check' : 'Uncheck'} ${target}`
-    case 'press':
-      return `Press ${[...(action.modifiers ?? []), action.key].join('+')} on ${target}`
-    case 'select':
-      return `Select ${action.options.map(value => `“${value}”`).join(', ')} in ${target}`
-    case 'hover':
-      return `Hover over ${target}`
-    case 'set-input-files':
-      return `Choose ${action.files.length} file${action.files.length === 1 ? '' : 's'} in ${target}`
-    case 'assert-visible':
-      return `Verify ${target} is visible`
-  }
+  return matchBy(action, 'kind', {
+    'assert-visible': () => `Verify ${target} is visible`,
+    check: current => `${current.checked ? 'Check' : 'Uncheck'} ${target}`,
+    click: () => `Click ${target}`,
+    fill: () => `Fill ${target}`,
+    'go-back': () => 'Go back',
+    'go-forward': () => 'Go forward',
+    goto: current => `Navigate to ${displayUrl(current.url)}`,
+    hover: () => `Hover over ${target}`,
+    press: current => `Press ${[...(current.modifiers ?? []), current.key].join('+')} on ${target}`,
+    reload: () => 'Reload the page',
+    select: current => `Select ${current.options.map(value => `“${value}”`).join(', ')} in ${target}`,
+    'set-input-files': current => `Choose ${current.files.length} file${current.files.length === 1 ? '' : 's'} in ${target}`,
+  })
 }
 
 function locatorTarget(locator: RecordedLocator | undefined): string {
