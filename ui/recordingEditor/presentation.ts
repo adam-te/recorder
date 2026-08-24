@@ -1,7 +1,7 @@
 import type { RecordedAction, RecordedLocator, RecordedValue } from '@te/recorder-core'
 import { matchBy } from '@te/recorder-utils'
 
-export { actionKindLabel, actionProperties, displayUrl, formatDate, formatLocator, summarizeAction }
+export { actionKindLabel, actionProperties, displayUrl, formatDate, summarizeAction }
 
 function summarizeAction(action: RecordedAction): string {
   const target = locatorTarget('locatorCandidates' in action ? action.locatorCandidates[0] : undefined)
@@ -29,24 +29,6 @@ function locatorTarget(locator: RecordedLocator | undefined): string {
   if (!step) return 'element'
   if (step.method === 'role') return step.name ? `${step.role} “${step.name}”` : step.role
   return `“${step.text}”`
-}
-
-function formatLocator(locator: RecordedLocator): string {
-  const framePrefix = locator.framePath?.map(selector => `frameLocator(${JSON.stringify(selector)}).`).join('') ?? ''
-  if (locator.kind === 'css') return `${framePrefix}locator(${JSON.stringify(locator.value)})`
-
-  return `${framePrefix}${locator.steps
-    .map(step => {
-      if (step.method === 'label') {
-        const options = step.exact === undefined ? '' : `, { exact: ${step.exact} }`
-        return `getByLabel(${JSON.stringify(step.text)}${options})`
-      }
-      const options = []
-      if (step.name !== undefined) options.push(`name: ${JSON.stringify(step.name)}`)
-      if (step.exact !== undefined) options.push(`exact: ${step.exact}`)
-      return `getByRole(${JSON.stringify(step.role)}${options.length ? `, { ${options.join(', ')} }` : ''})`
-    })
-    .join('.')}`
 }
 
 function actionProperties(action: RecordedAction): [string, string][] {

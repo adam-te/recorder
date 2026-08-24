@@ -1,4 +1,6 @@
 export { createRecordingDocument } from './document/createRecordingDocument.ts'
+export { formatPlaywrightLocator } from './codecs/playwright/formatPlaywrightLocator.ts'
+export type { FormatPlaywrightLocatorOptions } from './codecs/playwright/formatPlaywrightLocator.ts'
 export { generatePlaywrightScript } from './codecs/playwright/generatePlaywrightScript.ts'
 export { parseRecordingDocument } from './document/parseRecordingDocument.ts'
 export { recordingDocumentSchema } from './document/recordingDocumentSchema.ts'

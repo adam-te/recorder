@@ -1,9 +1,9 @@
-import { formatLocator } from '#runtime/injected/locators/formatLocator.ts'
 import { generateLocatorCandidates } from '#runtime/injected/locators/generateLocatorCandidates.ts'
 import { generateSelectorCandidates } from '#runtime/injected/locators/generateSelectorCandidates.ts'
 import { DISPOSE_OVERLAY_FUNCTION_NAME, OVERLAY_CONFIG_NAME, RECORDER_UI_ATTRIBUTE, STOP_BINDING_NAME } from '#runtime/injected/protocol.ts'
 import * as ariaRuntime from '@te/aria/browser'
 
+import { formatPlaywrightLocator } from '@te/recorder-core/playwright/locator'
 import { createRecordingOverlay, type RecordingOverlay } from '@te/recorder-ui/recording-overlay'
 
 const globalRecord = globalThis as unknown as Record<string, unknown>
@@ -31,9 +31,9 @@ if (!document.querySelector(`[${RECORDER_UI_ATTRIBUTE}]`)) {
   }
 
   function describeElement(element: Element): string {
-    const locator = generateLocatorCandidates(element, generateSelectorCandidates, ariaRuntime)[0]
+    const locator = generateLocatorCandidates(element, generateSelectorCandidates, ariaRuntime)[0] ?? { kind: 'css' as const, value: element.tagName.toLowerCase() }
 
-    return locator ? formatLocator(locator) : `locator(${JSON.stringify(element.tagName.toLowerCase())})`
+    return formatPlaywrightLocator(locator, { scope: 'implicit' })
   }
 
   async function disposeRecordingOverlay(): Promise<void> {

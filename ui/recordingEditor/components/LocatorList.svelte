@@ -1,7 +1,6 @@
 <script lang="ts">
   import type { RecordedLocator } from '@te/recorder-core'
-
-  import { formatLocator } from '../presentation.ts'
+  import { formatPlaywrightLocator } from '@te/recorder-core/playwright/locator'
 
   interface Props {
     locators: RecordedLocator[]
@@ -24,7 +23,7 @@
   <h3>Locator candidates</h3>
   <ol class="locator-list">
     {#each locators as locator, index}
-      {@const value = formatLocator(locator)}
+      {@const value = formatPlaywrightLocator(locator)}
       <li class="locator-row">
         <div class="locator-main">
           <span class="locator-rank">{index === 0 ? 'Preferred' : `Alternative ${index}`}</span>
