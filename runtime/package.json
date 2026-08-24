@@ -16,11 +16,13 @@
   "dependencies": {
     "@te/aria": "*",
     "@te/recorder-core": "*",
+    "@te/recorder-ui": "*",
     "@te/recorder-utils": "*",
     "devtools-protocol": "^0.0.1627472"
   },
   "devDependencies": {
-    "esbuild": "0.27.7"
+    "esbuild": "0.27.7",
+    "svelte": "5.56.10"
   },
   "peerDependencies": {
     "playwright": "1.62.1"

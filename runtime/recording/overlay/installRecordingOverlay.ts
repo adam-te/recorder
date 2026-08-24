@@ -30,7 +30,7 @@ async function installRecordingOverlay(args: InstallRecordingOverlayArgs): Promi
   return { dispose }
 
   async function dispose(): Promise<void> {
-    await Promise.all(args.page.frames().map(frame => frame.evaluate(name => (globalThis as unknown as Record<string, (() => void) | undefined>)[name]?.(), DISPOSE_OVERLAY_FUNCTION_NAME)))
+    await Promise.all(args.page.frames().map(frame => frame.evaluate(name => (globalThis as unknown as Record<string, (() => Promise<void> | void) | undefined>)[name]?.(), DISPOSE_OVERLAY_FUNCTION_NAME)))
     await Promise.all([initScript.dispose(), stopBinding?.dispose()])
   }
 }

@@ -2,11 +2,28 @@ import { build } from 'esbuild'
 import { readFile, writeFile } from 'node:fs/promises'
 import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
+import { compile } from 'svelte/compiler'
 
 const SCRIPT_DIRECTORY = dirname(fileURLToPath(import.meta.url))
 const RUNTIME_DIRECTORY = join(SCRIPT_DIRECTORY, '..')
 const ROOT_DIRECTORY = join(RUNTIME_DIRECTORY, '..')
 const GENERATED_DIRECTORY = join(RUNTIME_DIRECTORY, 'injected', 'generated')
+const sveltePlugin = {
+  name: 'svelte',
+  setup(buildContext) {
+    buildContext.onLoad({ filter: /\.svelte$/ }, async args => {
+      const source = await readFile(args.path, 'utf8')
+      const { js, warnings } = compile(source, { filename: args.path, generate: 'client', modernAst: true, runes: true })
+
+      return {
+        contents: js.code,
+        loader: 'js',
+        resolveDir: dirname(args.path),
+        warnings: warnings.map(warning => ({ text: warning.message })),
+      }
+    })
+  },
+}
 
 await generate()
 
@@ -44,6 +61,7 @@ async function bundle(entryPoint, options = {}) {
       legalComments: 'none',
       minify: true,
       platform: 'browser',
+      plugins: [sveltePlugin],
       write: false,
     })
   ).outputFiles[0].text

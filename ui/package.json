@@ -4,6 +4,7 @@
   "private": true,
   "type": "module",
   "exports": {
+    "./recording-overlay": "./recordingOverlay/index.ts",
     "./recording-editor": "./recordingEditor/index.ts",
     "./recording-editor-host": "./recordingEditor/createRecordingEditorHost.ts",
     "./recording-editor.css": "./recordingEditor/recordingEditor.css",
