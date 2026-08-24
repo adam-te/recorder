@@ -1,6 +1,8 @@
 import { renderAriaSnapshot } from '@te/aria'
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, test } from 'vitest'
 
+import type { RecordedAriaNode, RecordedAriaSnapshot } from '@te/recorder-core'
+
 import { playTestRecording, recordTest, useBrowserTestFixture } from './utils.ts'
 
 describe('recording playback', () => {
@@ -54,7 +56,16 @@ describe('recording playback', () => {
       'https://frame.test/content': `<button id="target" onclick="document.body.dataset.clicked = 'true'">Click</button>`,
       'https://recorder.test/content': '<iframe id="action-frame" src="https://frame.test/content"></iframe>',
     }
-    const document = await recordTest({ documents, fixture, interact: page => page.frameLocator('#action-frame').locator('#target').click(), startUrl: 'https://recorder.test/content' })
+    let recordedSnapshot: { actionIndex: number; ariaSnapshot: RecordedAriaSnapshot } | undefined
+    const document = await recordTest({
+      documents,
+      fixture,
+      interact: page => page.frameLocator('#action-frame').locator('#target').click(),
+      onSnapshotCaptured: snapshot => {
+        recordedSnapshot = snapshot
+      },
+      startUrl: 'https://recorder.test/content',
+    })
 
     expect(document?.actions).toMatchObject([
       { kind: 'goto', pageUrl: 'about:blank', url: 'https://recorder.test/content' },
@@ -68,12 +79,14 @@ describe('recording playback', () => {
         pageUrl: 'https://recorder.test/content',
       },
     ])
-    const recordedAction = document?.actions[1] && 'ariaSnapshot' in document.actions[1] ? document.actions[1] : undefined
+    const target = findTarget(recordedSnapshot?.ariaSnapshot)
 
-    expect(recordedAction?.targetRef).toMatch(/^e\d+$/)
-    expect(recordedAction?.ariaSnapshot).toMatchObject({ role: 'fragment' })
-    expect(recordedAction?.ariaSnapshot).not.toHaveProperty('targetRef')
-    expect(recordedAction?.ariaSnapshot && renderAriaSnapshot(recordedAction.ariaSnapshot)).toBe(`- button "Click" [active] [ref=${recordedAction?.targetRef}]`)
+    expect(recordedSnapshot?.actionIndex).toBe(1)
+    expect(recordedSnapshot?.ariaSnapshot).toMatchObject({ role: 'fragment' })
+    expect(document?.actions[1]).not.toHaveProperty('ariaSnapshot')
+    expect(document?.actions[1]).not.toHaveProperty('targetRef')
+    expect(target?.ref).toMatch(/^e\d+$/)
+    expect(renderAriaSnapshot(recordedSnapshot!.ariaSnapshot)).toBe(`- button "Click" [active] [ref=${target?.ref}]`)
 
     const playbackPage = await playTestRecording({ document, documents, fixture })
 
@@ -170,3 +183,22 @@ describe('recording playback', () => {
     expect(await playbackPage.locator('body').getAttribute('data-clicked')).toBe('true')
   })
 })
+
+function findTarget(snapshot: RecordedAriaSnapshot | undefined): RecordedAriaNode | undefined {
+  if (!snapshot) {
+    return undefined
+  }
+
+  if (snapshot.target) {
+    return snapshot
+  }
+
+  for (const child of snapshot.children ?? []) {
+    const target = typeof child === 'string' ? undefined : findTarget(child)
+    if (target) {
+      return target
+    }
+  }
+
+  return undefined
+}

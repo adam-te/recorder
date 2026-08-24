@@ -8,7 +8,7 @@ export { activateExtension }
 export type { ActiveExtension }
 
 function activateExtension(args: ActivateExtensionArgs): ActiveExtension {
-  const controller = createRecorderController({ onStopRequested: stopRecording })
+  const controller = createRecorderController({ context: args.context, onStopRequested: stopRecording })
   let recorderState: RecorderState = 'idle'
   const recorderStateReady = updateRecorderContext()
   const disposables = [createRecorderView(), commands.registerCommand('thousandeyesRecorder.startRecording', startRecording), commands.registerCommand('thousandeyesRecorder.stopRecording', stopRecording), commands.registerCommand('thousandeyesRecorder.playRecording', controller.play)]

@@ -1,7 +1,9 @@
-import { readFile, writeFile } from 'node:fs/promises'
+import { randomUUID } from 'node:crypto'
+import { mkdir, readFile, rename, rm, writeFile } from 'node:fs/promises'
+import { basename, dirname, join } from 'node:path'
 import { createInterface } from 'node:readline/promises'
 
-import { parseRecordingDocument, serializeRecordingDocument } from '@te/recorder-core'
+import { getRecordingSnapshotFileName, parseRecordingDocument, parseRecordingSnapshot, serializeRecordingDocument, serializeRecordingSnapshot, type RecordedAriaSnapshot, type RecordingDocument } from '@te/recorder-core'
 import { createRecorder, type Recorder } from '@te/recorder-runtime'
 import { matchBy, tryTo } from '@te/recorder-utils'
 
@@ -13,8 +15,8 @@ export type { RunRecorderCliArgs }
 const HELP = `Usage: te <command>
 
 Commands:
-  record <url> <file>  Record a browser transaction
-  play <file>          Play a recorded browser transaction
+  record <url> <directory>  Record a browser transaction
+  play <directory>          Play a recorded browser transaction
   help                 Show this help
 `
 
@@ -44,13 +46,20 @@ async function executeCommand(args: ExecuteCommandArgs): Promise<void> {
       await args.stdout.write(HELP)
     },
     play: async command => {
-      const document = parseRecordingDocument(JSON.parse(await readFile(command.filePath, 'utf8')))
+      const document = parseRecordingDocument(JSON.parse(await readFile(join(command.directoryPath, 'recording.json'), 'utf8')))
 
       await args.recorder.play({ document })
       await args.stdout.write(`Played ${document.actions.length} recorded actions.\n`)
     },
     record: async command => {
-      await args.recorder.start({ url: command.url })
+      const snapshots = new Map<number, RecordedAriaSnapshot>()
+
+      await args.recorder.start({
+        onSnapshotCaptured: snapshot => {
+          snapshots.set(snapshot.actionIndex, snapshot.ariaSnapshot)
+        },
+        url: command.url,
+      })
       await args.stdout.write('Recording started. Press Enter to stop and save.\n')
       await waitForEnter()
 
@@ -59,10 +68,47 @@ async function executeCommand(args: ExecuteCommandArgs): Promise<void> {
         throw new Error('The recording stopped without producing a document.')
       }
 
-      await writeFile(command.filePath, serializeRecordingDocument(document), 'utf8')
-      await args.stdout.write(`Saved recording to ${command.filePath}.\n`)
+      await writeRecordingDirectory({ directoryPath: command.directoryPath, document, snapshots })
+      await args.stdout.write(`Saved recording to ${command.directoryPath}.\n`)
     },
   })
+}
+
+async function writeRecordingDirectory(args: { directoryPath: string; document: RecordingDocument; snapshots: ReadonlyMap<number, RecordedAriaSnapshot> }): Promise<void> {
+  const pendingDirectory = join(dirname(args.directoryPath), `.${basename(args.directoryPath)}.pending-${randomUUID()}`)
+
+  try {
+    const snapshotsDirectory = join(pendingDirectory, 'snapshots')
+    await mkdir(snapshotsDirectory, { recursive: true })
+    await writeFile(join(pendingDirectory, 'recording.json'), serializeRecordingDocument(args.document), 'utf8')
+
+    for (const [actionIndex, action] of args.document.actions.entries()) {
+      if (!('locatorCandidates' in action)) {
+        continue
+      }
+
+      const snapshot = args.snapshots.get(actionIndex)
+      if (!snapshot) {
+        throw new Error(`Missing ARIA snapshot for action ${actionIndex}.`)
+      }
+
+      await writeFile(join(snapshotsDirectory, getRecordingSnapshotFileName(actionIndex)), serializeRecordingSnapshot(snapshot), 'utf8')
+    }
+
+    parseRecordingDocument(JSON.parse(await readFile(join(pendingDirectory, 'recording.json'), 'utf8')))
+    for (const [actionIndex, action] of args.document.actions.entries()) {
+      if (!('locatorCandidates' in action)) {
+        continue
+      }
+
+      parseRecordingSnapshot(JSON.parse(await readFile(join(snapshotsDirectory, getRecordingSnapshotFileName(actionIndex)), 'utf8')))
+    }
+
+    await rename(pendingDirectory, args.directoryPath)
+  } catch (error) {
+    await rm(pendingDirectory, { force: true, recursive: true })
+    throw error
+  }
 }
 
 async function waitForEnter(): Promise<void> {

@@ -2,7 +2,7 @@ import type { AriaSnapshot } from '@te/aria'
 import type { Browser, BrowserContext, Page } from 'playwright'
 import { chromium } from 'playwright'
 
-import { createRecordingSession, type RecordingDocument } from '@te/recorder-core'
+import { createRecordingSession, type RecordedAriaSnapshot, type RecordingDocument } from '@te/recorder-core'
 import { createRecorder, playRecording, type Recorder } from '@te/recorder-runtime'
 import { installRecordingCapture, type CapturedInteractionEvent } from '@te/recorder-runtime/capture'
 
@@ -61,7 +61,7 @@ async function recordTest(args: RecordTestArgs): Promise<RecordingDocument | und
   const page = await createPage({ context: args.fixture.context, documents: args.documents, html: args.html })
   const recorder = createTestRecorder({ browser: args.fixture.browser, context: args.fixture.context, page })
 
-  await recorder.start({ onDocumentChanged: args.onDocumentChanged, url: args.startUrl })
+  await recorder.start({ onDocumentChanged: args.onDocumentChanged, onSnapshotCaptured: args.onSnapshotCaptured, url: args.startUrl })
   await args.interact(page)
   return recorder.stop()
 }
@@ -140,6 +140,7 @@ interface RecordTestArgs {
   html?: string
   interact: (page: Page) => Promise<unknown>
   onDocumentChanged?: (document: RecordingDocument) => Promise<void> | void
+  onSnapshotCaptured?: (snapshot: { actionIndex: number; ariaSnapshot: RecordedAriaSnapshot }) => Promise<void> | void
   startUrl?: string
 }
 

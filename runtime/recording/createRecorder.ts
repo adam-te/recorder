@@ -3,7 +3,7 @@ import { playRecording } from '#recorder-runtime/playback/playRecording.ts'
 import { installRecordingCapture, type RecordingCapture } from '#recorder-runtime/recording/installRecordingCapture/index.ts'
 import { appendCapturedInteraction } from '#recorder-runtime/recording/processing/appendCapturedInteraction.ts'
 
-import { createRecordingSession, type RecordingDocument, type RecordingSession } from '@te/recorder-core'
+import { createRecordingSession, type RecordedAriaSnapshot, type RecordingDocument, type RecordingSession } from '@te/recorder-core'
 import { tryTo } from '@te/recorder-utils'
 
 export { createRecorder }
@@ -36,9 +36,12 @@ function createRecorder(args: CreateRecorderArgs = {}): Recorder {
           context: currentBrowserSession.context,
           onDocumentChanged: recordDocumentChange,
           onInteraction: async interaction => {
-            const document = await appendCapturedInteraction({ interaction, recordingSession: currentRecordingSession })
+            const appendedInteraction = await appendCapturedInteraction({ interaction, recordingSession: currentRecordingSession })
 
-            await (document && recordDocumentChange(document))
+            if (appendedInteraction) {
+              await args.onSnapshotCaptured?.({ actionIndex: appendedInteraction.actionIndex, ariaSnapshot: appendedInteraction.ariaSnapshot })
+              await recordDocumentChange(appendedInteraction.document)
+            }
           },
           onStopRequested: args.onStopRequested ?? stopFromOverlay,
           page: currentBrowserSession.page,
@@ -140,7 +143,13 @@ interface Recorder {
 interface StartArgs {
   onDocumentChanged?: (document: RecordingDocument) => Promise<void> | void
   onStopRequested?: () => Promise<void> | void
+  onSnapshotCaptured?: (snapshot: CapturedSnapshot) => Promise<void> | void
   url?: string
+}
+
+interface CapturedSnapshot {
+  actionIndex: number
+  ariaSnapshot: RecordedAriaSnapshot
 }
 
 interface CreateRecorderArgs {

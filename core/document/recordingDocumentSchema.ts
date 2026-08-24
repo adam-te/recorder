@@ -32,10 +32,23 @@ const recordedAriaNodeSchema: z.ZodType<RecordedAriaNode> = z.lazy(() =>
     ref: z.string().min(1).optional(),
     role: recordedAriaRoleSchema,
     selected: z.boolean().optional(),
+    target: z.literal(true).optional(),
   }),
 )
-const recordedAriaSnapshotSchema = recordedAriaNodeSchema
-const recordedActionLocatorContextSchema = { ariaSnapshot: recordedAriaSnapshotSchema.optional(), locatorCandidates: z.array(recordedLocatorSchema).min(1), targetRef: z.string().min(1).optional() }
+const recordedAriaSnapshotSchema = recordedAriaNodeSchema.superRefine((snapshot, context) => {
+  let targetCount = 0
+  visit(snapshot)
+
+  if (targetCount > 1) {
+    context.addIssue({ code: 'custom', message: 'An ARIA snapshot cannot contain more than one target.' })
+  }
+
+  function visit(node: RecordedAriaNode): void {
+    targetCount += node.target ? 1 : 0
+    node.children?.forEach(child => typeof child !== 'string' && visit(child))
+  }
+})
+const recordedActionLocatorContextSchema = { locatorCandidates: z.array(recordedLocatorSchema).min(1) }
 
 const recordedActionSchema = z.discriminatedUnion('kind', [
   z.object({ ...recordedActionContextSchema, kind: z.literal('goto'), url: z.url() }),
@@ -67,4 +80,5 @@ type RecordingDocument = z.infer<typeof recordingDocumentSchema>
 
 interface RecordedAriaNode extends Omit<AriaNode, 'children'> {
   children?: (RecordedAriaNode | string)[]
+  target?: true
 }
