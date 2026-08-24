@@ -1,5 +1,6 @@
 import { createRecorderView } from '#recorder-extension/createRecorderView.ts'
 import { createRecorderController } from '#recorder-extension/recording/createRecorderController.ts'
+import { createRecordingEditorProvider } from '#recorder-extension/recording/createRecordingEditorProvider.ts'
 import { commands, ProgressLocation, window, type ExtensionContext } from 'vscode'
 
 import { tryTo } from '@te/recorder-utils'
@@ -11,7 +12,13 @@ function activateExtension(args: ActivateExtensionArgs): ActiveExtension {
   const controller = createRecorderController({ context: args.context, onStopRequested: stopRecording })
   let recorderState: RecorderState = 'idle'
   const recorderStateReady = updateRecorderContext()
-  const disposables = [createRecorderView(), commands.registerCommand('thousandeyesRecorder.startRecording', startRecording), commands.registerCommand('thousandeyesRecorder.stopRecording', stopRecording), commands.registerCommand('thousandeyesRecorder.playRecording', controller.play)]
+  const disposables = [
+    createRecorderView(),
+    createRecordingEditorProvider({ context: args.context, isPending: controller.isPending, onDiscard: controller.discardPending, onPlay: controller.play, onSave: controller.savePending }),
+    commands.registerCommand('thousandeyesRecorder.startRecording', startRecording),
+    commands.registerCommand('thousandeyesRecorder.stopRecording', stopRecording),
+    commands.registerCommand('thousandeyesRecorder.playRecording', controller.play),
+  ]
 
   args.context.subscriptions.push(...disposables)
 

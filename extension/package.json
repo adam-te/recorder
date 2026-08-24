@@ -15,6 +15,7 @@
     "watch": "npm run build -- --watch --sourcemap"
   },
   "dependencies": {
+    "@te/aria": "*",
     "@te/recorder-core": "*",
     "@te/recorder-runtime": "*",
     "@te/recorder-utils": "*",
@@ -25,6 +26,18 @@
     "esbuild": "^0.27.0"
   },
   "contributes": {
+    "customEditors": [
+      {
+        "viewType": "thousandeyesRecorder.recording",
+        "displayName": "Transaction Recording",
+        "selector": [
+          {
+            "filenamePattern": "**/*.recording/recording.json"
+          }
+        ],
+        "priority": "default"
+      }
+    ],
     "viewsContainers": {
       "activitybar": [
         {
@@ -85,6 +98,7 @@
     "onCommand:thousandeyesRecorder.playRecording",
     "onCommand:thousandeyesRecorder.startRecording",
     "onCommand:thousandeyesRecorder.stopRecording",
+    "onCustomEditor:thousandeyesRecorder.recording",
     "onView:thousandeyesRecorder.controls"
   ],
   "engines": {
