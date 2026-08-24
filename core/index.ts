@@ -1,4 +1,5 @@
 export { createRecordingDocument } from './document/createRecordingDocument.ts'
+export { generatePlaywrightScript } from './codecs/playwright/generatePlaywrightScript.ts'
 export { parseRecordingDocument } from './document/parseRecordingDocument.ts'
 export { recordingDocumentSchema } from './document/recordingDocumentSchema.ts'
 export { serializeRecordingDocument } from './document/serializeRecordingDocument.ts'
