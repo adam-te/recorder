@@ -10,6 +10,7 @@
     "extension",
     "runtime",
     "smoketest",
+    "ui",
     "utils"
   ],
   "type": "module",

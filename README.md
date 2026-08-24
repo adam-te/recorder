@@ -2,18 +2,20 @@
 
 Provides the packages used to author, record, and play back ThousandEyes Transaction tests from Visual Studio Code.
 
-The domain model is kept independent from browser automation and editor integration so each layer can evolve without coupling the others.
+The domain model and recording UI are kept independent from browser automation and editor integration so each layer can evolve without coupling the others.
 
 ```text
-VS Code extension ─┐
-                   ├──> runtime ───> core
-CLI ───────────────┘       │          │
-                           v          v
-                       Playwright  codecs/
-                                      └── thousandeyes
+VS Code extension ──> UI ──────> core
+        │                         ▲
+        └──────────> runtime ─────┤
+CLI ───────────────> runtime      │
+                         │        │
+                         v        v
+                     Playwright  codecs/
+                                  └── thousandeyes
 ```
 
-`runtime` provides the reusable browser-backed recorder API, while the extension is a lightweight UI wrapper. `core` owns the platform-independent recording document and pure format codecs.
+`ui` provides the host-neutral recording editor and typed host protocol, while the extension supplies a thin VS Code webview adapter and theme mapping. `runtime` provides the reusable browser-backed recorder API, and `core` owns the platform-independent recording document and pure format codecs.
 
 ## Development
 

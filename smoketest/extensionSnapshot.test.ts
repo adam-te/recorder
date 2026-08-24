@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'vitest'
 
-import { renderRecordingSnapshot } from '../extension/recording/renderRecordingSnapshot.ts'
+import { renderRecordingSnapshot } from '@te/recorder-ui/render-recording-snapshot'
 
 describe('extension snapshot rendering', () => {
   test('hides internal refs and preserves the target line', () => {

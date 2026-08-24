@@ -1,0 +1,31 @@
+:root {
+  --recorder-background: var(--vscode-editor-background);
+  --recorder-badge-background: var(--vscode-badge-background);
+  --recorder-badge-foreground: var(--vscode-badge-foreground);
+  --recorder-border: var(--vscode-panel-border);
+  --recorder-button-background: var(--vscode-button-secondaryBackground);
+  --recorder-button-border: var(--vscode-button-border, transparent);
+  --recorder-button-foreground: var(--vscode-button-secondaryForeground);
+  --recorder-button-hover-background: var(--vscode-button-secondaryHoverBackground);
+  --recorder-code-background: var(--vscode-textCodeBlock-background, var(--vscode-editor-background));
+  --recorder-code-foreground: var(--vscode-editor-foreground);
+  --recorder-description-foreground: var(--vscode-descriptionForeground);
+  --recorder-focus-border: var(--vscode-focusBorder);
+  --recorder-font-family: var(--vscode-font-family);
+  --recorder-font-size: var(--vscode-font-size);
+  --recorder-foreground: var(--vscode-foreground);
+  --recorder-highlight-background: var(--vscode-editor-findMatchHighlightBackground);
+  --recorder-list-active-background: var(--vscode-list-activeSelectionBackground);
+  --recorder-list-active-foreground: var(--vscode-list-activeSelectionForeground);
+  --recorder-list-hover-background: var(--vscode-list-hoverBackground);
+  --recorder-primary-background: var(--vscode-button-background);
+  --recorder-primary-foreground: var(--vscode-button-foreground);
+  --recorder-primary-hover-background: var(--vscode-button-hoverBackground);
+  --recorder-sidebar-background: var(--vscode-sideBar-background);
+  --recorder-sidebar-foreground: var(--vscode-sideBar-foreground);
+  --recorder-sidebar-heading-foreground: var(--vscode-sideBarSectionHeader-foreground);
+  --recorder-text-block-background: var(--vscode-textBlockQuote-background);
+  --recorder-text-preformatted-foreground: var(--vscode-textPreformat-foreground);
+  --recorder-editor-font-family: var(--vscode-editor-font-family);
+  --recorder-editor-font-size: var(--vscode-editor-font-size);
+}

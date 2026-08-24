@@ -1,0 +1,15 @@
+{
+  "name": "@te/recorder-ui",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    "./recording-editor": "./recordingEditor/index.ts",
+    "./recording-editor.css": "./recordingEditor/recordingEditor.css",
+    "./render-recording-snapshot": "./renderRecordingSnapshot.ts"
+  },
+  "dependencies": {
+    "@te/aria": "*",
+    "@te/recorder-core": "*"
+  }
+}

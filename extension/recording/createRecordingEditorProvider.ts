@@ -1,8 +1,9 @@
-import { renderRecordingSnapshot } from '#recorder-extension/recording/renderRecordingSnapshot.ts'
 import { randomUUID } from 'node:crypto'
 import { commands, env, Uri, ViewColumn, window, workspace, type CustomTextEditorProvider, type Disposable, type ExtensionContext, type TextDocument, type WebviewPanel } from 'vscode'
 
 import { getRecordingSnapshotFileName, parseRecordingDocument, parseRecordingSnapshot, type RecordingDocument } from '@te/recorder-core'
+import type { RecordingEditorUiMessage } from '@te/recorder-ui/recording-editor'
+import { renderRecordingSnapshot } from '@te/recorder-ui/render-recording-snapshot'
 
 export { createRecordingEditorProvider, recordingEditorViewType }
 
@@ -43,7 +44,7 @@ function resolveRecordingEditor(args: ResolveRecordingEditorArgs): void {
     }
   })
 
-  async function handleMessage(message: WebviewMessage): Promise<void> {
+  async function handleMessage(message: RecordingEditorUiMessage): Promise<void> {
     switch (message.type) {
       case 'ready':
         await publishDocument()
@@ -182,5 +183,3 @@ interface ResolveRecordingEditorArgs extends CreateRecordingEditorProviderArgs {
   document: TextDocument
   panel: WebviewPanel
 }
-
-type WebviewMessage = { type: 'copy'; text: string } | { type: 'discard' | 'openJson' | 'play' | 'ready' | 'save' } | { type: 'selectAction'; actionIndex: number }

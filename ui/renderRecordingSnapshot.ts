@@ -3,6 +3,7 @@ import { renderAriaSnapshot } from '@te/aria'
 import type { RecordedAriaNode, RecordedAriaSnapshot } from '@te/recorder-core'
 
 export { renderRecordingSnapshot }
+export type { RenderedRecordingSnapshot }
 
 function renderRecordingSnapshot(snapshot: RecordedAriaSnapshot): RenderedRecordingSnapshot {
   const lines = renderAriaSnapshot(snapshot).split('\n')
