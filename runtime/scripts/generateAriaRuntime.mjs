@@ -6,7 +6,7 @@ import { fileURLToPath } from 'node:url'
 const SCRIPT_DIRECTORY = dirname(fileURLToPath(import.meta.url))
 const RUNTIME_DIRECTORY = join(SCRIPT_DIRECTORY, '..')
 const ROOT_DIRECTORY = join(RUNTIME_DIRECTORY, '..')
-const RUNTIME_SOURCE = join(RUNTIME_DIRECTORY, 'recording', 'injected', 'ariaRuntimeSource.ts')
+const RUNTIME_SOURCE = join(RUNTIME_DIRECTORY, 'recording', 'injected', 'ariaRuntimeSource.generated.ts')
 
 await generate()
 

@@ -1,4 +1,4 @@
-import { ariaRuntimeSource } from '#recorder-runtime/recording/injected/ariaRuntimeSource.ts'
+import { ariaRuntimeSource } from '#recorder-runtime/recording/injected/ariaRuntimeSource.generated.ts'
 import { RECORDER_UI_ATTRIBUTE } from '#recorder-runtime/recording/injected/constants.ts'
 import { generateLocatorCandidates } from '#recorder-runtime/recording/injected/generateLocatorCandidates.ts'
 import { generateSelectorCandidates, SELECTOR_GENERATOR_NAME } from '#recorder-runtime/recording/injected/generateSelectorCandidates.ts'

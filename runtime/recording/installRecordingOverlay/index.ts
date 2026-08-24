@@ -1,4 +1,4 @@
-import { ariaRuntimeSource } from '#recorder-runtime/recording/injected/ariaRuntimeSource.ts'
+import { ariaRuntimeSource } from '#recorder-runtime/recording/injected/ariaRuntimeSource.generated.ts'
 import { RECORDER_UI_ATTRIBUTE } from '#recorder-runtime/recording/injected/constants.ts'
 import { formatLocator } from '#recorder-runtime/recording/injected/formatLocator.ts'
 import { generateLocatorCandidates } from '#recorder-runtime/recording/injected/generateLocatorCandidates.ts'

@@ -1,7 +1,7 @@
 import { type AriaRuntime, type AriaSnapshot, renderAriaSnapshot } from '@te/aria'
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, test } from 'vitest'
 
-import { ariaRuntimeSource } from '../runtime/recording/injected/ariaRuntimeSource.ts'
+import { ariaRuntimeSource } from '../runtime/recording/injected/ariaRuntimeSource.generated.ts'
 import { createPage, useBrowserTestFixture } from './utils.ts'
 
 describe('Playwright ARIA snapshot parity', () => {

@@ -1,2 +1,2 @@
-aria/vendor/** -diff
-runtime/recording/injected/ariaRuntimeSource.ts -diff
+aria/vendor/** -diff linguist-vendored
+**/*.generated.ts -diff linguist-generated
