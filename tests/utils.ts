@@ -1,6 +1,7 @@
 import type { AriaSnapshot } from '@te/aria'
 import type { Browser, BrowserContext, Page } from 'playwright'
 import { chromium } from 'playwright'
+import { afterAll, afterEach, beforeAll, beforeEach } from 'vitest'
 
 import { createRecordingSession, type RecordedAriaSnapshot, type RecordingDocument } from '@te/recorder-core'
 import { createRecorder, playRecording, type Recorder } from '@te/recorder-runtime'
@@ -66,19 +67,19 @@ async function recordTest(args: RecordTestArgs): Promise<RecordingDocument | und
   return recorder.stop()
 }
 
-function useBrowserTestFixture(args: BrowserTestHooks): BrowserTestFixture {
+function useBrowserTestFixture(): BrowserTestFixture {
   const fixture = {} as BrowserTestFixture
 
-  args.beforeAll(async () => {
+  beforeAll(async () => {
     fixture.browser = await chromium.launch({ headless: true })
   })
-  args.beforeEach(async () => {
+  beforeEach(async () => {
     fixture.context = await fixture.browser.newContext()
   })
-  args.afterEach(async () => {
+  afterEach(async () => {
     await fixture.context.close()
   })
-  args.afterAll(async () => {
+  afterAll(async () => {
     await fixture.browser.close()
   })
 
@@ -120,13 +121,6 @@ interface BrowserTestFixture {
   context: BrowserContext
 }
 
-interface BrowserTestHooks {
-  afterAll: TestHook
-  afterEach: TestHook
-  beforeAll: TestHook
-  beforeEach: TestHook
-}
-
 interface PlayTestRecordingArgs {
   document: RecordingDocument | undefined
   documents?: Record<string, string>
@@ -143,5 +137,3 @@ interface RecordTestArgs {
   onSnapshotCaptured?: (snapshot: { actionIndex: number; ariaSnapshot: RecordedAriaSnapshot }) => Promise<void> | void
   startUrl: string
 }
-
-type TestHook = (callback: () => Promise<void>) => void

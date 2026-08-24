@@ -1,4 +1,4 @@
-import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, test } from 'vitest'
+import { describe, expect, test } from 'vitest'
 
 import { createRecordingSession } from '@te/recorder-core'
 import { appendCapturedInteraction, installRecordingCapture } from '@te/recorder-runtime/capture'
@@ -6,7 +6,7 @@ import { appendCapturedInteraction, installRecordingCapture } from '@te/recorder
 import { createPage, playTestRecording, recordTest, useBrowserTestFixture } from './utils.ts'
 
 describe('navigation recording', () => {
-  const fixture = useBrowserTestFixture({ afterAll, afterEach, beforeAll, beforeEach })
+  const fixture = useBrowserTestFixture()
 
   test('records click-triggered navigation without inspecting the departing document', async () => {
     const documents = { 'https://recorder.test/after': '<p>After</p>', 'https://recorder.test/content': '<a id="target" href="/after">Continue</a>' }

@@ -1,11 +1,11 @@
 import { type AriaNode, renderAriaSnapshot } from '@te/aria'
 import type { Page } from 'playwright'
-import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, test } from 'vitest'
+import { describe, expect, test } from 'vitest'
 
 import { captureInteraction, useBrowserTestFixture } from './utils.ts'
 
 describe('ARIA interaction snapshots', () => {
-  const fixture = useBrowserTestFixture({ afterAll, afterEach, beforeAll, beforeEach })
+  const fixture = useBrowserTestFixture()
 
   test('captures current-frame semantics and the target ref before click handlers change the page', async () => {
     const html = `

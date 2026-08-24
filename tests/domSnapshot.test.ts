@@ -1,4 +1,4 @@
-import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, test } from 'vitest'
+import { describe, expect, test } from 'vitest'
 
 import type { CapturedDomSnapshot } from '@te/recorder-runtime/capture'
 import { captureDomSnapshot } from '@te/recorder-runtime/capture'
@@ -6,7 +6,7 @@ import { captureDomSnapshot } from '@te/recorder-runtime/capture'
 import { createPage, useBrowserTestFixture } from './utils.ts'
 
 describe('captureDomSnapshot', () => {
-  const fixture = useBrowserTestFixture({ afterAll, afterEach, beforeAll, beforeEach })
+  const fixture = useBrowserTestFixture()
 
   test('captures current DOM content across frames and open shadow roots', async () => {
     const page = await createPage({

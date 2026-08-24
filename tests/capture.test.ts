@@ -1,5 +1,5 @@
 import type { Page } from 'playwright'
-import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, test } from 'vitest'
+import { describe, expect, test } from 'vitest'
 
 import { createRecordingSession } from '@te/recorder-core'
 import { installRecordingCapture, type CapturedInteractionEvent, type RecordingCapture } from '@te/recorder-runtime/capture'
@@ -7,7 +7,7 @@ import { installRecordingCapture, type CapturedInteractionEvent, type RecordingC
 import { captureInteraction, createPage, useBrowserTestFixture } from './utils.ts'
 
 describe('interaction capture', () => {
-  const fixture = useBrowserTestFixture({ afterAll, afterEach, beforeAll, beforeEach })
+  const fixture = useBrowserTestFixture()
 
   const eventCases: EventCase[] = [
     { expectedKind: 'click', html: '<button id="target">Click</button>', interact: page => page.locator('#target').click(), name: 'captures clicks' },

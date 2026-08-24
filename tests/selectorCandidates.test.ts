@@ -1,10 +1,10 @@
 import type { Page } from 'playwright'
-import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, test } from 'vitest'
+import { describe, expect, test } from 'vitest'
 
 import { captureInteraction, useBrowserTestFixture, type BrowserTestFixture } from './utils.ts'
 
 describe('CSS selector candidates', () => {
-  const fixture = useBrowserTestFixture({ afterAll, afterEach, beforeAll, beforeEach })
+  const fixture = useBrowserTestFixture()
 
   const selectorCases: SelectorCase[] = [
     {
