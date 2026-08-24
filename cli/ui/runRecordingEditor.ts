@@ -80,7 +80,7 @@ async function handleRequest(context: RequestContext): Promise<void> {
 
 async function openBrowser(url: string): Promise<void> {
   const browser = await chromium.launch({ headless: false })
-  const page = await browser.newPage()
+  const page = await browser.newPage({ colorScheme: null })
 
   try {
     await page.goto(url)
