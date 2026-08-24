@@ -2,14 +2,13 @@ import { type AriaRuntime, type AriaSnapshot, renderAriaSnapshot } from '@te/ari
 import { describe, expect, test } from 'vitest'
 
 import { ariaRuntimeSource } from '../runtime/recording/injected/ariaRuntimeSource.generated.ts'
-import { createPage, useBrowserTestFixture } from './utils.ts'
+import { useBrowserTestHarness } from './utils.ts'
 
 describe('Playwright ARIA snapshot parity', () => {
-  const fixture = useBrowserTestFixture()
+  const browser = useBrowserTestHarness()
 
   test('matches Playwright AI mode', async () => {
-    const page = await createPage({
-      context: fixture.context,
+    const page = await browser.page({
       html: `
         <main aria-label="Account settings">
           <h2>Profile</h2>

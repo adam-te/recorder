@@ -2,10 +2,10 @@ import { type AriaNode, renderAriaSnapshot } from '@te/aria'
 import type { Page } from 'playwright'
 import { describe, expect, test } from 'vitest'
 
-import { captureInteraction, useBrowserTestFixture } from './utils.ts'
+import { useBrowserTestHarness } from './utils.ts'
 
 describe('ARIA interaction snapshots', () => {
-  const fixture = useBrowserTestFixture()
+  const browser = useBrowserTestHarness()
 
   test('captures current-frame semantics and the target ref before click handlers change the page', async () => {
     const html = `
@@ -19,7 +19,7 @@ describe('ARIA interaction snapshots', () => {
         <p hidden>Secret content</p>
       </main>
     `
-    const interaction = await captureInteraction({ expectedKind: 'click', fixture, html, interact: page => page.locator('#target').click() })
+    const interaction = await browser.capture({ expectedKind: 'click', html, interact: page => page.locator('#target').click() })
     const yaml = renderAriaSnapshot(interaction.ariaSnapshot)
 
     expect(yaml).toContain('- main "Account settings"')
@@ -41,10 +41,9 @@ describe('ARIA interaction snapshots', () => {
   })
 
   test('captures the interaction frame without including the parent frame', async () => {
-    const interaction = await captureInteraction({
+    const interaction = await browser.capture({
       documents: { 'https://frame.test/content': '<main aria-label="Frame content"><button id="target">Frame action</button></main>' },
       expectedKind: 'click',
-      fixture,
       html: '<main aria-label="Parent content"><iframe src="https://frame.test/content"></iframe></main>',
       interact: async page => page.frameLocator('iframe').locator('#target').click(),
     })
@@ -69,7 +68,7 @@ describe('ARIA interaction snapshots', () => {
         closedRoot.append(target);
       </script>
     `
-    const interaction = await captureInteraction({ expectedKind: 'click', fixture, html, interact: clickClosedShadowButton })
+    const interaction = await browser.capture({ expectedKind: 'click', html, interact: clickClosedShadowButton })
     const yaml = renderAriaSnapshot(interaction.ariaSnapshot)
 
     expect(yaml).toContain('- button "Open shadow action"')
@@ -79,7 +78,7 @@ describe('ARIA interaction snapshots', () => {
 
   test('selects the nearest actionable ARIA ancestor of the raw event target', async () => {
     const html = '<button id="action"><span id="target">Save</span></button>'
-    const interaction = await captureInteraction({ expectedKind: 'click', fixture, html, interact: page => page.locator('#target').click() })
+    const interaction = await browser.capture({ expectedKind: 'click', html, interact: page => page.locator('#target').click() })
     const target = findNodes(interaction.ariaSnapshot).find(node => node.ref === interaction.targetRef)
 
     expect(target).toMatchObject({ name: 'Save', role: 'button' })

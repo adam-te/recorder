@@ -3,14 +3,13 @@ import { describe, expect, test } from 'vitest'
 import type { CapturedDomSnapshot } from '@te/recorder-runtime/capture'
 import { captureDomSnapshot } from '@te/recorder-runtime/capture'
 
-import { createPage, useBrowserTestFixture } from './utils.ts'
+import { useBrowserTestHarness } from './utils.ts'
 
 describe('captureDomSnapshot', () => {
-  const fixture = useBrowserTestFixture()
+  const browser = useBrowserTestHarness()
 
   test('captures current DOM content across frames and open shadow roots', async () => {
-    const page = await createPage({
-      context: fixture.context,
+    const page = await browser.page({
       documents: { 'https://frame.test/content': '<button id="frame-target">Frame target</button>' },
       html: '<main id="dynamic-target" data-state="initial">Before</main><div id="shadow-host"></div><iframe src="https://frame.test/content"></iframe>',
     })

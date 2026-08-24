@@ -7,13 +7,14 @@ import { createRecordingSession, type RecordedAriaSnapshot, type RecordingDocume
 import { createRecorder, playRecording, type Recorder } from '@te/recorder-runtime'
 import { installRecordingCapture, type CapturedInteractionEvent } from '@te/recorder-runtime/capture'
 
-export { captureInteraction, createPage, playTestRecording, recordTest, useBrowserTestFixture }
-export type { BrowserTestFixture, InteractionSummary }
+export { useBrowserTestHarness }
+
+const defaultStartUrl = 'https://recorder.test/content'
 
 async function captureInteraction(args: CaptureInteractionArgs): Promise<InteractionSummary> {
   const captured = Promise.withResolvers<InteractionSummary>()
   const page = await createPage({ context: args.fixture.context, documents: args.documents, headers: args.headers, html: args.html })
-  const recordingSession = createRecordingSession({ startUrl: 'https://recorder.test/content', title: 'Smoke test' })
+  const recordingSession = createRecordingSession({ startUrl: defaultStartUrl, title: 'Smoke test' })
 
   await installRecordingCapture({
     context: args.fixture.context,
@@ -24,7 +25,7 @@ async function captureInteraction(args: CaptureInteractionArgs): Promise<Interac
     },
     page,
     recordingSession,
-    startUrl: 'https://recorder.test/content',
+    startUrl: defaultStartUrl,
   })
 
   await args.interact(page)
@@ -69,7 +70,7 @@ async function recordTest(args: RecordTestArgs): Promise<RecordingDocument> {
   return document
 }
 
-function useBrowserTestFixture(): BrowserTestFixture {
+function useBrowserTestHarness(): BrowserTestHarness {
   const fixture = {} as BrowserTestFixture
 
   beforeAll(async () => {
@@ -85,7 +86,15 @@ function useBrowserTestFixture(): BrowserTestFixture {
     await fixture.browser.close()
   })
 
-  return fixture
+  return {
+    capture: args => captureInteraction({ ...args, fixture }),
+    get context() {
+      return fixture.context
+    },
+    page: args => createPage({ ...args, context: fixture.context }),
+    play: args => playTestRecording({ ...args, fixture }),
+    record: args => recordTest({ ...args, fixture, startUrl: args.startUrl ?? defaultStartUrl }),
+  }
 }
 
 interface CaptureInteractionArgs {
@@ -121,6 +130,14 @@ interface InteractionSummary {
 interface BrowserTestFixture {
   browser: Browser
   context: BrowserContext
+}
+
+interface BrowserTestHarness {
+  capture: (args: Omit<CaptureInteractionArgs, 'fixture'>) => Promise<InteractionSummary>
+  readonly context: BrowserContext
+  page: (args: Omit<CreatePageArgs, 'context'>) => Promise<Page>
+  play: (args: Omit<PlayTestRecordingArgs, 'fixture'>) => Promise<Page>
+  record: (args: Omit<RecordTestArgs, 'fixture' | 'startUrl'> & { startUrl?: string }) => Promise<RecordingDocument>
 }
 
 interface PlayTestRecordingArgs {

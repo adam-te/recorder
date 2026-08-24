@@ -1,10 +1,11 @@
 import type { Page } from 'playwright'
 import { describe, expect, test } from 'vitest'
 
-import { captureInteraction, useBrowserTestFixture, type BrowserTestFixture } from './utils.ts'
+import { useBrowserTestHarness } from './utils.ts'
 
 describe('CSS selector candidates', () => {
-  const fixture = useBrowserTestFixture()
+  const browser = useBrowserTestHarness()
+  const getSelectors = async (args: Pick<SelectorCase, 'html' | 'interact'>): Promise<string[]> => (await browser.capture({ ...args, expectedKind: 'click' })).selectors
 
   const selectorCases: SelectorCase[] = [
     {
@@ -59,50 +60,40 @@ describe('CSS selector candidates', () => {
 
   selectorCases.forEach(testCase =>
     test(testCase.name, async () => {
-      expect(await getSelectors({ fixture, html: testCase.html, interact: testCase.interact })).toStrictEqual(testCase.expected)
+      expect(await getSelectors(testCase)).toStrictEqual(testCase.expected)
     }),
   )
 
   test('limits candidates in preference order', async () => {
     const html = '<a data-testid="save" id="save" href="/save" name="save" class="primary">Save</a>'
 
-    expect(await getSelectors({ fixture, html, interact: page => page.getByTestId('save').click() })).toStrictEqual(['[data-testid="save"]', '#save', '[href="/save"]'])
+    expect(await getSelectors({ html, interact: page => page.getByTestId('save').click() })).toStrictEqual(['[data-testid="save"]', '#save', '[href="/save"]'])
   })
 
   test('uses compound selectors when individual qualifiers are ambiguous', async () => {
     const html = '<button class="primary" data-testid="action">First</button><button class="secondary" data-testid="action">Second</button><button class="primary" data-testid="other">Third</button>'
 
-    expect(await getSelectors({ fixture, html, interact: page => page.locator('[data-testid="action"].primary').click() })).toStrictEqual(['[data-testid="action"].primary', 'button:nth-of-type(1)'])
+    expect(await getSelectors({ html, interact: page => page.locator('[data-testid="action"].primary').click() })).toStrictEqual(['[data-testid="action"].primary', 'button:nth-of-type(1)'])
   })
 
   test('uses a stable ancestor when the target alone is ambiguous', async () => {
     const html = '<section id="primary"><button>Save</button></section><section><button>Save</button></section>'
 
-    expect(await getSelectors({ fixture, html, interact: page => page.locator('#primary button').click() })).toStrictEqual(['#primary button', 'section:nth-of-type(1) button'])
+    expect(await getSelectors({ html, interact: page => page.locator('#primary button').click() })).toStrictEqual(['#primary button', 'section:nth-of-type(1) button'])
   })
 
   test('falls back to a structural selector when stable attributes are duplicated', async () => {
     const html = '<button data-testid="target">First</button><button data-testid="target">Second</button>'
 
-    expect(await getSelectors({ fixture, html, interact: page => page.getByTestId('target').nth(1).click() })).toStrictEqual(['button:nth-of-type(2)'])
+    expect(await getSelectors({ html, interact: page => page.getByTestId('target').nth(1).click() })).toStrictEqual(['button:nth-of-type(2)'])
   })
 
   test('composes selectors across shadow DOM boundaries', async () => {
     const html = `<div id="host"></div><script>document.querySelector('#host').attachShadow({ mode: 'open' }).innerHTML = '<button id="target">Click</button>'</script>`
 
-    expect(await getSelectors({ fixture, html, interact: page => page.locator('#host').locator('#target').click() })).toStrictEqual(['#host #target', '#host button'])
+    expect(await getSelectors({ html, interact: page => page.locator('#host').locator('#target').click() })).toStrictEqual(['#host #target', '#host button'])
   })
 })
-
-async function getSelectors(args: GetSelectorsArgs): Promise<string[]> {
-  return (await captureInteraction({ expectedKind: 'click', fixture: args.fixture, html: args.html, interact: args.interact })).selectors
-}
-
-interface GetSelectorsArgs {
-  fixture: BrowserTestFixture
-  html: string
-  interact: (page: Page) => Promise<unknown>
-}
 
 interface SelectorCase {
   expected: string[]

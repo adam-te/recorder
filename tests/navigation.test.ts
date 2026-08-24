@@ -3,19 +3,19 @@ import { describe, expect, test } from 'vitest'
 import { createRecordingSession } from '@te/recorder-core'
 import { appendCapturedInteraction, installRecordingCapture } from '@te/recorder-runtime/capture'
 
-import { createPage, playTestRecording, recordTest, useBrowserTestFixture } from './utils.ts'
+import { useBrowserTestHarness } from './utils.ts'
 
 describe('navigation recording', () => {
-  const fixture = useBrowserTestFixture()
+  const browser = useBrowserTestHarness()
 
   test('records click-triggered navigation without inspecting the departing document', async () => {
     const documents = { 'https://recorder.test/after': '<p>After</p>', 'https://recorder.test/content': '<a id="target" href="/after">Continue</a>' }
     const recordingSession = createRecordingSession({ startUrl: 'https://recorder.test/content', title: 'Smoke test' })
     const recorded = Promise.withResolvers<void>()
-    const page = await createPage({ context: fixture.context, documents })
+    const page = await browser.page({ documents })
 
     await installRecordingCapture({
-      context: fixture.context,
+      context: browser.context,
       onInteraction: interaction => {
         const recording = appendCapturedInteraction({ interaction, recordingSession })
         recording.then(() => recorded.resolve(), recorded.reject)
@@ -39,7 +39,7 @@ describe('navigation recording', () => {
       'https://recorder.test/after': `<button id="target" onclick="document.body.dataset.clicked = 'true'">Continue</button>`,
       'https://recorder.test/start': `<script>location.replace('https://recorder.test/after')</script>`,
     }
-    const document = await recordTest({ documents, fixture, interact: page => page.locator('#target').click(), startUrl: 'https://recorder.test/start' })
+    const document = await browser.record({ documents, interact: page => page.locator('#target').click(), startUrl: 'https://recorder.test/start' })
 
     expect(document).toMatchObject({
       actions: [
@@ -49,23 +49,21 @@ describe('navigation recording', () => {
       startUrl: 'https://recorder.test/start',
     })
 
-    const playbackPage = await playTestRecording({ document, documents, fixture })
+    const playbackPage = await browser.play({ document, documents })
 
     expect(await playbackPage.locator('body').getAttribute('data-clicked')).toBe('true')
   })
 
   test('records subsequent browser address entry and ignores Back, Forward, and Reload', async () => {
     const documents = { 'https://recorder.test/after': '<p>After</p>', 'https://recorder.test/content': '<p>Before</p>' }
-    const document = await recordTest({
+    const document = await browser.record({
       documents,
-      fixture,
       interact: async page => {
         await page.goto('https://recorder.test/after')
         await page.goBack()
         await page.goForward()
         await page.reload()
       },
-      startUrl: 'https://recorder.test/content',
     })
 
     expect(document.actions).toStrictEqual([
@@ -74,7 +72,7 @@ describe('navigation recording', () => {
     ])
     expect(document.startUrl).toBe('https://recorder.test/content')
 
-    const playbackPage = await playTestRecording({ document, documents, fixture })
+    const playbackPage = await browser.play({ document, documents })
 
     expect(playbackPage.url()).toBe('https://recorder.test/after')
   })
