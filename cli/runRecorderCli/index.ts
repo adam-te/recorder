@@ -65,16 +65,18 @@ async function executeCommand(args: ExecuteCommandArgs): Promise<void> {
         workingDirectory: args.args.workingDirectory ?? process.cwd(),
       })
       const snapshots = new Map<number, RecordedAriaSnapshot>()
+      const stopRequest = createRecordingStopRequest()
 
       await args.stdout.write(`Recording to ${directoryPath}.\n`)
       await args.recorder.start({
         onSnapshotCaptured: snapshot => {
           snapshots.set(snapshot.actionIndex, snapshot.ariaSnapshot)
         },
+        onStopRequested: stopRequest.request,
         url: command.url,
       })
-      await args.stdout.write('Recording started. Press Enter to stop and save.\n')
-      await (args.args.waitForStop ?? waitForEnter)()
+      await args.stdout.write('Recording started. Press Enter or click Stop recording in the browser to stop and save.\n')
+      await stopRequest.wait(args.args.waitForStop ?? waitForEnter)
 
       const document = await args.recorder.stop()
       if (!document) {
@@ -86,6 +88,43 @@ async function executeCommand(args: ExecuteCommandArgs): Promise<void> {
       await (args.args.runRecordingEditor ?? runRecordingEditor)({ directoryPath, onPlay: documentToPlay => args.recorder.play({ document: documentToPlay }), stdout: args.stdout })
     },
   })
+}
+
+function createRecordingStopRequest(): RecordingStopRequest {
+  const abortController = new AbortController()
+  let rejectRequest: (error: unknown) => void
+  let requestPending = false
+  let resolveRequest: () => void
+  const requested = new Promise<void>((resolve, reject) => {
+    rejectRequest = reject
+    resolveRequest = resolve
+  })
+
+  return { request, wait }
+
+  function request(): void {
+    if (requestPending) {
+      return
+    }
+
+    requestPending = true
+    setImmediate(resolveRequest)
+  }
+
+  async function wait(waitForTerminalStop: (signal: AbortSignal) => Promise<void>): Promise<void> {
+    const terminalStop = waitForTerminalStop(abortController.signal).then(request, error => {
+      if (!abortController.signal.aborted) {
+        rejectRequest(error)
+      }
+    })
+
+    try {
+      await requested
+    } finally {
+      abortController.abort()
+      await terminalStop
+    }
+  }
 }
 
 async function resolveRecordingDirectoryPath(args: { directoryPath?: string; url: string; workingDirectory: string }): Promise<string> {
@@ -173,14 +212,19 @@ async function writeRecordingDirectory(args: { directoryPath: string; document: 
   }
 }
 
-async function waitForEnter(): Promise<void> {
+async function waitForEnter(signal: AbortSignal): Promise<void> {
   const prompt = createInterface({ input: process.stdin, output: process.stdout })
 
   await tryTo(
-    () => prompt.question(''),
+    () => prompt.question('', { signal }),
     undefined,
     () => prompt.close(),
   )
+}
+
+interface RecordingStopRequest {
+  request: () => void
+  wait: (waitForTerminalStop: (signal: AbortSignal) => Promise<void>) => Promise<void>
 }
 
 interface ExecuteCommandArgs {
@@ -196,7 +240,7 @@ interface RunRecorderCliArgs {
   runRecordingEditor?: (args: RunRecordingEditorArgs) => Promise<void>
   stderr?: CliWriter
   stdout?: CliWriter
-  waitForStop?: () => Promise<void>
+  waitForStop?: (signal: AbortSignal) => Promise<void>
   workingDirectory?: string
 }
 
