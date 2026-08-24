@@ -1,5 +1,5 @@
-import type { BrowserSession } from '#recorder-runtime/browser/createBrowserSession.ts'
-import { executeRecordedAction } from '#recorder-runtime/playback/executeRecordedAction.ts'
+import type { BrowserSession } from '#runtime/browser/createBrowserSession.ts'
+import { executeRecordedAction } from '#runtime/playback/executeRecordedAction.ts'
 
 import type { PlaybackObserver, PlaybackResult, RecordingDocument } from '@te/recorder-core'
 

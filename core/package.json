@@ -4,7 +4,7 @@
   "private": true,
   "type": "module",
   "imports": {
-    "#recorder-core/*": "./*"
+    "#core/*": "./*"
   },
   "exports": {
     ".": "./index.ts"

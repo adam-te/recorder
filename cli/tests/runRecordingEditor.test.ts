@@ -1,4 +1,4 @@
-import { runRecordingEditor } from '#recorder-cli/ui/runRecordingEditor.ts'
+import { runRecordingEditor } from '#cli/ui/runRecordingEditor.ts'
 import { mkdir, writeFile } from 'node:fs/promises'
 import { join } from 'node:path'
 import { chromium } from 'playwright'

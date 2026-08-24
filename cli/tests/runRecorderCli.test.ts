@@ -1,4 +1,4 @@
-import { runRecorderCli } from '#recorder-cli/runRecorderCli/index.ts'
+import { runRecorderCli } from '#cli/runRecorderCli/index.ts'
 import { readFile } from 'node:fs/promises'
 import { join } from 'node:path'
 import { describe, expect, test } from 'vitest'

@@ -1,4 +1,4 @@
-import { resolveRecordingDirectoryPath } from '#recorder-cli/runRecorderCli/index.ts'
+import { resolveRecordingDirectoryPath } from '#cli/runRecorderCli/index.ts'
 import { mkdir } from 'node:fs/promises'
 import { join } from 'node:path'
 import { describe, expect, test } from 'vitest'

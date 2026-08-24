@@ -1,4 +1,4 @@
-import { parseRecorderCliCommand } from '#recorder-cli/runRecorderCli/parseRecorderCliCommand.ts'
+import { parseRecorderCliCommand } from '#cli/runRecorderCli/parseRecorderCliCommand.ts'
 import { describe, expect, test } from 'vitest'
 
 describe('parseRecorderCliCommand', () => {

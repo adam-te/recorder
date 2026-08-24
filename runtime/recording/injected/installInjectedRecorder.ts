@@ -1,7 +1,7 @@
-import { recordingRuntimeSource } from '#recorder-runtime/injected/generated/recordingRuntimeSource.generated.ts'
-import { DISPOSE_OVERLAY_FUNCTION_NAME, INTERACTION_BINDING_NAME, OVERLAY_CONFIG_NAME, STOP_BINDING_NAME } from '#recorder-runtime/injected/protocol.ts'
-import type { SerializedInteraction } from '#recorder-runtime/injected/protocol.ts'
-import type { CapturedInteraction } from '#recorder-runtime/recording/capture/types.ts'
+import { recordingRuntimeSource } from '#runtime/injected/generated/recordingRuntimeSource.generated.ts'
+import { DISPOSE_OVERLAY_FUNCTION_NAME, INTERACTION_BINDING_NAME, OVERLAY_CONFIG_NAME, STOP_BINDING_NAME } from '#runtime/injected/protocol.ts'
+import type { SerializedInteraction } from '#runtime/injected/protocol.ts'
+import type { CapturedInteraction } from '#runtime/recording/capture/types.ts'
 import type { BrowserContext, Frame, Page } from 'playwright'
 
 import { tryTo } from '@te/recorder-utils'

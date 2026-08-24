@@ -1,6 +1,6 @@
-import { createRecorderView } from '#recorder-extension/createRecorderView.ts'
-import { createRecorderController } from '#recorder-extension/recording/createRecorderController.ts'
-import { createRecordingEditorProvider } from '#recorder-extension/recording/createRecordingEditorProvider.ts'
+import { createRecorderView } from '#vscode-extension/createRecorderView.ts'
+import { createRecorderController } from '#vscode-extension/recording/createRecorderController.ts'
+import { createRecordingEditorProvider } from '#vscode-extension/recording/createRecordingEditorProvider.ts'
 import { commands, window, type ExtensionContext } from 'vscode'
 
 import { tryTo } from '@te/recorder-utils'

@@ -1,4 +1,4 @@
-import { formatLocator } from '#recorder-runtime/injected/locators/formatLocator.ts'
+import { formatLocator } from '#runtime/injected/locators/formatLocator.ts'
 import { describe, expect, test } from 'vitest'
 
 describe('locator presentation', () => {

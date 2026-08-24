@@ -1,7 +1,7 @@
-import { formatLocator } from '#recorder-runtime/injected/locators/formatLocator.ts'
-import { generateLocatorCandidates } from '#recorder-runtime/injected/locators/generateLocatorCandidates.ts'
-import { generateSelectorCandidates } from '#recorder-runtime/injected/locators/generateSelectorCandidates.ts'
-import { DISPOSE_OVERLAY_FUNCTION_NAME, OVERLAY_CONFIG_NAME, RECORDER_UI_ATTRIBUTE, STOP_BINDING_NAME } from '#recorder-runtime/injected/protocol.ts'
+import { formatLocator } from '#runtime/injected/locators/formatLocator.ts'
+import { generateLocatorCandidates } from '#runtime/injected/locators/generateLocatorCandidates.ts'
+import { generateSelectorCandidates } from '#runtime/injected/locators/generateSelectorCandidates.ts'
+import { DISPOSE_OVERLAY_FUNCTION_NAME, OVERLAY_CONFIG_NAME, RECORDER_UI_ATTRIBUTE, STOP_BINDING_NAME } from '#runtime/injected/protocol.ts'
 import * as ariaRuntime from '@te/aria/browser'
 
 import { createRecordingOverlay, type RecordingOverlay } from '@te/recorder-ui/recording-overlay'

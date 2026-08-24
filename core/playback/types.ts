@@ -1,4 +1,4 @@
-import type { RecordedAction } from '#recorder-core/document/recordingDocumentSchema.ts'
+import type { RecordedAction } from '#core/document/recordingDocumentSchema.ts'
 
 export type { PlaybackObserver, PlaybackResult }
 

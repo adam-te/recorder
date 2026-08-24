@@ -1,4 +1,4 @@
-import { resolveRecordedLocator } from '#recorder-runtime/playback/resolveRecordedLocator.ts'
+import { resolveRecordedLocator } from '#runtime/playback/resolveRecordedLocator.ts'
 import type { Page } from 'playwright'
 
 import type { RecordedAction, RecordedValue } from '@te/recorder-core'

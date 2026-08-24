@@ -1,4 +1,4 @@
-import { recordingEditorViewType } from '#recorder-extension/recording/createRecordingEditorProvider.ts'
+import { recordingEditorViewType } from '#vscode-extension/recording/createRecordingEditorProvider.ts'
 import { randomUUID } from 'node:crypto'
 import { commands, Uri, window, workspace, type ExtensionContext } from 'vscode'
 

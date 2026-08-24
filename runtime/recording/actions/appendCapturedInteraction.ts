@@ -1,5 +1,5 @@
-import { createRecordedAction } from '#recorder-runtime/recording/actions/createRecordedAction.ts'
-import type { CapturedInteraction } from '#recorder-runtime/recording/capture/types.ts'
+import { createRecordedAction } from '#runtime/recording/actions/createRecordedAction.ts'
+import type { CapturedInteraction } from '#runtime/recording/capture/types.ts'
 
 import type { RecordedAriaSnapshot, RecordingDocument, RecordingSession } from '@te/recorder-core'
 

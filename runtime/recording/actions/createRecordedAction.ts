@@ -1,5 +1,5 @@
-import type { CapturedInteraction } from '#recorder-runtime/recording/capture/types.ts'
-import { createRecordedLocatorCandidates } from '#recorder-runtime/recording/locators/createRecordedLocatorCandidates.ts'
+import type { CapturedInteraction } from '#runtime/recording/capture/types.ts'
+import { createRecordedLocatorCandidates } from '#runtime/recording/locators/createRecordedLocatorCandidates.ts'
 
 import { parseRecordingSnapshot, type RecordedAction, type RecordedAriaNode, type RecordedAriaSnapshot } from '@te/recorder-core'
 import { matchBy } from '@te/recorder-utils'

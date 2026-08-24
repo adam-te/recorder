@@ -3,6 +3,9 @@
   "version": "1.0.0",
   "private": true,
   "type": "module",
+  "imports": {
+    "#aria/*": "./*"
+  },
   "exports": {
     ".": "./src/index.ts",
     "./browser": "./src/browser.ts"

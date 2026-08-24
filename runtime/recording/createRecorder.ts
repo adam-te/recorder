@@ -1,7 +1,7 @@
-import { createBrowserSession, type BrowserSession } from '#recorder-runtime/browser/createBrowserSession.ts'
-import { playRecording } from '#recorder-runtime/playback/playRecording.ts'
-import { appendCapturedInteraction } from '#recorder-runtime/recording/actions/appendCapturedInteraction.ts'
-import { installRecordingInstruments } from '#recorder-runtime/recording/capture/installRecordingInstruments.ts'
+import { createBrowserSession, type BrowserSession } from '#runtime/browser/createBrowserSession.ts'
+import { playRecording } from '#runtime/playback/playRecording.ts'
+import { appendCapturedInteraction } from '#runtime/recording/actions/appendCapturedInteraction.ts'
+import { installRecordingInstruments } from '#runtime/recording/capture/installRecordingInstruments.ts'
 
 import { createRecordingSession, type RecordedAriaSnapshot, type RecordingDocument, type RecordingSession } from '@te/recorder-core'
 import { tryTo } from '@te/recorder-utils'

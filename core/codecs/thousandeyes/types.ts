@@ -1,4 +1,4 @@
-import type { RecordingDocument } from '#recorder-core/document/recordingDocumentSchema.ts'
+import type { RecordingDocument } from '#core/document/recordingDocumentSchema.ts'
 
 export type { ThousandEyesTransactionCodec, ThousandEyesTransactionScript }
 

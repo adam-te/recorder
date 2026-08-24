@@ -1,5 +1,5 @@
-import { recordingRuntimeSource } from '#recorder-runtime/injected/generated/recordingRuntimeSource.generated.ts'
-import { DISPOSE_OVERLAY_FUNCTION_NAME } from '#recorder-runtime/injected/protocol.ts'
+import { recordingRuntimeSource } from '#runtime/injected/generated/recordingRuntimeSource.generated.ts'
+import { DISPOSE_OVERLAY_FUNCTION_NAME } from '#runtime/injected/protocol.ts'
 import { type AriaSnapshot, renderAriaSnapshot } from '@te/aria'
 import type { AriaRuntime } from '@te/aria/browser'
 import { describe, expect, test } from 'vitest'

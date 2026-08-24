@@ -1,5 +1,5 @@
-import { createRecordingDocument } from '#recorder-core/document/createRecordingDocument.ts'
-import { recordingDocumentSchema, type RecordedAction, type RecordingDocument } from '#recorder-core/document/recordingDocumentSchema.ts'
+import { createRecordingDocument } from '#core/document/createRecordingDocument.ts'
+import { recordingDocumentSchema, type RecordedAction, type RecordingDocument } from '#core/document/recordingDocumentSchema.ts'
 
 export { createRecordingSession }
 export type { RecordingSession }

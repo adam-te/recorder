@@ -1,5 +1,5 @@
-import { installRecordingInstruments } from '#recorder-runtime/recording/capture/installRecordingInstruments.ts'
-import type { CapturedInteraction } from '#recorder-runtime/recording/capture/types.ts'
+import { installRecordingInstruments } from '#runtime/recording/capture/installRecordingInstruments.ts'
+import type { CapturedInteraction } from '#runtime/recording/capture/types.ts'
 import type { BrowserContext, Page } from 'playwright'
 
 import type { RecordingDocument, RecordingSession } from '@te/recorder-core'

@@ -7,7 +7,7 @@
   },
   "type": "module",
   "imports": {
-    "#recorder-cli/*": "./*"
+    "#cli/*": "./*"
   },
   "exports": {
     ".": "./index.ts"

@@ -3,6 +3,9 @@
   "version": "1.0.0",
   "private": true,
   "type": "module",
+  "imports": {
+    "#ui/*": "./*"
+  },
   "exports": {
     "./recording-overlay": "./recordingOverlay/index.ts",
     "./recording-editor": "./recordingEditor/index.ts",

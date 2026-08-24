@@ -1,6 +1,6 @@
-import { captureBrowserNavigation, type CapturedBrowserNavigation } from '#recorder-runtime/recording/capture/captureBrowserNavigation.ts'
-import type { CapturedInteraction } from '#recorder-runtime/recording/capture/types.ts'
-import { installInjectedRecorder } from '#recorder-runtime/recording/injected/installInjectedRecorder.ts'
+import { captureBrowserNavigation, type CapturedBrowserNavigation } from '#runtime/recording/capture/captureBrowserNavigation.ts'
+import type { CapturedInteraction } from '#runtime/recording/capture/types.ts'
+import { installInjectedRecorder } from '#runtime/recording/injected/installInjectedRecorder.ts'
 import type { BrowserContext, Page } from 'playwright'
 
 import { tryTo } from '@te/recorder-utils'

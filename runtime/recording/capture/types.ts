@@ -1,4 +1,4 @@
-import type { CapturedInteractionEvent, CapturedSelector, SerializedInteraction } from '#recorder-runtime/injected/protocol.ts'
+import type { CapturedInteractionEvent, CapturedSelector, SerializedInteraction } from '#runtime/injected/protocol.ts'
 import type { Frame } from 'playwright'
 
 export type { CapturedInteraction, CapturedInteractionEvent, CapturedSelector }
