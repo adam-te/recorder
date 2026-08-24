@@ -9,10 +9,10 @@ describe('CSS selector candidates', () => {
 
   const selectorCases: SelectorCase[] = [
     {
-      expected: ['[data-testid="save"]', 'button'],
+      expected: ['button'],
       html: '<button data-testid="save">Save</button>',
       interact: page => page.getByTestId('save').click(),
-      name: 'prefers data-testid selectors',
+      name: 'does not duplicate first-class test IDs as CSS',
     },
     {
       expected: ['#save', 'button'],
@@ -67,7 +67,13 @@ describe('CSS selector candidates', () => {
   test('limits candidates in preference order', async () => {
     const html = '<a data-testid="save" id="save" href="/save" name="save" class="primary">Save</a>'
 
-    expect(await getSelectors({ html, interact: page => page.getByTestId('save').click() })).toStrictEqual(['[data-testid="save"]', '#save', '[href="/save"]'])
+    expect(await getSelectors({ html, interact: page => page.getByTestId('save').click() })).toStrictEqual(['#save', '[href="/save"]'])
+  })
+
+  test('does not give non-standard test ID attributes special CSS priority', async () => {
+    const html = '<button data-cy="save" id="save">Save</button>'
+
+    expect(await getSelectors({ html, interact: page => page.locator('#save').click() })).toStrictEqual(['#save', '[data-cy="save"]', 'button'])
   })
 
   test('uses compound selectors when individual qualifiers are ambiguous', async () => {

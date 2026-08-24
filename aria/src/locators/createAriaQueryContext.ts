@@ -1,5 +1,5 @@
 import { getAriaRole, getElementAccessibleNameText, isElementHiddenForAria } from '../../vendor/playwright/injected/roleUtils.ts'
-import { getElementLabels, type ElementText } from '../../vendor/playwright/injected/selectorUtils.ts'
+import { elementMatchesText, elementText, getElementLabels, type ElementText } from '../../vendor/playwright/injected/selectorUtils.ts'
 import { normalizeWhiteSpace } from '../../vendor/playwright/isomorphic/stringUtils.ts'
 import type { AriaLocatorOptions } from '../types/browser.ts'
 import type { AriaLocatorStep } from '../types/locators.ts'
@@ -17,12 +17,30 @@ function createAriaQueryContext(options: AriaLocatorOptions): AriaQueryContext {
   const getShadowRoot = options.getShadowRoot ?? (element => element.shadowRoot)
   const isExcluded = options.excludeElement ?? (() => false)
 
-  return { findMatches, getAccessibleAncestors, getLabels, getName, getRole, isExcluded, isInaccessible }
+  return { findMatches, getAccessibleAncestors, getLabels, getName, getRole, getText, isExcluded, isInaccessible }
 
   function findMatches(scope: Element, step: AriaLocatorStep): Element[] {
     const elements = getElements(scope)
 
-    return step.method === 'role' ? elements.filter(element => getRole(element) === step.role && !isInaccessible(element) && (step.name === undefined || textMatches(getName(element), step.name, step.exact))) : elements.filter(element => getLabels(element).some(label => textMatches(label, step.text, step.exact)))
+    switch (step.method) {
+      case 'role':
+        return elements.filter(element => getRole(element) === step.role && !isInaccessible(element) && (step.name === undefined || textMatches(getName(element), step.name, step.exact)))
+      case 'label':
+        return elements.filter(element => getLabels(element).some(label => textMatches(label, step.text, step.exact)))
+      case 'text': {
+        const matcher = (text: ElementText): boolean => textMatches(text.normalized, step.text, step.exact)
+
+        return elements.filter(element => elementMatchesText(labelTextCache, element, matcher) === 'self')
+      }
+      case 'alt':
+      case 'placeholder':
+      case 'title':
+        return elements.filter(element => {
+          const value = element.getAttribute(step.method)
+
+          return value !== null && textMatches(value, step.text, step.exact)
+        })
+    }
   }
 
   function getAccessibleAncestors(element: Element): Element[] {
@@ -84,6 +102,10 @@ function createAriaQueryContext(options: AriaLocatorOptions): AriaQueryContext {
     return role
   }
 
+  function getText(element: Element): string {
+    return elementText(labelTextCache, element).normalized
+  }
+
   function isInaccessible(element: Element): boolean {
     if (inaccessibleCache.has(element)) {
       return inaccessibleCache.get(element) ?? false
@@ -131,6 +153,7 @@ interface AriaQueryContext {
   getLabels: (element: Element) => string[]
   getName: (element: Element) => string
   getRole: (element: Element) => string | null
+  getText: (element: Element) => string
   isExcluded: (element: Element) => boolean
   isInaccessible: (element: Element) => boolean
 }

@@ -13,14 +13,18 @@ function formatPlaywrightLocator(locator: RecordedLocator, options: FormatPlaywr
     source = scope === 'page' ? appendCall(source, `locator(${quoteTypeScriptString(frameSelector)}).contentFrame()`) : appendCall(source, `frameLocator(${quoteTypeScriptString(frameSelector)})`)
   }
 
-  if (locator.kind === 'css') {
-    return appendCall(source, `locator(${quoteTypeScriptString(locator.value)})`)
+  if (locator.kind !== 'aria') {
+    const method = locator.kind === 'css' ? 'locator' : 'getByTestId'
+
+    return appendCall(source, `${method}(${quoteTypeScriptString(locator.value)})`)
   }
 
   for (const step of locator.steps) {
-    if (step.method === 'label') {
+    if (step.method !== 'role') {
       const stepOptions = step.exact === undefined ? '' : `, { exact: ${step.exact} }`
-      source = appendCall(source, `getByLabel(${quoteTypeScriptString(step.text)}${stepOptions})`)
+      const method = { alt: 'getByAltText', label: 'getByLabel', placeholder: 'getByPlaceholder', text: 'getByText', title: 'getByTitle' }[step.method]
+
+      source = appendCall(source, `${method}(${quoteTypeScriptString(step.text)}${stepOptions})`)
       continue
     }
 

@@ -24,7 +24,15 @@ describe('recording playback', () => {
     expect(document).toMatchObject({
       actions: [
         { kind: 'goto', pageUrl: 'about:blank', url: 'https://recorder.test/content' },
-        { kind: 'click', pageUrl: 'https://recorder.test/content' },
+        {
+          kind: 'click',
+          locatorCandidates: [
+            { kind: 'test-id', value: 'target' },
+            { kind: 'aria', steps: [{ method: 'role', name: 'Click', role: 'button' }] },
+            { kind: 'css', value: 'button' },
+          ],
+          pageUrl: 'https://recorder.test/content',
+        },
       ],
       startUrl: 'https://recorder.test/content',
     })
@@ -42,6 +50,25 @@ describe('recording playback', () => {
       { key: 'Enter', kind: 'press', pageUrl: 'https://recorder.test/content' },
     ])
     expect(await playbackPage.locator('body').getAttribute('data-key')).toBe('Enter')
+  })
+
+  test('uses test IDs only when they are unique', async () => {
+    const html = `<button data-testid="action" id="target" onclick="document.body.dataset.clicked = 'true'">Save</button><button data-testid="action">Cancel</button>`
+    const { document, playbackPage } = await browser.recordAndPlay({ html, interact: page => page.locator('#target').click() })
+    const click = getOnlyAction(document, 'click')
+
+    expect(click.locatorCandidates[0]).toStrictEqual({ kind: 'aria', steps: [{ method: 'role', name: 'Save', role: 'button' }] })
+    expect(await playbackPage.locator('body').getAttribute('data-clicked')).toBe('true')
+  })
+
+  test('leaves non-standard test attributes to CSS selection', async () => {
+    const html = `<div data-cy="target" id="target" style="height: 10px; width: 10px" onclick="document.body.dataset.clicked = 'true'"></div>`
+    const { document, playbackPage } = await browser.recordAndPlay({ html, interact: page => page.locator('#target').click() })
+    const click = getOnlyAction(document, 'click')
+
+    expect(click.locatorCandidates[0]).toStrictEqual({ kind: 'css', value: '#target' })
+    expect(click.locatorCandidates[1]).toStrictEqual({ kind: 'css', value: '[data-cy="target"]' })
+    expect(await playbackPage.locator('body').getAttribute('data-clicked')).toBe('true')
   })
 
   test('records and plays back interactions inside frames', async () => {
@@ -103,9 +130,29 @@ describe('recording playback', () => {
 
 const locatorPlaybackCases: LocatorPlaybackCase[] = [
   {
+    expectedLocator: { kind: 'aria', steps: [{ method: 'alt', text: 'Target' }] },
+    html: `<div id="target" alt="Target" style="height: 10px; width: 10px" onclick="document.body.dataset.clicked = 'true'"></div>`,
+    name: 'selects and plays back alt-text locators',
+  },
+  {
     expectedLocator: { kind: 'aria', steps: [{ method: 'label', text: 'Password' }] },
     html: `<div id="target" aria-label="Password" onclick="document.body.dataset.clicked = 'true'">Password field</div>`,
     name: 'selects and plays back label locators',
+  },
+  {
+    expectedLocator: { kind: 'aria', steps: [{ method: 'placeholder', text: 'Search' }] },
+    html: `<div id="target" placeholder="Search" style="height: 10px; width: 10px" onclick="document.body.dataset.clicked = 'true'"></div>`,
+    name: 'selects and plays back placeholder locators',
+  },
+  {
+    expectedLocator: { kind: 'aria', steps: [{ method: 'text', text: 'Target text' }] },
+    html: `<div id="target" onclick="document.body.dataset.clicked = 'true'">Target text</div>`,
+    name: 'selects and plays back text locators',
+  },
+  {
+    expectedLocator: { kind: 'aria', steps: [{ method: 'title', text: 'Target title' }] },
+    html: `<div id="target" title="Target title" style="height: 10px; width: 10px" onclick="document.body.dataset.clicked = 'true'"></div>`,
+    name: 'selects and plays back title locators',
   },
   {
     expectedLocator: {
@@ -122,6 +169,11 @@ const locatorPlaybackCases: LocatorPlaybackCase[] = [
     expectedLocator: { kind: 'aria', steps: [{ exact: true, method: 'role', name: 'Save', role: 'button' }] },
     html: `<button id="target" onclick="document.body.dataset.clicked = 'true'">Save</button><button>Save changes</button>`,
     name: 'uses exact matching when default matching is ambiguous',
+  },
+  {
+    expectedLocator: { kind: 'aria', steps: [{ exact: true, method: 'text', text: 'Save' }] },
+    html: `<div id="target" onclick="document.body.dataset.clicked = 'true'">Save</div><div>Save changes</div>`,
+    name: 'uses exact matching for text locators when needed',
   },
   {
     expectedLocator: {

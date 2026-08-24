@@ -13,12 +13,17 @@ function resolveRecordedLocator(page: Page, locator: RecordedLocator): Locator {
       current.steps.reduce<LocatorScope>(
         (currentScope, step) =>
           matchBy(step, 'method', {
+            alt: value => currentScope.getByAltText(value.text, { exact: value.exact }),
             label: value => currentScope.getByLabel(value.text, { exact: value.exact }),
+            placeholder: value => currentScope.getByPlaceholder(value.text, { exact: value.exact }),
             role: value => currentScope.getByRole(value.role as AriaRole, { exact: value.exact, name: value.name }),
+            text: value => currentScope.getByText(value.text, { exact: value.exact }),
+            title: value => currentScope.getByTitle(value.text, { exact: value.exact }),
           }),
         scope,
       ) as Locator,
     css: current => scope.locator(current.value),
+    'test-id': current => scope.getByTestId(current.value),
   })
 }
 

@@ -108,7 +108,7 @@ function generateSelectorCandidates(element: Element, maxCandidates = 3): Captur
 
   function getStableFragments(value: Element): string[] {
     const attributes = [...value.attributes].filter(attribute => attribute.value && isAllowedSelectorAttribute(attribute, value))
-    const testAttributeNames = ['data-testid', 'data-test-id', 'data-test', 'data-cy', 'data-qa']
+    const testAttributeNames = ['data-testid']
     const semanticAttributeNames = ['href', 'name', 'aria-label', 'placeholder', 'title', 'alt', 'role', 'type']
     const testAttributes = getNamedAttributes(testAttributeNames)
     const semanticAttributes = [...getNamedAttributes(semanticAttributeNames), ...attributes.filter(attribute => attribute.name.startsWith('aria-') && !semanticAttributeNames.includes(attribute.name))]

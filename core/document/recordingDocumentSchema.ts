@@ -5,8 +5,20 @@ export { recordedActionSchema, recordedAriaSnapshotSchema, recordedLocatorSchema
 export type { RecordedAction, RecordedAriaNode, RecordedAriaSnapshot, RecordedLocator, RecordedValue, RecordingDocument }
 
 const recordedLocatorContextSchema = { framePath: z.array(z.string().min(1)).optional() }
-const recordedAriaLocatorStepSchema = z.discriminatedUnion('method', [z.object({ exact: z.boolean().optional(), method: z.literal('label'), text: z.string().min(1) }), z.object({ exact: z.boolean().optional(), method: z.literal('role'), name: z.string().min(1).optional(), role: z.string().min(1) })])
-const recordedLocatorSchema = z.discriminatedUnion('kind', [z.object({ ...recordedLocatorContextSchema, kind: z.literal('aria'), steps: z.array(recordedAriaLocatorStepSchema).min(1) }), z.object({ ...recordedLocatorContextSchema, kind: z.literal('css'), value: z.string().min(1) })])
+const recordedTextLocatorStepSchema = <Method extends 'alt' | 'label' | 'placeholder' | 'text' | 'title'>(method: Method) => z.object({ exact: z.boolean().optional(), method: z.literal(method), text: z.string().min(1) })
+const recordedAriaLocatorStepSchema = z.discriminatedUnion('method', [
+  recordedTextLocatorStepSchema('alt'),
+  recordedTextLocatorStepSchema('label'),
+  recordedTextLocatorStepSchema('placeholder'),
+  recordedTextLocatorStepSchema('text'),
+  recordedTextLocatorStepSchema('title'),
+  z.object({ exact: z.boolean().optional(), method: z.literal('role'), name: z.string().min(1).optional(), role: z.string().min(1) }),
+])
+const recordedLocatorSchema = z.discriminatedUnion('kind', [
+  z.object({ ...recordedLocatorContextSchema, kind: z.literal('aria'), steps: z.array(recordedAriaLocatorStepSchema).min(1) }),
+  z.object({ ...recordedLocatorContextSchema, kind: z.literal('css'), value: z.string().min(1) }),
+  z.object({ ...recordedLocatorContextSchema, kind: z.literal('test-id'), value: z.string().min(1) }),
+])
 
 const recordedValueSchema = z.discriminatedUnion('kind', [z.object({ kind: z.literal('plain-text'), value: z.string() }), z.object({ kind: z.literal('secret'), name: z.string().min(1) })])
 

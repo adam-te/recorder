@@ -1,7 +1,7 @@
 import type { AriaLocatorStep, AriaSnapshot } from '@te/aria'
 
 export { DISPOSE_OVERLAY_FUNCTION_NAME, INTERACTION_BINDING_NAME, OVERLAY_CONFIG_NAME, RECORDER_UI_ATTRIBUTE, SELECTOR_GENERATOR_NAME, STOP_BINDING_NAME }
-export type { CapturedAriaSelector, CapturedAriaSelectorStep, CapturedCssSelector, CapturedInteractionEvent, CapturedSelector, SerializedInteraction }
+export type { CapturedAriaSelector, CapturedAriaSelectorStep, CapturedCssSelector, CapturedInteractionEvent, CapturedSelector, CapturedTestIdSelector, SerializedInteraction }
 
 const DISPOSE_OVERLAY_FUNCTION_NAME = '__thousandEyesRecorderDisposeOverlay'
 const INTERACTION_BINDING_NAME = '__thousandEyesRecorderCaptureInteraction'
@@ -40,6 +40,11 @@ interface CapturedCssSelector {
   value: string
 }
 
+interface CapturedTestIdSelector {
+  kind: 'test-id'
+  value: string
+}
+
 interface SerializedInteraction {
   ariaSnapshot: AriaSnapshot
   event: CapturedInteractionEvent
@@ -49,4 +54,4 @@ interface SerializedInteraction {
 
 type CapturedInteractionEvent = CapturedChangeEvent | CapturedClickEvent | CapturedInputEvent | CapturedKeydownEvent
 type CapturedAriaSelectorStep = AriaLocatorStep
-type CapturedSelector = CapturedAriaSelector | CapturedCssSelector
+type CapturedSelector = CapturedAriaSelector | CapturedCssSelector | CapturedTestIdSelector

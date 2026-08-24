@@ -6,6 +6,7 @@ describe('Playwright locator formatting', () => {
   test('formats locators with a page receiver by default', () => {
     expect(formatPlaywrightLocator({ kind: 'aria', steps: [{ method: 'role', name: 'Save', role: 'button' }] })).toBe('page.getByRole("button", { name: "Save" })')
     expect(formatPlaywrightLocator({ kind: 'css', value: 'body' })).toBe('page.locator("body")')
+    expect(formatPlaywrightLocator({ kind: 'test-id', value: 'save' })).toBe('page.getByTestId("save")')
   })
 
   test('formats locators without a receiver for an implicit page scope', () => {
@@ -27,6 +28,15 @@ describe('Playwright locator formatting', () => {
         ],
       }),
     ).toBe('page.getByRole("group", { name: "Account", exact: true }).getByLabel("Password", { exact: false })')
+  })
+
+  test.each([
+    { expected: 'page.getByAltText("Logo")', method: 'alt' as const },
+    { expected: 'page.getByPlaceholder("Search")', method: 'placeholder' as const },
+    { expected: 'page.getByText("Save")', method: 'text' as const },
+    { expected: 'page.getByTitle("Help")', method: 'title' as const },
+  ])('formats $method locators', ({ expected, method }) => {
+    expect(formatPlaywrightLocator({ kind: 'aria', steps: [{ method, text: method === 'alt' ? 'Logo' : method === 'placeholder' ? 'Search' : method === 'text' ? 'Save' : 'Help' }] })).toBe(expected)
   })
 
   test('uses executable frame traversal with a page receiver', () => {

@@ -24,6 +24,7 @@ function summarizeAction(action: RecordedAction): string {
 function locatorTarget(locator: RecordedLocator | undefined): string {
   if (!locator) return 'element'
   if (locator.kind === 'css') return locator.value
+  if (locator.kind === 'test-id') return `test ID “${locator.value}”`
 
   const step = locator.steps.at(-1)
   if (!step) return 'element'

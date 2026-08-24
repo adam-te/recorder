@@ -41,9 +41,20 @@ function getTargetSteps(query: AriaQueryContext, element: Element): AriaLocatorS
   const role = query.getRole(element)
   const namedRole = name && role ? [{ method: 'role' as const, name, role }] : []
   const labels = query.getLabels(element).map(text => ({ method: 'label' as const, text }))
+  const alt = getAttributeStep('alt')
+  const placeholder = getAttributeStep('placeholder')
+  const text = query.getText(element)
+  const textSteps = text ? [{ method: 'text' as const, text }] : []
+  const title = getAttributeStep('title')
   const unnamedRole = role ? [{ method: 'role' as const, role }] : []
 
-  return [...namedRole, ...labels, ...unnamedRole]
+  return [...namedRole, ...labels, ...alt, ...placeholder, ...textSteps, ...title, ...unnamedRole]
+
+  function getAttributeStep(method: 'alt' | 'placeholder' | 'title'): AriaLocatorStep[] {
+    const text = element.getAttribute(method)
+
+    return text ? [{ method, text }] : []
+  }
 }
 
 function uniquelyMatchesTarget(query: AriaQueryContext, target: Element, candidate: AriaLocatorCandidate): boolean {
@@ -53,7 +64,7 @@ function uniquelyMatchesTarget(query: AriaQueryContext, target: Element, candida
 }
 
 function withNecessaryExactness(steps: AriaLocatorStep[]): AriaLocatorCandidate[] {
-  const exactableStepIndexes = steps.flatMap((step, index) => (step.method === 'label' || step.name !== undefined ? [index] : []))
+  const exactableStepIndexes = steps.flatMap((step, index) => (step.method !== 'role' || step.name !== undefined ? [index] : []))
   const candidates: AriaLocatorCandidate[] = []
 
   for (let exactCount = 0; exactCount <= exactableStepIndexes.length; exactCount++) {
