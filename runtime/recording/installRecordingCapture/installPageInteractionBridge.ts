@@ -3,6 +3,7 @@ import { RECORDER_UI_ATTRIBUTE } from '#recorder-runtime/recording/injected/cons
 import { generateSelectorCandidates, SELECTOR_GENERATOR_NAME } from '#recorder-runtime/recording/injected/generateSelectorCandidates.ts'
 import { recordPageInteractions } from '#recorder-runtime/recording/injected/recordPageInteractions.ts'
 import type { CapturedInteractionEvent, CapturedSelector, SerializedInteraction } from '#recorder-runtime/recording/injected/types.ts'
+import type { AriaSnapshot } from '@te/aria'
 import type { BrowserContext, Frame, Page } from 'playwright'
 
 import { tryTo } from '@te/recorder-utils'
@@ -46,11 +47,10 @@ function createInjectedRecorderSource(): string {
 }
 
 interface CapturedInteraction {
-  ariaSnapshot: string
+  ariaSnapshot: AriaSnapshot
   event: CapturedInteractionEvent
   frame: Frame
   pageUrl: string
-  ref?: string
   selectors: CapturedSelector[]
 }
 

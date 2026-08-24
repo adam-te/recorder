@@ -1,4 +1,4 @@
-import type { AriaLocatorStep } from '@te/aria'
+import type { AriaLocatorStep, AriaSnapshot } from '@te/aria'
 
 export type { CapturedAriaSelector, CapturedAriaSelectorStep, CapturedCssSelector, CapturedInteractionEvent, CapturedSelector, SerializedInteraction }
 
@@ -33,9 +33,8 @@ interface CapturedCssSelector {
 }
 
 interface SerializedInteraction {
-  ariaSnapshot: string
+  ariaSnapshot: AriaSnapshot
   event: CapturedInteractionEvent
-  ref?: string
   selectors: CapturedSelector[]
 }
 

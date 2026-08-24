@@ -1,7 +1,9 @@
 # ARIA browser utilities
 
-Browser-side utilities for generating Playwright-compatible AI ARIA snapshots and semantic locator candidates. Both features use vendored TypeScript accessibility and selector utilities from the Playwright version declared by this package's `playwright` development dependency; the locator candidate selection algorithm remains local.
+Browser-side utilities for generating Playwright-compatible AI ARIA snapshots and semantic locator candidates. Snapshots are JSON-safe, versioned tree DTOs containing per-node `ariaVisible` state and an optional `targetRef`; `renderAriaSnapshot` reconstructs Playwright's AI-mode YAML from a stored DTO.
+
+Both features use vendored TypeScript accessibility and selector utilities from the Playwright version declared by this package's `playwright` development dependency; the locator candidate selection algorithm remains local. The snapshot generator accepts the event's element-only composed path so it can select the nearest ARIA-visible, non-generic ancestor with a Playwright ref at capture time.
 
 Run `npm run generate:aria` in this workspace to refresh the committed Playwright sources, or run the command with the same name at the repository root to refresh both the sources and downstream injected runtime. The generator downloads the pinned Apache-2.0 Playwright sources and verifies that every consumer uses the same version. Runtime consumers do not need network access.
 
-The locator generator accepts callbacks for excluding application-owned elements and traversing closed shadow roots. The upstream Playwright snapshot generator accepts only the target element and traverses open shadow roots. The `@te/aria/browser` entry point is available to consumers that want to create a browser bundle.
+The locator generator accepts callbacks for excluding application-owned elements and traversing closed shadow roots. The snapshot tree follows Playwright's open-shadow-root traversal; the `@te/aria/browser` entry point is available to consumers that want to create a browser bundle.

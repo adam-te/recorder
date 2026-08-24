@@ -1,7 +1,8 @@
+import type { AriaNode } from '@te/aria'
 import { z } from 'zod'
 
-export { recordedActionSchema, recordedLocatorSchema, recordedValueSchema, recordingDocumentSchema }
-export type { RecordedAction, RecordedLocator, RecordedValue, RecordingDocument }
+export { recordedActionSchema, recordedAriaSnapshotSchema, recordedLocatorSchema, recordedValueSchema, recordingDocumentSchema }
+export type { RecordedAction, RecordedAriaNode, RecordedAriaSnapshot, RecordedLocator, RecordedValue, RecordingDocument }
 
 const recordedLocatorContextSchema = { framePath: z.array(z.string().min(1)).optional() }
 const recordedAriaLocatorStepSchema = z.discriminatedUnion('method', [z.object({ exact: z.boolean().optional(), method: z.literal('label'), text: z.string().min(1) }), z.object({ exact: z.boolean().optional(), method: z.literal('role'), name: z.string().min(1).optional(), role: z.string().min(1) })])
@@ -12,7 +13,31 @@ const recordedValueSchema = z.discriminatedUnion('kind', [z.object({ kind: z.lit
 const recordedModifierSchema = z.enum(['Alt', 'Control', 'Meta', 'Shift'])
 const recordedPositionSchema = z.object({ x: z.number(), y: z.number() })
 const recordedActionContextSchema = { pageUrl: z.url() }
-const recordedActionLocatorContextSchema = { ariaSnapshot: z.string().optional(), locatorCandidates: z.array(recordedLocatorSchema).min(1), ref: z.string().min(1).optional() }
+const recordedAriaRoleSchema = z
+  .string()
+  .min(1)
+  .transform(value => value as AriaNode['role'])
+const recordedAriaNodeSchema: z.ZodType<RecordedAriaNode> = z.lazy(() =>
+  z.object({
+    active: z.boolean().optional(),
+    ariaVisible: z.boolean(),
+    box: z.object({ cursor: z.string().optional(), inline: z.boolean(), visible: z.boolean() }),
+    checked: z.union([z.boolean(), z.literal('mixed')]).optional(),
+    children: z.array(z.union([recordedAriaNodeSchema, z.string()])),
+    disabled: z.boolean().optional(),
+    expanded: z.boolean().optional(),
+    level: z.number().optional(),
+    name: z.string(),
+    pressed: z.union([z.boolean(), z.literal('mixed')]).optional(),
+    props: z.record(z.string(), z.string()),
+    receivesPointerEvents: z.boolean(),
+    ref: z.string().min(1).optional(),
+    role: recordedAriaRoleSchema,
+    selected: z.boolean().optional(),
+  }),
+)
+const recordedAriaSnapshotSchema = z.object({ playwrightVersion: z.string().min(1), root: recordedAriaNodeSchema, schemaVersion: z.literal(1), targetRef: z.string().min(1).optional() })
+const recordedActionLocatorContextSchema = { ariaSnapshot: recordedAriaSnapshotSchema.optional(), locatorCandidates: z.array(recordedLocatorSchema).min(1) }
 
 const recordedActionSchema = z.discriminatedUnion('kind', [
   z.object({ ...recordedActionContextSchema, kind: z.literal('goto'), url: z.url() }),
@@ -37,6 +62,11 @@ const recordingDocumentSchema = z.object({
 })
 
 type RecordedAction = z.infer<typeof recordedActionSchema>
+type RecordedAriaSnapshot = z.infer<typeof recordedAriaSnapshotSchema>
 type RecordedLocator = z.infer<typeof recordedLocatorSchema>
 type RecordedValue = z.infer<typeof recordedValueSchema>
 type RecordingDocument = z.infer<typeof recordingDocumentSchema>
+
+interface RecordedAriaNode extends Omit<AriaNode, 'children'> {
+  children: (RecordedAriaNode | string)[]
+}

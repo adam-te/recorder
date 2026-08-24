@@ -1,4 +1,6 @@
-export type { AriaLocatorCandidate, AriaLocatorOptions, AriaLocatorStep, AriaRuntime, AriaSnapshot, AriaSnapshotOptions }
+import type { AriaNode as PlaywrightAriaNode } from './vendor/playwright/isomorphic/ariaSnapshot.ts'
+
+export type { AriaLocatorCandidate, AriaLocatorOptions, AriaLocatorStep, AriaNode, AriaRuntime, AriaSnapshot, AriaSnapshotOptions }
 
 interface AriaLabelLocatorStep {
   exact?: boolean
@@ -20,15 +22,24 @@ interface AriaLocatorCandidate {
 interface AriaRuntime {
   generateAriaLocatorCandidates: (options: AriaLocatorOptions) => AriaLocatorCandidate[]
   generateAriaSnapshot: (options: AriaSnapshotOptions) => AriaSnapshot
+  renderAriaSnapshot: (snapshot: AriaSnapshot) => string
 }
 
 interface AriaSnapshot {
-  snapshot: string
+  playwrightVersion: string
+  root: AriaNode
+  schemaVersion: 1
   targetRef?: string
+}
+
+interface AriaNode extends Omit<PlaywrightAriaNode, 'children'> {
+  ariaVisible: boolean
+  children: (AriaNode | string)[]
 }
 
 interface AriaSnapshotOptions {
   target: Element
+  targetPath?: Element[]
 }
 
 interface AriaLocatorOptions extends AriaSnapshotOptions {

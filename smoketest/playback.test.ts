@@ -1,3 +1,4 @@
+import { renderAriaSnapshot } from '@te/aria'
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, test } from 'vitest'
 
 import { playTestRecording, recordTest, useBrowserTestFixture } from './utils.ts'
@@ -55,10 +56,9 @@ describe('recording playback', () => {
     }
     const document = await recordTest({ documents, fixture, interact: page => page.frameLocator('#action-frame').locator('#target').click(), startUrl: 'https://recorder.test/content' })
 
-    expect(document?.actions).toStrictEqual([
+    expect(document?.actions).toMatchObject([
       { kind: 'goto', pageUrl: 'about:blank', url: 'https://recorder.test/content' },
       {
-        ariaSnapshot: '- button "Click" [active] [ref=e2]',
         kind: 'click',
         locatorCandidates: [
           { framePath: ['#action-frame'], kind: 'aria', steps: [{ exact: true, method: 'role', name: 'Click', role: 'button' }] },
@@ -66,9 +66,12 @@ describe('recording playback', () => {
           { framePath: ['#action-frame'], kind: 'css', value: 'button' },
         ],
         pageUrl: 'https://recorder.test/content',
-        ref: 'e2',
       },
     ])
+    const recordedSnapshot = document?.actions[1] && 'ariaSnapshot' in document.actions[1] ? document.actions[1].ariaSnapshot : undefined
+
+    expect(recordedSnapshot?.targetRef).toMatch(/^e\d+$/)
+    expect(recordedSnapshot && renderAriaSnapshot(recordedSnapshot)).toBe(`- button "Click" [active] [ref=${recordedSnapshot?.targetRef}]`)
 
     const playbackPage = await playTestRecording({ document, documents, fixture })
 
