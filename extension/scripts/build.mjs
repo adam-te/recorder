@@ -10,7 +10,7 @@ const formatWebviewAssetsPlugin = {
     buildContext.onEnd(async result => {
       if (result.errors.length > 0) return
 
-      await Promise.all(['media/recordingEditor.css', 'media/recordingEditor.js'].map(formatAsset))
+      await Promise.all(['dist/webview/recordingEditor.css', 'dist/webview/recordingEditor.js'].map(formatAsset))
     })
   },
 }
@@ -29,7 +29,7 @@ const configurations = [
     bundle: true,
     entryPoints: ['webview/recordingEditor.ts'],
     format: 'esm',
-    outfile: 'media/recordingEditor.js',
+    outfile: 'dist/webview/recordingEditor.js',
     platform: 'browser',
     plugins: [formatWebviewAssetsPlugin],
     sourcemap,

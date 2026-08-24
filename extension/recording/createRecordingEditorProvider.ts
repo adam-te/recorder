@@ -19,14 +19,14 @@ function createRecordingEditorProvider(args: CreateRecordingEditorProviderArgs):
 }
 
 function resolveRecordingEditor(args: ResolveRecordingEditorArgs): void {
-  const mediaDirectory = Uri.joinPath(args.context.extensionUri, 'media')
+  const webviewDirectory = Uri.joinPath(args.context.extensionUri, 'dist', 'webview')
   const nonce = randomUUID()
   let selectedActionIndex = 0
   let decisionInProgress = false
   let disposed = false
 
-  args.panel.webview.options = { enableScripts: true, localResourceRoots: [mediaDirectory] }
-  args.panel.webview.html = getEditorHtml({ nonce, scriptUri: args.panel.webview.asWebviewUri(Uri.joinPath(mediaDirectory, 'recordingEditor.js')), styleUri: args.panel.webview.asWebviewUri(Uri.joinPath(mediaDirectory, 'recordingEditor.css')), webviewSource: args.panel.webview.cspSource })
+  args.panel.webview.options = { enableScripts: true, localResourceRoots: [webviewDirectory] }
+  args.panel.webview.html = getEditorHtml({ nonce, scriptUri: args.panel.webview.asWebviewUri(Uri.joinPath(webviewDirectory, 'recordingEditor.js')), styleUri: args.panel.webview.asWebviewUri(Uri.joinPath(webviewDirectory, 'recordingEditor.css')), webviewSource: args.panel.webview.cspSource })
 
   const disposables = [
     args.panel.webview.onDidReceiveMessage(handleMessage),
