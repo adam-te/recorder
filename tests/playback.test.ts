@@ -30,9 +30,9 @@ describe('recording playback', () => {
       ],
       startUrl: 'https://recorder.test/content',
     })
-    expect(document?.actions[1] && 'locatorCandidates' in document.actions[1] ? document.actions[1].locatorCandidates.length : 0).toBeGreaterThan(0)
+    expect(document.actions[1] && 'locatorCandidates' in document.actions[1] ? document.actions[1].locatorCandidates.length : 0).toBeGreaterThan(0)
 
-    const playbackPage = await playTestRecording({ document: { ...document!, startUrl: 'https://metadata.test/not-used' }, fixture, html })
+    const playbackPage = await playTestRecording({ document: { ...document, startUrl: 'https://metadata.test/not-used' }, fixture, html })
 
     expect(await playbackPage.locator('body').getAttribute('data-clicked')).toBe('true')
   })
@@ -41,11 +41,11 @@ describe('recording playback', () => {
     const html = `<input id="search" onkeydown="document.body.dataset.key = event.key">`
     const document = await recordTest({ fixture, html, interact: page => page.locator('#search').press('Enter'), startUrl: 'https://recorder.test/content' })
 
-    expect(document?.actions).toMatchObject([
+    expect(document.actions).toMatchObject([
       { kind: 'goto', url: 'https://recorder.test/content' },
       { key: 'Enter', kind: 'press', pageUrl: 'https://recorder.test/content' },
     ])
-    expect(document?.actions[1] && 'locatorCandidates' in document.actions[1] ? document.actions[1].locatorCandidates.length : 0).toBeGreaterThan(0)
+    expect(document.actions[1] && 'locatorCandidates' in document.actions[1] ? document.actions[1].locatorCandidates.length : 0).toBeGreaterThan(0)
 
     const playbackPage = await playTestRecording({ document, fixture, html })
 
@@ -68,7 +68,7 @@ describe('recording playback', () => {
       startUrl: 'https://recorder.test/content',
     })
 
-    expect(document?.actions).toMatchObject([
+    expect(document.actions).toMatchObject([
       { kind: 'goto', pageUrl: 'about:blank', url: 'https://recorder.test/content' },
       {
         kind: 'click',
@@ -84,8 +84,8 @@ describe('recording playback', () => {
 
     expect(recordedSnapshot?.actionIndex).toBe(1)
     expect(recordedSnapshot?.ariaSnapshot).toMatchObject({ role: 'fragment' })
-    expect(document?.actions[1]).not.toHaveProperty('ariaSnapshot')
-    expect(document?.actions[1]).not.toHaveProperty('targetRef')
+    expect(document.actions[1]).not.toHaveProperty('ariaSnapshot')
+    expect(document.actions[1]).not.toHaveProperty('targetRef')
     expect(target?.ref).toMatch(/^e\d+$/)
     expect(renderAriaSnapshot(recordedSnapshot!.ariaSnapshot)).toBe(`- button "Click" [active] [ref=${target?.ref}]`)
 
@@ -96,7 +96,7 @@ describe('recording playback', () => {
 
   test.each(locatorPlaybackCases)('$name', async ({ expectedClicked, expectedLocator, html, interact }) => {
     const document = await recordTest({ fixture, html, interact, startUrl: 'https://recorder.test/content' })
-    const action = document?.actions[1]
+    const action = document.actions[1]
 
     expect(action && 'locatorCandidates' in action ? action.locatorCandidates[0] : undefined).toStrictEqual(expectedLocator)
 
@@ -108,7 +108,7 @@ describe('recording playback', () => {
   test('does not generate ARIA locators through hidden shadow hosts', async () => {
     const html = `<div id="host" aria-hidden="true"></div><script>document.querySelector('#host').attachShadow({ mode: 'open' }).innerHTML = '<button id="target" onclick="document.body.dataset.clicked = true">Save</button>'</script>`
     const document = await recordTest({ fixture, html, interact: page => page.locator('#target').click(), startUrl: 'https://recorder.test/content' })
-    const action = document?.actions[1]
+    const action = document.actions[1]
 
     expect(action && 'locatorCandidates' in action ? action.locatorCandidates[0] : undefined).toMatchObject({ kind: 'css' })
 

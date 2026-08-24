@@ -68,11 +68,11 @@ describe('navigation recording', () => {
       startUrl: 'https://recorder.test/content',
     })
 
-    expect(document?.actions).toStrictEqual([
+    expect(document.actions).toStrictEqual([
       { kind: 'goto', pageUrl: 'about:blank', url: 'https://recorder.test/content' },
       { kind: 'goto', pageUrl: 'https://recorder.test/content', url: 'https://recorder.test/after' },
     ])
-    expect(document?.startUrl).toBe('https://recorder.test/content')
+    expect(document.startUrl).toBe('https://recorder.test/content')
 
     const playbackPage = await playTestRecording({ document, documents, fixture })
 

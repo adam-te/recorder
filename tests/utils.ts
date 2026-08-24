@@ -48,23 +48,25 @@ function createTestRecorder(args: CreateTestRecorderArgs): Recorder {
 }
 
 async function playTestRecording(args: PlayTestRecordingArgs): Promise<Page> {
-  if (!args.document) {
-    throw new Error('Expected the recorder to produce a document.')
-  }
-
   const page = await createPage({ context: args.fixture.context, documents: args.documents, html: args.html })
 
   await playRecording({ document: args.document, session: { browser: args.fixture.browser, close: async () => undefined, context: args.fixture.context, page } })
   return page
 }
 
-async function recordTest(args: RecordTestArgs): Promise<RecordingDocument | undefined> {
+async function recordTest(args: RecordTestArgs): Promise<RecordingDocument> {
   const page = await createPage({ context: args.fixture.context, documents: args.documents, html: args.html })
   const recorder = createTestRecorder({ browser: args.fixture.browser, context: args.fixture.context, page })
 
   await recorder.start({ onDocumentChanged: args.onDocumentChanged, onSnapshotCaptured: args.onSnapshotCaptured, startUrl: args.startUrl })
   await args.interact(page)
-  return recorder.stop()
+  const document = await recorder.stop()
+
+  if (!document) {
+    throw new Error('Expected the recorder to produce a document.')
+  }
+
+  return document
 }
 
 function useBrowserTestFixture(): BrowserTestFixture {
@@ -122,7 +124,7 @@ interface BrowserTestFixture {
 }
 
 interface PlayTestRecordingArgs {
-  document: RecordingDocument | undefined
+  document: RecordingDocument
   documents?: Record<string, string>
   fixture: BrowserTestFixture
   html?: string
