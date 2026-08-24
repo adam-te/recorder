@@ -72,6 +72,7 @@ async function recordTest(args: RecordTestArgs): Promise<RecordingDocument> {
 
 function useBrowserTestHarness(): BrowserTestHarness {
   const fixture = {} as BrowserTestFixture
+  const record = (args: BrowserRecordArgs): Promise<RecordingDocument> => recordTest({ ...args, fixture, startUrl: args.startUrl ?? defaultStartUrl })
 
   beforeAll(async () => {
     fixture.browser = await chromium.launch({ headless: true })
@@ -93,7 +94,13 @@ function useBrowserTestHarness(): BrowserTestHarness {
     },
     page: args => createPage({ ...args, context: fixture.context }),
     play: args => playTestRecording({ ...args, fixture }),
-    record: args => recordTest({ ...args, fixture, startUrl: args.startUrl ?? defaultStartUrl }),
+    record,
+    recordAndPlay: async args => {
+      const document = await record(args)
+      const playbackPage = await playTestRecording({ document, documents: args.documents, fixture, html: args.html })
+
+      return { document, playbackPage }
+    },
   }
 }
 
@@ -137,8 +144,11 @@ interface BrowserTestHarness {
   readonly context: BrowserContext
   page: (args: Omit<CreatePageArgs, 'context'>) => Promise<Page>
   play: (args: Omit<PlayTestRecordingArgs, 'fixture'>) => Promise<Page>
-  record: (args: Omit<RecordTestArgs, 'fixture' | 'startUrl'> & { startUrl?: string }) => Promise<RecordingDocument>
+  record: (args: BrowserRecordArgs) => Promise<RecordingDocument>
+  recordAndPlay: (args: BrowserRecordArgs) => Promise<{ document: RecordingDocument; playbackPage: Page }>
 }
+
+type BrowserRecordArgs = Omit<RecordTestArgs, 'fixture' | 'startUrl'> & { startUrl?: string }
 
 interface PlayTestRecordingArgs {
   document: RecordingDocument
