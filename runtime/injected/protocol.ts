@@ -1,6 +1,14 @@
 import type { AriaLocatorStep, AriaSnapshot } from '@te/aria'
 
+export { DISPOSE_OVERLAY_FUNCTION_NAME, INTERACTION_BINDING_NAME, OVERLAY_CONFIG_NAME, RECORDER_UI_ATTRIBUTE, SELECTOR_GENERATOR_NAME, STOP_BINDING_NAME }
 export type { CapturedAriaSelector, CapturedAriaSelectorStep, CapturedCssSelector, CapturedInteractionEvent, CapturedSelector, SerializedInteraction }
+
+const DISPOSE_OVERLAY_FUNCTION_NAME = '__thousandEyesRecorderDisposeOverlay'
+const INTERACTION_BINDING_NAME = '__thousandEyesRecorderCaptureInteraction'
+const OVERLAY_CONFIG_NAME = '__thousandEyesRecorderOverlayConfig'
+const RECORDER_UI_ATTRIBUTE = 'data-thousandeyes-recorder-ui'
+const SELECTOR_GENERATOR_NAME = '__thousandEyesRecorderGenerateSelector'
+const STOP_BINDING_NAME = '__thousandEyesRecorderStop'
 
 interface CapturedChangeEvent {
   kind: 'change'

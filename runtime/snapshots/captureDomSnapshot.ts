@@ -6,6 +6,7 @@ import { tryTo } from '@te/recorder-utils'
 export { captureDomSnapshot }
 export type { CapturedDomSnapshot }
 
+/** Captures the current page DOM through the Chromium DevTools Protocol. */
 async function captureDomSnapshot(page: Page): Promise<CapturedDomSnapshot> {
   const client = await page.context().newCDPSession(page)
   const capturedAt = new Date().toISOString()

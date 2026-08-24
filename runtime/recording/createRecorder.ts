@@ -1,7 +1,8 @@
 import { createBrowserSession, type BrowserSession } from '#recorder-runtime/browser/createBrowserSession.ts'
 import { playRecording } from '#recorder-runtime/playback/playRecording.ts'
-import { installRecordingCapture, type RecordingCapture } from '#recorder-runtime/recording/installRecordingCapture/index.ts'
-import { appendCapturedInteraction } from '#recorder-runtime/recording/processing/appendCapturedInteraction.ts'
+import { appendCapturedInteraction } from '#recorder-runtime/recording/actions/appendCapturedInteraction.ts'
+import { installRecordingInstruments } from '#recorder-runtime/recording/capture/installRecordingInstruments.ts'
+import { installRecordingOverlay, type RecordingOverlay } from '#recorder-runtime/recording/overlay/installRecordingOverlay.ts'
 
 import { createRecordingSession, type RecordedAriaSnapshot, type RecordingDocument, type RecordingSession } from '@te/recorder-core'
 import { tryTo } from '@te/recorder-utils'
@@ -11,14 +12,12 @@ export type { CreateRecorderArgs, Recorder }
 
 function createRecorder(args: CreateRecorderArgs = {}): Recorder {
   const createSession = args.createBrowserSession ?? createBrowserSession
-  let browserSession: BrowserSession | undefined
-  let capture: RecordingCapture | undefined
-  let recordingSession: RecordingSession | undefined
+  let activeRecording: ActiveRecording | undefined
 
   return { dispose, play, start, stop }
 
   async function start(args: StartArgs): Promise<void> {
-    if (browserSession) {
+    if (activeRecording) {
       throw new Error('A recorder browser session is already active.')
     }
 
@@ -26,14 +25,13 @@ function createRecorder(args: CreateRecorderArgs = {}): Recorder {
     const currentRecordingSession = createRecordingSession({ startUrl: args.startUrl, title: startUrl.hostname || args.startUrl })
     let pendingDocumentChange = Promise.resolve()
     const currentBrowserSession = await createSession()
+    const currentRecording: ActiveRecording = { browserSession: currentBrowserSession, recordingSession: currentRecordingSession }
 
-    browserSession = currentBrowserSession
-    recordingSession = currentRecordingSession
+    activeRecording = currentRecording
     await tryTo(
       async () => {
-        capture = await installRecordingCapture({
+        const instruments = await installRecordingInstruments({
           context: currentBrowserSession.context,
-          onDocumentChanged: notifyDocumentChanged,
           onInteraction: async interaction => {
             const appendedInteraction = await appendCapturedInteraction({ interaction, recordingSession: currentRecordingSession })
 
@@ -42,11 +40,20 @@ function createRecorder(args: CreateRecorderArgs = {}): Recorder {
               await notifyDocumentChanged(appendedInteraction.document)
             }
           },
-          onStopRequested: args.onStopRequested ?? stopFromOverlay,
+          onNavigation: navigation => notifyDocumentChanged(currentRecordingSession.append({ kind: 'goto', ...navigation })),
           page: currentBrowserSession.page,
-          recordingSession: currentRecordingSession,
-          startUrl: args.startUrl,
         })
+        let recordingOverlay: RecordingOverlay | undefined
+
+        currentRecording.capture = {
+          dispose: async () => {
+            await recordingOverlay?.dispose()
+            await instruments.dispose()
+          },
+        }
+        recordingOverlay = await installRecordingOverlay({ context: currentBrowserSession.context, onStopRequested: args.onStopRequested ?? stopFromOverlay, page: currentBrowserSession.page })
+        await currentBrowserSession.page.goto(args.startUrl)
+        await instruments.flush()
       },
       async error => {
         await closeRecording()
@@ -62,7 +69,7 @@ function createRecorder(args: CreateRecorderArgs = {}): Recorder {
   }
 
   async function stop(): Promise<RecordingDocument | undefined> {
-    const currentRecordingSession = recordingSession
+    const currentRecordingSession = activeRecording?.recordingSession
 
     return await tryTo(
       async () => {
@@ -83,19 +90,20 @@ function createRecorder(args: CreateRecorderArgs = {}): Recorder {
   }
 
   async function disposeCaptures(): Promise<void> {
-    const currentCapture = capture
+    const currentCapture = activeRecording?.capture
 
-    capture = undefined
+    if (activeRecording) {
+      activeRecording.capture = undefined
+    }
 
     await currentCapture?.dispose()
   }
 
   async function closeBrowserSession(): Promise<void> {
-    const currentBrowserSession = browserSession
+    const currentRecording = activeRecording
 
-    browserSession = undefined
-    recordingSession = undefined
-    await currentBrowserSession?.close()
+    activeRecording = undefined
+    await currentRecording?.browserSession.close()
   }
 
   async function play(args: PlayArgs): Promise<void> {
@@ -107,6 +115,16 @@ function createRecorder(args: CreateRecorderArgs = {}): Recorder {
   async function dispose(): Promise<void> {
     await closeRecording()
   }
+}
+
+interface ActiveRecording {
+  browserSession: BrowserSession
+  capture?: ActiveRecordingCapture
+  recordingSession: RecordingSession
+}
+
+interface ActiveRecordingCapture {
+  dispose: () => Promise<void>
 }
 
 interface PlayArgs {

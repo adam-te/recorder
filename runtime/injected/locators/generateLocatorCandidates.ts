@@ -1,6 +1,5 @@
+import type { CapturedCssSelector, CapturedSelector } from '#recorder-runtime/injected/protocol.ts'
 import type { AriaLocatorOptions, AriaRuntime } from '@te/aria/browser'
-
-import type { CapturedCssSelector, CapturedSelector } from './types.ts'
 
 export { generateLocatorCandidates }
 export type { GenerateLocatorCandidates }

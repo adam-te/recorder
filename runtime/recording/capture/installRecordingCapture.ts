@@ -1,30 +1,36 @@
-import { captureBrowserNavigation } from '#recorder-runtime/recording/installRecordingCapture/captureBrowserNavigation.ts'
-import { installPageInteractionBridge, type CapturedInteraction, type CapturedInteractionEvent, type CapturedSelector } from '#recorder-runtime/recording/installRecordingCapture/installPageInteractionBridge.ts'
-import { installRecordingOverlay, type RecordingOverlay } from '#recorder-runtime/recording/installRecordingOverlay/index.ts'
+import { installRecordingInstruments } from '#recorder-runtime/recording/capture/installRecordingInstruments.ts'
+import type { CapturedInteraction } from '#recorder-runtime/recording/capture/types.ts'
+import { installRecordingOverlay, type RecordingOverlay } from '#recorder-runtime/recording/overlay/installRecordingOverlay.ts'
 import type { BrowserContext, Page } from 'playwright'
 
 import type { RecordingDocument, RecordingSession } from '@te/recorder-core'
 import { tryTo } from '@te/recorder-utils'
 
 export { installRecordingCapture }
-export type { CapturedInteraction, CapturedInteractionEvent, CapturedSelector, InstallRecordingCaptureArgs, RecordingCapture }
+export type { InstallRecordingCaptureArgs, RecordingCapture }
 
 async function installRecordingCapture(args: InstallRecordingCaptureArgs): Promise<RecordingCapture> {
-  const pageInteractionBridge = await installPageInteractionBridge({ context: args.context, onInteraction: args.onInteraction })
+  const instruments = await installRecordingInstruments({
+    context: args.context,
+    onInteraction: args.onInteraction,
+    onNavigation: async navigation => {
+      const document = args.recordingSession.append({ kind: 'goto', ...navigation })
+
+      await args.onDocumentChanged?.(document)
+    },
+    page: args.page,
+  })
   let recordingOverlay: RecordingOverlay | undefined
-  const browserNavigationCapture = await tryTo(
+  await tryTo(
     async () => {
       recordingOverlay = await installRecordingOverlay({ context: args.context, onStopRequested: args.onStopRequested, page: args.page })
-      const capture = await captureBrowserNavigation({ onDocumentChanged: args.onDocumentChanged, page: args.page, recordingSession: args.recordingSession })
 
       await args.page.goto(args.startUrl)
-      await capture.flush()
-
-      return capture
+      await instruments.flush()
     },
     async error => {
       await recordingOverlay?.dispose()
-      await pageInteractionBridge.dispose()
+      await instruments.dispose()
       throw error
     },
   )
@@ -32,9 +38,8 @@ async function installRecordingCapture(args: InstallRecordingCaptureArgs): Promi
   return { dispose }
 
   async function dispose(): Promise<void> {
-    await browserNavigationCapture.dispose()
     await recordingOverlay?.dispose()
-    await pageInteractionBridge.dispose()
+    await instruments.dispose()
   }
 }
 

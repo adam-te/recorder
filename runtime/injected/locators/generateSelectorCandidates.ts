@@ -1,8 +1,7 @@
-import type { CapturedCssSelector } from './types.ts'
+import { RECORDER_UI_ATTRIBUTE } from '#recorder-runtime/injected/protocol.ts'
+import type { CapturedCssSelector } from '#recorder-runtime/injected/protocol.ts'
 
-export { generateSelectorCandidates, SELECTOR_GENERATOR_NAME }
-
-const SELECTOR_GENERATOR_NAME = '__thousandEyesRecorderGenerateSelector'
+export { generateSelectorCandidates }
 
 function generateSelectorCandidates(element: Element, maxCandidates = 3): CapturedCssSelector[] {
   if (!Number.isInteger(maxCandidates) || maxCandidates < 1) {
@@ -131,7 +130,7 @@ function generateSelectorCandidates(element: Element, maxCandidates = 3): Captur
   }
 
   function isAllowedSelectorAttribute(attribute: Attr, elementValue: Element): boolean {
-    const excludedAttributes = ['id', 'class', 'style', 'value', 'nonce', 'srcdoc', 'checked', 'selected', 'disabled', 'hidden', 'open', 'aria-expanded', 'aria-pressed', 'data-thousandeyes-recorder-ui']
+    const excludedAttributes = ['id', 'class', 'style', 'value', 'nonce', 'srcdoc', 'checked', 'selected', 'disabled', 'hidden', 'open', 'aria-expanded', 'aria-pressed', RECORDER_UI_ATTRIBUTE]
     const isEventHandler = attribute.name.startsWith('on') && attribute.name in elementValue
 
     return !excludedAttributes.includes(attribute.name) && !isEventHandler

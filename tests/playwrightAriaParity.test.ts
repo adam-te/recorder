@@ -2,7 +2,7 @@ import { type AriaSnapshot, renderAriaSnapshot } from '@te/aria'
 import type { AriaRuntime } from '@te/aria/browser'
 import { describe, expect, test } from 'vitest'
 
-import { ariaRuntimeSource } from '../runtime/recording/injected/ariaRuntimeSource.generated.ts'
+import { ariaRuntimeSource } from '../runtime/injected/generated/ariaRuntimeSource.generated.ts'
 import { useBrowserTestHarness } from './utils.ts'
 
 describe('Playwright ARIA snapshot parity', () => {

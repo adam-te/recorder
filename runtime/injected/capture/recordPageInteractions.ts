@@ -1,11 +1,11 @@
+import { generateLocatorCandidates } from '#recorder-runtime/injected/locators/generateLocatorCandidates.ts'
+import { generateSelectorCandidates } from '#recorder-runtime/injected/locators/generateSelectorCandidates.ts'
+import type { CapturedCssSelector, CapturedInteractionEvent, SerializedInteraction } from '#recorder-runtime/injected/protocol.ts'
 import type { AriaRuntime } from '@te/aria/browser'
-
-import type { GenerateLocatorCandidates } from './generateLocatorCandidates.ts'
-import type { CapturedCssSelector, CapturedInteractionEvent, SerializedInteraction } from './types.ts'
 
 export { recordPageInteractions }
 
-function recordPageInteractions(args: RecordPageInteractionsArgs, generateSelectorCandidates: (element: Element) => CapturedCssSelector[], generateLocatorCandidates: GenerateLocatorCandidates, ariaRuntime: AriaRuntime): void {
+function recordPageInteractions(args: RecordPageInteractionsArgs, ariaRuntime: AriaRuntime): void {
   const reportInteraction = (globalThis as unknown as Record<string, (value: SerializedInteraction) => Promise<void>>)[args.bindingName]
   const capturedEvents = new WeakSet<Event>()
   const eventSerializers: EventSerializers = {

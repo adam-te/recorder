@@ -11,7 +11,7 @@
     "./capture": "./capture.ts"
   },
   "scripts": {
-    "generate:aria-runtime": "node scripts/generateAriaRuntime.mjs"
+    "generate:injected-runtime": "node scripts/generateInjectedRuntime.mjs"
   },
   "dependencies": {
     "@te/aria": "*",

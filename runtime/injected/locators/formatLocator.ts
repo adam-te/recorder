@@ -1,4 +1,4 @@
-import type { CapturedSelector } from './types.ts'
+import type { CapturedSelector } from '#recorder-runtime/injected/protocol.ts'
 
 export { formatLocator }
 

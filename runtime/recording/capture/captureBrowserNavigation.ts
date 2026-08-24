@@ -1,10 +1,9 @@
 import type { Frame, Page } from 'playwright'
 
-import type { RecordingDocument, RecordingSession } from '@te/recorder-core'
-
 export { captureBrowserNavigation }
-export type { BrowserNavigationCapture }
+export type { BrowserNavigationCapture, CapturedBrowserNavigation }
 
+/** Observes top-level browser navigation while a recording is active. */
 async function captureBrowserNavigation(args: CaptureBrowserNavigationArgs): Promise<BrowserNavigationCapture> {
   const cdpSession = await args.page.context().newCDPSession(args.page)
   await cdpSession.send('Page.enable')
@@ -39,9 +38,7 @@ async function captureBrowserNavigation(args: CaptureBrowserNavigationArgs): Pro
       const previousEntryIndex = history.entries.findIndex(entry => entry.id === currentEntry.id)
 
       if (previousEntryIndex === -1) {
-        const document = args.recordingSession.append({ kind: 'goto', pageUrl: previousEntry.url, url: currentEntry.userTypedURL || currentEntry.url })
-
-        await args.onDocumentChanged?.(document)
+        await args.onNavigation?.({ pageUrl: previousEntry.url, url: currentEntry.userTypedURL || currentEntry.url })
       }
     }
 
@@ -60,9 +57,13 @@ async function captureBrowserNavigation(args: CaptureBrowserNavigationArgs): Pro
 }
 
 interface CaptureBrowserNavigationArgs {
-  onDocumentChanged?: (document: RecordingDocument) => Promise<void> | void
+  onNavigation?: (navigation: CapturedBrowserNavigation) => Promise<void> | void
   page: Page
-  recordingSession: RecordingSession
+}
+
+interface CapturedBrowserNavigation {
+  pageUrl: string
+  url: string
 }
 
 interface BrowserNavigationCapture {

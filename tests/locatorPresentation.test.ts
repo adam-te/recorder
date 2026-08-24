@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'vitest'
 
-import { formatLocator } from '../runtime/recording/injected/formatLocator.ts'
+import { formatLocator } from '../runtime/injected/locators/formatLocator.ts'
 
 describe('locator presentation', () => {
   test('omits exact when the locator uses Playwright default matching', () => {
