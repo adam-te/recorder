@@ -9,7 +9,7 @@ function parseRecorderCliCommand(argv: readonly string[]): RecorderCliCommand {
     assertArgumentCount(commandArguments, 0, 'te help')
     command = { kind: 'help' }
   } else if (commandName === 'record') {
-    assertArgumentCount(commandArguments, 2, 'te record <url> <directory>')
+    assertArgumentCountBetween(commandArguments, 1, 2, 'te record <url> [recording-directory]')
     command = { directoryPath: commandArguments[1], kind: 'record', url: commandArguments[0] }
   } else if (commandName === 'play') {
     assertArgumentCount(commandArguments, 1, 'te play <directory>')
@@ -30,4 +30,10 @@ function assertArgumentCount(positionals: readonly string[], expectedCount: numb
   }
 }
 
-type RecorderCliCommand = { directoryPath: string; kind: 'play' } | { directoryPath: string; kind: 'ui' } | { directoryPath: string; kind: 'record'; url: string } | { kind: 'help' }
+function assertArgumentCountBetween(positionals: readonly string[], minimumCount: number, maximumCount: number, usage: string): void {
+  if (positionals.length < minimumCount || positionals.length > maximumCount) {
+    throw new Error(`Usage: ${usage}`)
+  }
+}
+
+type RecorderCliCommand = { directoryPath: string; kind: 'play' } | { directoryPath: string; kind: 'ui' } | { directoryPath?: string; kind: 'record'; url: string } | { kind: 'help' }
