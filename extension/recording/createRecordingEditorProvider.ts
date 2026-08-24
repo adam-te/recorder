@@ -1,8 +1,8 @@
-import { renderAriaSnapshot } from '@te/aria'
+import { renderRecordingSnapshot } from '#recorder-extension/recording/renderRecordingSnapshot.ts'
 import { randomUUID } from 'node:crypto'
 import { commands, env, Uri, ViewColumn, window, workspace, type CustomTextEditorProvider, type Disposable, type ExtensionContext, type TextDocument, type WebviewPanel } from 'vscode'
 
-import { getRecordingSnapshotFileName, parseRecordingDocument, parseRecordingSnapshot, type RecordedAriaNode, type RecordingDocument } from '@te/recorder-core'
+import { getRecordingSnapshotFileName, parseRecordingDocument, parseRecordingSnapshot, type RecordingDocument } from '@te/recorder-core'
 
 export { createRecordingEditorProvider, recordingEditorViewType }
 
@@ -14,7 +14,7 @@ function createRecordingEditorProvider(args: CreateRecordingEditorProviderArgs):
     resolveCustomTextEditor: (document, panel) => resolveRecordingEditor({ ...args, document, panel }),
   }
 
-  return window.registerCustomEditorProvider(recordingEditorViewType, provider, { supportsMultipleEditorsPerDocument: true, webviewOptions: { retainContextWhenHidden: true } })
+  return window.registerCustomEditorProvider(recordingEditorViewType, provider, { supportsMultipleEditorsPerDocument: false, webviewOptions: { retainContextWhenHidden: true } })
 }
 
 function resolveRecordingEditor(args: ResolveRecordingEditorArgs): void {
@@ -38,8 +38,8 @@ function resolveRecordingEditor(args: ResolveRecordingEditorArgs): void {
   args.panel.onDidDispose(() => {
     disposed = true
     disposables.forEach(disposable => disposable.dispose())
-    if (!decisionInProgress) {
-      void args.onDiscard(args.document.uri)
+    if (!decisionInProgress && args.isPending(args.document.uri)) {
+      void handleClosedDraft()
     }
   })
 
@@ -73,7 +73,7 @@ function resolveRecordingEditor(args: ResolveRecordingEditorArgs): void {
           args.panel.dispose()
           await commands.executeCommand('vscode.openWith', savedDocumentUri, recordingEditorViewType)
         } else if (disposed) {
-          await args.onDiscard(args.document.uri)
+          await handleClosedDraft()
         } else {
           await args.panel.webview.postMessage({ type: 'decisionCancelled' })
         }
@@ -108,9 +108,26 @@ function resolveRecordingEditor(args: ResolveRecordingEditorArgs): void {
       const snapshotUri = Uri.joinPath(args.document.uri, '..', 'snapshots', getRecordingSnapshotFileName(selectedActionIndex))
       const contents = await workspace.fs.readFile(snapshotUri)
       const snapshot = parseRecordingSnapshot(JSON.parse(decoder.decode(contents)))
-      await args.panel.webview.postMessage({ type: 'snapshot', actionIndex: selectedActionIndex, targetRef: findTarget(snapshot)?.ref, yaml: renderAriaSnapshot(snapshot) })
+      await args.panel.webview.postMessage({ type: 'snapshot', actionIndex: selectedActionIndex, ...renderRecordingSnapshot(snapshot) })
     } catch (error) {
       await args.panel.webview.postMessage({ type: 'snapshot', actionIndex: selectedActionIndex, error: getErrorMessage(error) })
+    }
+  }
+
+  async function handleClosedDraft(): Promise<void> {
+    const draftDirectory = Uri.joinPath(args.document.uri, '..')
+    const relativePath = workspace.asRelativePath(draftDirectory, false)
+    const action = await window.showWarningMessage(`Recording was not saved. The draft was retained at ${relativePath}.`, 'Save Recording', 'Reopen Draft')
+
+    try {
+      if (action === 'Save Recording') {
+        const savedDocumentUri = await args.onSave(args.document.uri)
+        if (savedDocumentUri) await commands.executeCommand('vscode.openWith', savedDocumentUri, recordingEditorViewType)
+      } else if (action === 'Reopen Draft') {
+        await commands.executeCommand('vscode.openWith', args.document.uri, recordingEditorViewType)
+      }
+    } catch (error) {
+      await window.showErrorMessage(getErrorMessage(error))
     }
   }
 
@@ -167,16 +184,3 @@ interface ResolveRecordingEditorArgs extends CreateRecordingEditorProviderArgs {
 }
 
 type WebviewMessage = { type: 'copy'; text: string } | { type: 'discard' | 'openJson' | 'play' | 'ready' | 'save' } | { type: 'selectAction'; actionIndex: number }
-
-function findTarget(node: RecordedAriaNode): RecordedAriaNode | undefined {
-  if (node.target) return node
-
-  for (const child of node.children ?? []) {
-    if (typeof child !== 'string') {
-      const target = findTarget(child)
-      if (target) return target
-    }
-  }
-
-  return undefined
-}

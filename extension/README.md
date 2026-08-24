@@ -6,9 +6,9 @@ The extension is a lightweight view over Recorder Runtime. It owns commands, pro
 
 Starting a recording opens a blank browser immediately. The first URL entered in the browser becomes the recording's reported start URL and remains the first replayable navigation action.
 
-Completed recordings first open in a private staged custom-editor preview. The user can inspect or play the recording before choosing **Save Recording** or **Discard**; only Save commits a `.recording` directory into the selected location. Closing a staged preview discards it.
+Recordings are staged as visible, recoverable drafts under `.thousandeyes-recorder/drafts` in the active workspace folder. The draft directory and its raw `recording.json` and `snapshots/*.aria.json` files can be inspected in the Explorer before choosing **Save Recording** or **Discard**. Closing a staged preview retains the draft and warns the user; the preview can be reopened from the warning or directly from its `recording.json`. When no workspace folder is open, the extension falls back to its private storage.
 
-Opening a saved `.recording/recording.json` uses the Transaction Recording custom editor by default. The read-only view provides a human-readable step timeline, step details, copyable locator candidates, and the selected step's accessibility snapshot serialized as Playwright YAML with the interacted target highlighted. Snapshots are loaded on demand. Use **Play** to run the recording or **Open JSON** to inspect the manifest in VS Code's text editor.
+Opening a saved `.recording/recording.json` uses the Transaction Recording custom editor by default. The read-only view provides a human-readable step timeline, step details, copyable locator candidates, and the selected step's accessibility snapshot serialized as Playwright YAML with internal element refs hidden and the interacted target highlighted. Snapshots are loaded on demand. Use **Play** to run the recording or **Open JSON** to inspect the manifest in VS Code's text editor.
 
 ## Development
 

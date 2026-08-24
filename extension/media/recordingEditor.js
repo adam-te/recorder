@@ -16,7 +16,7 @@ window.addEventListener('message', event => {
     snapshotState = { loading: true }
     render()
   } else if (message.type === 'snapshot' && message.actionIndex === selectedActionIndex) {
-    snapshotState = { error: message.error, targetRef: message.targetRef, yaml: message.yaml }
+    snapshotState = { error: message.error, targetLine: message.targetLine, yaml: message.yaml }
     render()
   } else if (message.type === 'error') {
     app.replaceChildren(createEmptyState('Could not open recording', message.message))
@@ -156,9 +156,8 @@ function renderSnapshot() {
 
   const pre = element('pre', 'snapshot-yaml')
   const code = element('code')
-  const targetMarker = snapshotState.targetRef ? `[ref=${snapshotState.targetRef}]` : undefined
-  for (const line of snapshotState.yaml.split('\n')) {
-    code.append(element('span', targetMarker && line.includes(targetMarker) ? 'yaml-line target-line' : 'yaml-line', line))
+  for (const [lineIndex, line] of snapshotState.yaml.split('\n').entries()) {
+    code.append(element('span', lineIndex === snapshotState.targetLine ? 'yaml-line target-line' : 'yaml-line', line))
   }
   pre.append(code)
   section.append(pre)

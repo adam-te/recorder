@@ -1,7 +1,7 @@
 import { createRecorderView } from '#recorder-extension/createRecorderView.ts'
 import { createRecorderController } from '#recorder-extension/recording/createRecorderController.ts'
 import { createRecordingEditorProvider } from '#recorder-extension/recording/createRecordingEditorProvider.ts'
-import { commands, ProgressLocation, window, type ExtensionContext } from 'vscode'
+import { commands, type ExtensionContext } from 'vscode'
 
 import { tryTo } from '@te/recorder-utils'
 
@@ -33,11 +33,10 @@ function activateExtension(args: ActivateExtensionArgs): ActiveExtension {
     await recorderStateReady
     await updateRecorderContext()
     await tryTo(
-      () =>
-        window.withProgress({ location: ProgressLocation.Notification, title: 'Opening recorder browser…' }, async () => {
-          await controller.start()
-          await setRecorderState('recording')
-        }),
+      async () => {
+        await controller.start()
+        await setRecorderState('recording')
+      },
       async error => {
         await setRecorderState('idle')
         throw error
@@ -51,11 +50,7 @@ function activateExtension(args: ActivateExtensionArgs): ActiveExtension {
     }
 
     await setRecorderState('stopping')
-    await tryTo(
-      () => window.withProgress({ location: ProgressLocation.Notification, title: 'Stopping recording…' }, controller.stop),
-      undefined,
-      () => setRecorderState('idle'),
-    )
+    await tryTo(controller.stop, undefined, () => setRecorderState('idle'))
   }
 
   async function dispose(): Promise<void> {

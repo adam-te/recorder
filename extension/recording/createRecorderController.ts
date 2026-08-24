@@ -19,10 +19,10 @@ function createRecorderController(args: CreateRecorderControllerArgs): RecorderC
 
   async function start(): Promise<void> {
     if (stagingDirectory) {
-      throw new Error('Save or discard the recording preview before starting another recording.')
+      throw new Error('A recording is already in progress.')
     }
 
-    stagingDirectory = Uri.joinPath(args.context.storageUri ?? args.context.globalStorageUri, 'recording-staging', `${randomUUID()}.recording`)
+    stagingDirectory = Uri.joinPath(getDraftRoot(), getDraftDirectoryName())
     await workspace.fs.createDirectory(Uri.joinPath(stagingDirectory, 'snapshots'))
 
     try {
@@ -64,17 +64,17 @@ function createRecorderController(args: CreateRecorderControllerArgs): RecorderC
   }
 
   function isPending(documentUri: Uri): boolean {
-    return Boolean(stagingDirectory && documentUri.toString() === Uri.joinPath(stagingDirectory, 'recording.json').toString())
+    return getDraftRoots().some(root => isDraftDocumentInRoot(documentUri, root))
   }
 
   async function savePending(documentUri: Uri): Promise<Uri | undefined> {
-    if (!stagingDirectory || !isPending(documentUri)) {
+    if (!isPending(documentUri)) {
       throw new Error('This recording preview is no longer available.')
     }
 
     const contents = await workspace.fs.readFile(documentUri)
     const document = parseRecordingDocument(JSON.parse(decoder.decode(contents)))
-    return promptToSave(document)
+    return promptToSave({ document, draftDirectory: Uri.joinPath(documentUri, '..') })
   }
 
   async function discardPending(documentUri: Uri): Promise<boolean> {
@@ -82,7 +82,7 @@ function createRecorderController(args: CreateRecorderControllerArgs): RecorderC
       return false
     }
 
-    await discardStagingDirectory()
+    await workspace.fs.delete(Uri.joinPath(documentUri, '..'), { recursive: true, useTrash: false })
     return true
   }
 
@@ -108,20 +108,21 @@ function createRecorderController(args: CreateRecorderControllerArgs): RecorderC
     const temporary = destination.with({ path: `${destination.path}.pending` })
     await workspace.fs.writeFile(temporary, encoder.encode(serializeRecordingDocument(document)))
     await workspace.fs.rename(temporary, destination, { overwrite: true })
+    stagingDirectory = undefined
     await commands.executeCommand('vscode.openWith', destination, recordingEditorViewType)
   }
 
-  async function promptToSave(document: RecordingDocument): Promise<Uri | undefined> {
-    while (stagingDirectory) {
-      const destination = await window.showSaveDialog({ defaultUri: defaultRecordingUri(document), saveLabel: 'Save Recording' })
+  async function promptToSave(args: { document: RecordingDocument; draftDirectory: Uri }): Promise<Uri | undefined> {
+    while (isPending(Uri.joinPath(args.draftDirectory, 'recording.json'))) {
+      const destination = await window.showSaveDialog({ defaultUri: defaultRecordingUri(args.document, args.draftDirectory), saveLabel: 'Save Recording' })
       if (!destination) {
         return undefined
       }
 
       const recordingDirectory = destination.path.endsWith('.recording') ? destination : destination.with({ path: `${destination.path}.recording` })
       try {
-        await commitRecording({ destination: recordingDirectory, document, stagingDirectory })
-        await discardStagingDirectory()
+        await commitRecording({ destination: recordingDirectory, document: args.document, stagingDirectory: args.draftDirectory })
+        await workspace.fs.delete(args.draftDirectory, { recursive: true, useTrash: false })
 
         await window.showInformationMessage(`Saved recording to ${recordingDirectory.fsPath}.`)
         return Uri.joinPath(recordingDirectory, 'recording.json')
@@ -136,8 +137,8 @@ function createRecorderController(args: CreateRecorderControllerArgs): RecorderC
     return undefined
   }
 
-  function defaultRecordingUri(document: RecordingDocument): Uri | undefined {
-    const workspaceFolder = workspace.workspaceFolders?.[0]
+  function defaultRecordingUri(document: RecordingDocument, draftDirectory: Uri): Uri | undefined {
+    const workspaceFolder = workspace.getWorkspaceFolder(draftDirectory) ?? workspace.workspaceFolders?.[0]
     if (!workspaceFolder) {
       return undefined
     }
@@ -150,6 +151,22 @@ function createRecorderController(args: CreateRecorderControllerArgs): RecorderC
     return Uri.joinPath(workspaceFolder.uri, `${name || 'recording'}.recording`)
   }
 
+  function getDraftRoot(): Uri {
+    const activeDocumentUri = window.activeTextEditor?.document.uri
+    const activeWorkspaceFolder = activeDocumentUri ? workspace.getWorkspaceFolder(activeDocumentUri) : undefined
+    const workspaceFolder = activeWorkspaceFolder ?? workspace.workspaceFolders?.[0]
+
+    return workspaceFolder ? Uri.joinPath(workspaceFolder.uri, '.thousandeyes-recorder', 'drafts') : getPrivateDraftRoot()
+  }
+
+  function getDraftRoots(): Uri[] {
+    return [...(workspace.workspaceFolders ?? []).map(folder => Uri.joinPath(folder.uri, '.thousandeyes-recorder', 'drafts')), getPrivateDraftRoot()]
+  }
+
+  function getPrivateDraftRoot(): Uri {
+    return Uri.joinPath(args.context.storageUri ?? args.context.globalStorageUri, 'recording-drafts')
+  }
+
   async function discardStagingDirectory(): Promise<void> {
     const currentStagingDirectory = stagingDirectory
 
@@ -158,6 +175,24 @@ function createRecorderController(args: CreateRecorderControllerArgs): RecorderC
       await workspace.fs.delete(currentStagingDirectory, { recursive: true, useTrash: false })
     }
   }
+}
+
+function getDraftDirectoryName(): string {
+  const timestamp = new Date()
+    .toISOString()
+    .replaceAll(/[-:]/g, '')
+    .replace(/\.\d{3}Z$/, 'Z')
+  return `recording-${timestamp}-${randomUUID().slice(0, 8)}.recording`
+}
+
+function isDraftDocumentInRoot(documentUri: Uri, root: Uri): boolean {
+  if (documentUri.scheme !== root.scheme || documentUri.authority !== root.authority) {
+    return false
+  }
+
+  const rootPath = root.path.endsWith('/') ? root.path : `${root.path}/`
+  const relativePath = documentUri.path.startsWith(rootPath) ? documentUri.path.slice(rootPath.length) : undefined
+  return relativePath !== undefined && /^[^/]+\.recording\/recording\.json$/.test(relativePath)
 }
 
 async function commitRecording(args: { destination: Uri; document: RecordingDocument; stagingDirectory: Uri }): Promise<void> {
