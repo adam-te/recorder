@@ -3,23 +3,13 @@ import type { Browser, BrowserContext, Page } from 'playwright'
 import { chromium } from 'playwright'
 import { afterAll, afterEach, beforeAll, beforeEach } from 'vitest'
 
-import { createRecordingSession, type RecordedAction, type RecordedAriaSnapshot, type RecordingDocument } from '@te/recorder-core'
+import { createRecordingSession, type RecordedAriaSnapshot, type RecordingDocument } from '@te/recorder-core'
 import { createRecorder, playRecording, type Recorder } from '@te/recorder-runtime'
 import { installRecordingCapture, type CapturedInteractionEvent } from '@te/recorder-runtime/capture'
 
-export { getOnlyAction, useBrowserTestHarness }
+export { useBrowserTestHarness }
 
 const defaultStartUrl = 'https://recorder.test/content'
-
-function getOnlyAction<Kind extends RecordedAction['kind']>(document: Pick<RecordingDocument, 'actions'>, kind: Kind): Extract<RecordedAction, { kind: Kind }> {
-  const matchingActions = document.actions.filter(action => action.kind === kind)
-
-  if (matchingActions.length !== 1) {
-    throw new Error(`Expected exactly one "${kind}" action, received ${matchingActions.length}.`)
-  }
-
-  return matchingActions[0] as Extract<RecordedAction, { kind: Kind }>
-}
 
 async function captureInteraction(args: CaptureInteractionArgs): Promise<InteractionSummary> {
   const captured = Promise.withResolvers<InteractionSummary>()

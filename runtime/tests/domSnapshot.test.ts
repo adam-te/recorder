@@ -3,7 +3,7 @@ import { describe, expect, test } from 'vitest'
 import type { CapturedDomSnapshot } from '@te/recorder-runtime/capture'
 import { captureDomSnapshot } from '@te/recorder-runtime/capture'
 
-import { useBrowserTestHarness } from './utils.ts'
+import { useBrowserTestHarness } from './support/browserHarness.ts'
 
 describe('captureDomSnapshot', () => {
   const browser = useBrowserTestHarness()

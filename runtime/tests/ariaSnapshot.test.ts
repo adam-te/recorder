@@ -2,7 +2,7 @@ import { type AriaNode, renderAriaSnapshot } from '@te/aria'
 import type { Page } from 'playwright'
 import { describe, expect, test } from 'vitest'
 
-import { useBrowserTestHarness } from './utils.ts'
+import { useBrowserTestHarness } from './support/browserHarness.ts'
 
 describe('ARIA interaction snapshots', () => {
   const browser = useBrowserTestHarness()

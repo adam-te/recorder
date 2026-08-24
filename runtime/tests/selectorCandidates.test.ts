@@ -1,7 +1,7 @@
 import type { Page } from 'playwright'
 import { describe, expect, test } from 'vitest'
 
-import { useBrowserTestHarness } from './utils.ts'
+import { useBrowserTestHarness } from './support/browserHarness.ts'
 
 describe('CSS selector candidates', () => {
   const browser = useBrowserTestHarness()

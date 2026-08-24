@@ -4,7 +4,7 @@ import { describe, expect, test } from 'vitest'
 import { createRecordingSession } from '@te/recorder-core'
 import { installRecordingCapture, type CapturedInteractionEvent, type RecordingCapture } from '@te/recorder-runtime/capture'
 
-import { useBrowserTestHarness } from './utils.ts'
+import { useBrowserTestHarness } from './support/browserHarness.ts'
 
 describe('interaction capture', () => {
   const browser = useBrowserTestHarness()

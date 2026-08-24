@@ -3,7 +3,8 @@ import { describe, expect, test } from 'vitest'
 
 import type { RecordedAriaNode, RecordedAriaSnapshot, RecordedLocator } from '@te/recorder-core'
 
-import { getOnlyAction, useBrowserTestHarness } from './utils.ts'
+import { useBrowserTestHarness } from './support/browserHarness.ts'
+import { getOnlyAction } from './support/recordingAssertions.ts'
 
 describe('recording playback', () => {
   const browser = useBrowserTestHarness()

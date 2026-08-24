@@ -1,9 +1,9 @@
+import { ariaRuntimeSource } from '#recorder-runtime/injected/generated/ariaRuntimeSource.generated.ts'
 import { type AriaSnapshot, renderAriaSnapshot } from '@te/aria'
 import type { AriaRuntime } from '@te/aria/browser'
 import { describe, expect, test } from 'vitest'
 
-import { ariaRuntimeSource } from '../runtime/injected/generated/ariaRuntimeSource.generated.ts'
-import { useBrowserTestHarness } from './utils.ts'
+import { useBrowserTestHarness } from './support/browserHarness.ts'
 
 describe('Playwright ARIA snapshot parity', () => {
   const browser = useBrowserTestHarness()

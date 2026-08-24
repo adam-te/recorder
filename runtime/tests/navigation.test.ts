@@ -3,7 +3,8 @@ import { describe, expect, test } from 'vitest'
 import { createRecordingSession } from '@te/recorder-core'
 import { appendCapturedInteraction, installRecordingCapture } from '@te/recorder-runtime/capture'
 
-import { getOnlyAction, useBrowserTestHarness } from './utils.ts'
+import { useBrowserTestHarness } from './support/browserHarness.ts'
+import { getOnlyAction } from './support/recordingAssertions.ts'
 
 describe('navigation recording', () => {
   const browser = useBrowserTestHarness()
