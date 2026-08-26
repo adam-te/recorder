@@ -9,7 +9,7 @@ CLI ───────────────┤
                    └──> Runtime (record + play) ──> Playwright
                               │
                               v
-                   Core (recording + codecs)
+                   Core (recording + formats)
                               │
                               v
                      .recording artifacts
@@ -17,7 +17,7 @@ CLI ───────────────┤
              ARIA and utilities support shared packages
 ```
 
-The VS Code extension and CLI host the shared UI and runtime. The UI provides the host-neutral editor and browser overlay, the runtime coordinates recording and playback with Playwright, and core owns the recording, serialization, and format codecs.
+The VS Code extension and CLI host the shared UI and runtime. The UI provides the host-neutral editor and browser overlay, the runtime coordinates recording and playback with Playwright, and core owns the recording, serialization, and format support.
 
 ## Development
 

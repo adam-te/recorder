@@ -8,7 +8,7 @@
   },
   "exports": {
     ".": "./index.ts",
-    "./playwright/locator": "./codecs/playwright/formatPlaywrightLocator.ts"
+    "./playwright/locator": "./formats/playwright/formatPlaywrightLocator.ts"
   },
   "dependencies": {
     "@te/aria": "*",
