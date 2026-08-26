@@ -1,6 +1,8 @@
 import type { Protocol } from 'devtools-protocol'
 import type { Frame, Page } from 'playwright'
 
+import { tryTo } from '@te/recorder-utils'
+
 export { captureBrowserNavigation }
 export type { BrowserNavigationCapture, CapturedBrowserNavigation }
 
@@ -48,11 +50,7 @@ async function captureBrowserNavigation(args: CaptureBrowserNavigationArgs): Pro
 
   async function dispose(): Promise<void> {
     args.page.off('framenavigated', queueNavigationCapture)
-    try {
-      await flush()
-    } finally {
-      await navigationSession.detach()
-    }
+    await tryTo(flush, undefined, () => navigationSession.detach())
   }
 
   async function flush(): Promise<void> {
@@ -62,13 +60,15 @@ async function captureBrowserNavigation(args: CaptureBrowserNavigationArgs): Pro
   async function readNavigationHistory(attemptsRemaining = 3): Promise<Protocol.Page.GetNavigationHistoryResponse> {
     const historySession = await args.page.context().newCDPSession(args.page)
 
-    try {
-      return await historySession.send('Page.getNavigationHistory')
-    } catch (error) {
-      if (attemptsRemaining <= 1 || !error.message.includes('Not attached to an active page')) throw error
-    } finally {
-      await historySession.detach()
-    }
+    const history = await tryTo(
+      () => historySession.send('Page.getNavigationHistory'),
+      error => {
+        if (attemptsRemaining <= 1 || !error.message.includes('Not attached to an active page')) throw error
+        return undefined
+      },
+      () => historySession.detach(),
+    )
+    if (history) return history
 
     await new Promise<void>(resolve => setTimeout(resolve))
     return readNavigationHistory(attemptsRemaining - 1)

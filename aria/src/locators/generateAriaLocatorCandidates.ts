@@ -1,3 +1,5 @@
+import { tryTo } from '@te/recorder-utils'
+
 import { beginAriaCaches, endAriaCaches } from '../../vendor/playwright/injected/roleUtils.ts'
 import type { AriaLocatorOptions } from '../types/browser.ts'
 import type { AriaLocatorCandidate, AriaLocatorStep } from '../types/locators.ts'
@@ -7,11 +9,7 @@ export { generateAriaLocatorCandidates }
 
 function generateAriaLocatorCandidates(options: AriaLocatorOptions): AriaLocatorCandidate[] {
   beginAriaCaches()
-  try {
-    return generateAriaLocatorCandidatesInternal(options)
-  } finally {
-    endAriaCaches()
-  }
+  return tryTo(() => generateAriaLocatorCandidatesInternal(options), undefined, endAriaCaches)
 }
 
 function generateAriaLocatorCandidatesInternal(options: AriaLocatorOptions): AriaLocatorCandidate[] {

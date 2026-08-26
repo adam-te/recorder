@@ -1,43 +1,53 @@
 import type { RecordedLocator } from '#core/recording/recordingSchema.ts'
 
+import { matchBy } from '@te/recorder-utils'
+
 import { quoteTypeScriptString } from './quoteTypeScriptString.ts'
 
 export { formatPlaywrightLocator }
 export type { FormatPlaywrightLocatorOptions }
 
 function formatPlaywrightLocator(locator: RecordedLocator, { includePage = true }: FormatPlaywrightLocatorOptions = {}): string {
-  let source = includePage ? 'page' : ''
-
-  for (const frameSelector of locator.framePath ?? []) {
-    source = includePage ? appendCall(source, `locator(${quoteTypeScriptString(frameSelector)}).contentFrame()`) : appendCall(source, `frameLocator(${quoteTypeScriptString(frameSelector)})`)
-  }
-
-  if (locator.kind !== 'aria') {
-    const method = locator.kind === 'css' ? 'locator' : 'getByTestId'
-
-    return appendCall(source, `${method}(${quoteTypeScriptString(locator.value)})`)
-  }
-
-  for (const step of locator.steps) {
-    if (step.method !== 'role') {
-      const stepOptions = step.exact === undefined ? '' : `, { exact: ${step.exact} }`
-      const method = { alt: 'getByAltText', label: 'getByLabel', placeholder: 'getByPlaceholder', text: 'getByText', title: 'getByTitle' }[step.method]
-
-      source = appendCall(source, `${method}(${quoteTypeScriptString(step.text)}${stepOptions})`)
-      continue
-    }
-
-    const stepOptions = [...(step.name ? [`name: ${quoteTypeScriptString(step.name)}`] : []), ...(step.exact === undefined ? [] : [`exact: ${step.exact}`])]
-    source = appendCall(source, `getByRole(${quoteTypeScriptString(step.role)}${stepOptions.length ? `, { ${stepOptions.join(', ')} }` : ''})`)
-  }
-
-  return source
+  return [
+    includePage ? 'page' : '',
+    ...(locator.framePath ?? []).map(selector => formatFrame(selector, includePage)),
+    ...matchBy(locator, 'kind', {
+      aria: current => current.steps.map(formatAriaStep),
+      css: current => [`locator(${quoteTypeScriptString(current.value)})`],
+      'test-id': current => [`getByTestId(${quoteTypeScriptString(current.value)})`],
+    }),
+  ]
+    .filter(Boolean)
+    .join('.')
 }
 
-function appendCall(receiver: string, call: string): string {
-  return receiver ? `${receiver}.${call}` : call
+function formatFrame(selector: string, includePage: boolean): string {
+  return includePage ? `locator(${quoteTypeScriptString(selector)}).contentFrame()` : `frameLocator(${quoteTypeScriptString(selector)})`
+}
+
+function formatAriaStep(step: AriaStep): string {
+  return matchBy(step, 'method', {
+    alt: current => formatTextStep('getByAltText', current),
+    label: current => formatTextStep('getByLabel', current),
+    placeholder: current => formatTextStep('getByPlaceholder', current),
+    role: current => `getByRole(${quoteTypeScriptString(current.role)}${formatOptions({ name: current.name ? quoteTypeScriptString(current.name) : undefined, exact: current.exact })})`,
+    text: current => formatTextStep('getByText', current),
+    title: current => formatTextStep('getByTitle', current),
+  })
+}
+
+function formatTextStep(method: string, { exact, text }: { exact?: boolean; text: string }): string {
+  return `${method}(${quoteTypeScriptString(text)}${formatOptions({ exact })})`
+}
+
+function formatOptions(values: Record<string, boolean | string | undefined>): string {
+  const properties = Object.entries(values).flatMap(([name, value]) => (value === undefined ? [] : `${name}: ${value}`))
+
+  return properties.length ? `, { ${properties.join(', ')} }` : ''
 }
 
 interface FormatPlaywrightLocatorOptions {
   includePage?: boolean
 }
+
+type AriaStep = Extract<RecordedLocator, { kind: 'aria' }>['steps'][number]

@@ -1,3 +1,5 @@
+import { tryTo } from '@te/recorder-utils'
+
 import { generateAriaTree } from '../../vendor/playwright/injected/ariaSnapshot.ts'
 import { beginAriaCaches, endAriaCaches, isElementHiddenForAria } from '../../vendor/playwright/injected/roleUtils.ts'
 import type { AriaNode as PlaywrightAriaNode } from '../../vendor/playwright/isomorphic/ariaSnapshot.ts'
@@ -70,18 +72,20 @@ function elementAncestry(target: Element): Element[] {
 
 function findTargetRef(nodesByRef: Map<string, AriaNode>, refs: Map<Element, string>, targetPath: Element[]): string | undefined {
   beginAriaCaches()
-  try {
-    for (const element of targetPath) {
-      const ref = refs.get(element)
-      const node = ref ? nodesByRef.get(ref) : undefined
+  return tryTo(
+    () => {
+      for (const element of targetPath) {
+        const ref = refs.get(element)
+        const node = ref ? nodesByRef.get(ref) : undefined
 
-      if (node && node.role !== 'generic' && !isElementHiddenForAria(element)) {
-        return ref
+        if (node && node.role !== 'generic' && !isElementHiddenForAria(element)) {
+          return ref
+        }
       }
-    }
-  } finally {
-    endAriaCaches()
-  }
 
-  return undefined
+      return undefined
+    },
+    undefined,
+    endAriaCaches,
+  )
 }

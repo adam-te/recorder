@@ -5,7 +5,7 @@ import { getRecordingSnapshotFileName, parseRecording, parseRecordingSnapshot, t
 import type { RecordingEditorHostMessage, RecordingEditorUiMessage } from '@te/recorder-ui/recording-editor'
 import { createRecordingEditorHost } from '@te/recorder-ui/recording-editor-host'
 import { renderRecordingSnapshot } from '@te/recorder-ui/render-recording-snapshot'
-import { matchBy } from '@te/recorder-utils'
+import { matchBy, tryTo } from '@te/recorder-utils'
 
 export { createRecordingEditorProvider, recordingEditorViewType }
 
@@ -102,17 +102,18 @@ function resolveRecordingEditor(args: ResolveRecordingEditorArgs): void {
   async function handleClosedDraft(): Promise<void> {
     const action = await window.showWarningMessage(`Recording was not saved. The draft was retained at ${workspace.asRelativePath(Uri.joinPath(args.document.uri, '..'), false)}.`, 'Save Recording', 'Reopen Draft')
 
-    try {
-      if (action === 'Save Recording') {
-        const savedDocumentUri = await args.onSave(args.document.uri)
-        if (savedDocumentUri) await commands.executeCommand('vscode.openWith', savedDocumentUri, recordingEditorViewType)
-        return
-      }
-      if (action !== 'Reopen Draft') return
-      await commands.executeCommand('vscode.openWith', args.document.uri, recordingEditorViewType)
-    } catch (error) {
-      await window.showErrorMessage(getErrorMessage(error))
-    }
+    await tryTo(
+      async () => {
+        if (action === 'Save Recording') {
+          const savedDocumentUri = await args.onSave(args.document.uri)
+          if (savedDocumentUri) await commands.executeCommand('vscode.openWith', savedDocumentUri, recordingEditorViewType)
+          return
+        }
+        if (action !== 'Reopen Draft') return
+        await commands.executeCommand('vscode.openWith', args.document.uri, recordingEditorViewType)
+      },
+      error => window.showErrorMessage(getErrorMessage(error)),
+    )
   }
 
   function readRecording(): Recording {
@@ -120,11 +121,7 @@ function resolveRecordingEditor(args: ResolveRecordingEditorArgs): void {
   }
 
   async function withErrorMessage(operation: () => Promise<void>): Promise<void> {
-    try {
-      await operation()
-    } catch (error) {
-      await window.showErrorMessage(getErrorMessage(error))
-    }
+    await tryTo(operation, error => window.showErrorMessage(getErrorMessage(error)))
   }
 }
 

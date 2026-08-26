@@ -118,12 +118,14 @@ function createRecordingStopRequest(): RecordingStopRequest {
       }
     })
 
-    try {
-      await requested
-    } finally {
-      abortController.abort()
-      await terminalStop
-    }
+    await tryTo(
+      () => requested,
+      undefined,
+      async () => {
+        abortController.abort()
+        await terminalStop
+      },
+    )
   }
 }
 
@@ -161,53 +163,56 @@ function getRecordingNameStem(url: string): string {
 }
 
 async function pathExists(path: string): Promise<boolean> {
-  try {
-    await access(path)
-    return true
-  } catch (error) {
-    if (error && typeof error === 'object' && 'code' in error && error.code === 'ENOENT') {
-      return false
-    }
-
-    throw error
-  }
+  return await tryTo(
+    async () => {
+      await access(path)
+      return true
+    },
+    error => {
+      if ('code' in error && error.code === 'ENOENT') return false
+      throw error
+    },
+  )
 }
 
 async function writeRecordingDirectory(args: { directoryPath: string; recording: Recording; snapshots: ReadonlyMap<number, RecordedAriaSnapshot> }): Promise<void> {
   const pendingDirectory = join(dirname(args.directoryPath), `.${basename(args.directoryPath)}.pending-${randomUUID()}`)
 
-  try {
-    const snapshotsDirectory = join(pendingDirectory, 'snapshots')
-    await mkdir(snapshotsDirectory, { recursive: true })
-    await writeFile(join(pendingDirectory, 'recording.json'), serializeRecording(args.recording), 'utf8')
+  await tryTo(
+    async () => {
+      const snapshotsDirectory = join(pendingDirectory, 'snapshots')
+      await mkdir(snapshotsDirectory, { recursive: true })
+      await writeFile(join(pendingDirectory, 'recording.json'), serializeRecording(args.recording), 'utf8')
 
-    for (const [actionIndex, action] of args.recording.actions.entries()) {
-      if (!('locatorCandidates' in action)) {
-        continue
+      for (const [actionIndex, action] of args.recording.actions.entries()) {
+        if (!('locatorCandidates' in action)) {
+          continue
+        }
+
+        const snapshot = args.snapshots.get(actionIndex)
+        if (!snapshot) {
+          throw new Error(`Missing ARIA snapshot for action ${actionIndex}.`)
+        }
+
+        await writeFile(join(snapshotsDirectory, getRecordingSnapshotFileName(actionIndex)), serializeRecordingSnapshot(snapshot), 'utf8')
       }
 
-      const snapshot = args.snapshots.get(actionIndex)
-      if (!snapshot) {
-        throw new Error(`Missing ARIA snapshot for action ${actionIndex}.`)
+      parseRecording(JSON.parse(await readFile(join(pendingDirectory, 'recording.json'), 'utf8')))
+      for (const [actionIndex, action] of args.recording.actions.entries()) {
+        if (!('locatorCandidates' in action)) {
+          continue
+        }
+
+        parseRecordingSnapshot(JSON.parse(await readFile(join(snapshotsDirectory, getRecordingSnapshotFileName(actionIndex)), 'utf8')))
       }
 
-      await writeFile(join(snapshotsDirectory, getRecordingSnapshotFileName(actionIndex)), serializeRecordingSnapshot(snapshot), 'utf8')
-    }
-
-    parseRecording(JSON.parse(await readFile(join(pendingDirectory, 'recording.json'), 'utf8')))
-    for (const [actionIndex, action] of args.recording.actions.entries()) {
-      if (!('locatorCandidates' in action)) {
-        continue
-      }
-
-      parseRecordingSnapshot(JSON.parse(await readFile(join(snapshotsDirectory, getRecordingSnapshotFileName(actionIndex)), 'utf8')))
-    }
-
-    await rename(pendingDirectory, args.directoryPath)
-  } catch (error) {
-    await rm(pendingDirectory, { force: true, recursive: true })
-    throw error
-  }
+      await rename(pendingDirectory, args.directoryPath)
+    },
+    async error => {
+      await rm(pendingDirectory, { force: true, recursive: true })
+      throw error
+    },
+  )
 }
 
 async function waitForEnter(signal: AbortSignal): Promise<void> {

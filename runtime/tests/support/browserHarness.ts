@@ -6,6 +6,7 @@ import { afterAll, afterEach, beforeAll, beforeEach } from 'vitest'
 import { createRecordingSession, type RecordedAriaSnapshot, type Recording } from '@te/recorder-core'
 import { createRecorder, playRecording, type Recorder } from '@te/recorder-runtime'
 import { installRecordingCapture, type CapturedInteractionEvent } from '@te/recorder-runtime/capture'
+import { tryTo } from '@te/recorder-utils'
 
 export { useBrowserTestHarness }
 
@@ -26,12 +27,14 @@ async function captureInteraction(args: CaptureInteractionArgs): Promise<Interac
     recordingSession,
     startUrl: defaultStartUrl,
   })
-  try {
-    await args.interact(page)
-    return await captured.promise
-  } finally {
-    await recordingCapture.dispose()
-  }
+  return await tryTo(
+    async () => {
+      await args.interact(page)
+      return await captured.promise
+    },
+    undefined,
+    recordingCapture.dispose,
+  )
 }
 
 async function createPage(args: CreatePageArgs): Promise<Page> {

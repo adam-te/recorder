@@ -5,6 +5,7 @@ import { chromium } from 'playwright'
 import { describe, expect, test, vi } from 'vitest'
 
 import { createRecording, serializeRecording, serializeRecordingSnapshot, type Recording } from '@te/recorder-core'
+import { tryTo } from '@te/recorder-utils'
 
 import { useTemporaryDirectories } from './support/temporaryDirectories.ts'
 
@@ -56,26 +57,28 @@ describe('runRecordingEditor', () => {
       openBrowser: async url => {
         const browser = await chromium.launch({ headless: true })
 
-        try {
-          const page = await browser.newPage()
-          const pageResponse = await page.goto(url)
-          expect(pageResponse?.status()).toBe(200)
-          expect(await page.locator('h1').textContent()).toBe('Example recording')
-          expect(await page.locator('.locator-list').textContent()).toContain('page.getByRole("dialog", { name: "Settings", exact: true }).getByLabel("Save", { exact: false })')
-          expect(await page.locator('.snapshot-yaml').textContent()).toContain('Show [ref=e2]')
-          expect(await page.locator('.snapshot-yaml').textContent()).not.toContain('[ref=e1]')
-          expect(await page.locator('.target-line').textContent()).toContain('Save')
+        await tryTo(
+          async () => {
+            const page = await browser.newPage()
+            const pageResponse = await page.goto(url)
+            expect(pageResponse?.status()).toBe(200)
+            expect(await page.locator('h1').textContent()).toBe('Example recording')
+            expect(await page.locator('.locator-list').textContent()).toContain('page.getByRole("dialog", { name: "Settings", exact: true }).getByLabel("Save", { exact: false })')
+            expect(await page.locator('.snapshot-yaml').textContent()).toContain('Show [ref=e2]')
+            expect(await page.locator('.snapshot-yaml').textContent()).not.toContain('[ref=e1]')
+            expect(await page.locator('.target-line').textContent()).toContain('Save')
 
-          const assetResponse = await page.request.get(new URL('recordingEditor.js', url).href)
-          expect(assetResponse.status()).toBe(200)
-          expect(assetResponse.headers()['x-content-type-options']).toBe('nosniff')
+            const assetResponse = await page.request.get(new URL('recordingEditor.js', url).href)
+            expect(assetResponse.status()).toBe(200)
+            expect(assetResponse.headers()['x-content-type-options']).toBe('nosniff')
 
-          const playResponse = page.waitForResponse(response => response.url().endsWith('/api/messages'))
-          await page.getByRole('button', { name: 'Play' }).click()
-          expect((await playResponse).status()).toBe(200)
-        } finally {
-          await browser.close()
-        }
+            const playResponse = page.waitForResponse(response => response.url().endsWith('/api/messages'))
+            await page.getByRole('button', { name: 'Play' }).click()
+            expect((await playResponse).status()).toBe(200)
+          },
+          undefined,
+          () => browser.close(),
+        )
       },
       stdout: { write: value => output.push(value) },
     })

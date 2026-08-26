@@ -80,12 +80,13 @@ function activateExtension(args: ActivateExtensionArgs): ActiveExtension {
 }
 
 function validateStartUrl(value: string): string | undefined {
-  try {
-    new URL(value.trim())
-    return undefined
-  } catch {
-    return 'Enter a valid absolute URL.'
-  }
+  return tryTo(
+    () => {
+      new URL(value.trim())
+      return undefined
+    },
+    () => 'Enter a valid absolute URL.',
+  )
 }
 
 interface ActivateExtensionArgs {

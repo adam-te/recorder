@@ -1,4 +1,5 @@
 import type { Recording } from '@te/recorder-core'
+import { tryTo } from '@te/recorder-utils'
 
 import type { RecordingEditorHostMessage, RecordingEditorUiMessage, SnapshotState } from './types.ts'
 
@@ -22,26 +23,28 @@ function createRecordingEditorHost(args: CreateRecordingEditorHostArgs): Recordi
   }
 
   async function publishRecording(): Promise<RecordingEditorHostMessage[]> {
-    try {
-      const recording = await args.readRecording()
-      selectedActionIndex = Math.min(selectedActionIndex, Math.max(0, recording.actions.length - 1))
+    return await tryTo(
+      async () => {
+        const recording = await args.readRecording()
+        selectedActionIndex = Math.min(selectedActionIndex, Math.max(0, recording.actions.length - 1))
 
-      return [{ type: 'recording', recording, pending: args.isPending(), selectedActionIndex }, await publishSnapshot(recording)]
-    } catch (error) {
-      return [{ type: 'error', message: getErrorMessage(error) }]
-    }
+        return [{ type: 'recording' as const, recording, pending: args.isPending(), selectedActionIndex }, await publishSnapshot(recording)]
+      },
+      error => [{ type: 'error', message: getErrorMessage(error) }],
+    )
   }
 
   async function publishSnapshot(recording?: Recording): Promise<RecordingEditorHostMessage> {
-    try {
-      const currentRecording = recording ?? (await args.readRecording())
-      const action = currentRecording.actions[selectedActionIndex]
-      const snapshot = action && 'locatorCandidates' in action ? await args.readSnapshot(selectedActionIndex) : undefined
+    return await tryTo(
+      async () => {
+        const currentRecording = recording ?? (await args.readRecording())
+        const action = currentRecording.actions[selectedActionIndex]
+        const snapshot = action && 'locatorCandidates' in action ? await args.readSnapshot(selectedActionIndex) : undefined
 
-      return { type: 'snapshot', actionIndex: selectedActionIndex, ...snapshot }
-    } catch (error) {
-      return { type: 'snapshot', actionIndex: selectedActionIndex, error: getErrorMessage(error) }
-    }
+        return { type: 'snapshot' as const, actionIndex: selectedActionIndex, ...snapshot }
+      },
+      error => ({ type: 'snapshot', actionIndex: selectedActionIndex, error: getErrorMessage(error) }),
+    )
   }
 }
 

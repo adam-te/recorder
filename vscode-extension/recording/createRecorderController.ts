@@ -4,6 +4,7 @@ import { commands, Uri, window, workspace, type ExtensionContext } from 'vscode'
 
 import { getRecordingSnapshotFileName, parseRecording, parseRecordingSnapshot, serializeRecording, serializeRecordingSnapshot, type RecordedAriaSnapshot, type Recording } from '@te/recorder-core'
 import { createRecorder } from '@te/recorder-runtime'
+import { tryTo } from '@te/recorder-utils'
 
 export { createRecorderController }
 export type { RecorderController }
@@ -25,12 +26,13 @@ function createRecorderController(args: CreateRecorderControllerArgs): RecorderC
     stagingDirectory = Uri.joinPath(getDraftRoot(), getDraftDirectoryName())
     await workspace.fs.createDirectory(Uri.joinPath(stagingDirectory, 'snapshots'))
 
-    try {
-      await recorder.start({ onSnapshotCaptured: stageSnapshot, onStopRequested: args.onStopRequested, startUrl })
-    } catch (error) {
-      await discardStagingDirectory()
-      throw error
-    }
+    await tryTo(
+      () => recorder.start({ onSnapshotCaptured: stageSnapshot, onStopRequested: args.onStopRequested, startUrl }),
+      async error => {
+        await discardStagingDirectory()
+        throw error
+      },
+    )
   }
 
   async function stop(): Promise<void> {
@@ -110,28 +112,22 @@ function createRecorderController(args: CreateRecorderControllerArgs): RecorderC
   }
 
   async function promptToSave(args: { draftDirectory: Uri; recording: Recording }): Promise<Uri | undefined> {
-    while (isPending(Uri.joinPath(args.draftDirectory, 'recording.json'))) {
-      const destination = await window.showSaveDialog({ defaultUri: defaultRecordingUri(args.recording, args.draftDirectory), saveLabel: 'Save Recording' })
-      if (!destination) {
-        return undefined
-      }
+    if (!isPending(Uri.joinPath(args.draftDirectory, 'recording.json'))) return undefined
 
-      const recordingDirectory = destination.path.endsWith('.recording') ? destination : destination.with({ path: `${destination.path}.recording` })
-      try {
+    const destination = await window.showSaveDialog({ defaultUri: defaultRecordingUri(args.recording, args.draftDirectory), saveLabel: 'Save Recording' })
+    if (!destination) return undefined
+
+    const recordingDirectory = destination.path.endsWith('.recording') ? destination : destination.with({ path: `${destination.path}.recording` })
+    return await tryTo(
+      async () => {
         await commitRecording({ destination: recordingDirectory, recording: args.recording, stagingDirectory: args.draftDirectory })
         await workspace.fs.delete(args.draftDirectory, { recursive: true, useTrash: false })
 
         await window.showInformationMessage(`Saved recording to ${recordingDirectory.fsPath}.`)
         return Uri.joinPath(recordingDirectory, 'recording.json')
-      } catch (error) {
-        const retry = await window.showErrorMessage(`Could not save recording: ${error.message}`, 'Choose Another Location', 'Cancel')
-        if (retry !== 'Choose Another Location') {
-          return undefined
-        }
-      }
-    }
-
-    return undefined
+      },
+      async error => ((await window.showErrorMessage(`Could not save recording: ${error.message}`, 'Choose Another Location', 'Cancel')) === 'Choose Another Location' ? promptToSave(args) : undefined),
+    )
   }
 
   function defaultRecordingUri(recording: Recording, draftDirectory: Uri): Uri | undefined {
@@ -192,29 +188,32 @@ function isDraftDocumentInRoot(documentUri: Uri, root: Uri): boolean {
 async function commitRecording(args: { destination: Uri; recording: Recording; stagingDirectory: Uri }): Promise<void> {
   const pendingDirectory = args.destination.with({ path: `${args.destination.path}.pending-${randomUUID()}` })
 
-  try {
-    const pendingSnapshotsDirectory = Uri.joinPath(pendingDirectory, 'snapshots')
-    await workspace.fs.createDirectory(pendingSnapshotsDirectory)
-    await workspace.fs.writeFile(Uri.joinPath(pendingDirectory, 'recording.json'), encoder.encode(serializeRecording(args.recording)))
+  await tryTo(
+    async () => {
+      const pendingSnapshotsDirectory = Uri.joinPath(pendingDirectory, 'snapshots')
+      await workspace.fs.createDirectory(pendingSnapshotsDirectory)
+      await workspace.fs.writeFile(Uri.joinPath(pendingDirectory, 'recording.json'), encoder.encode(serializeRecording(args.recording)))
 
-    const stagedSnapshotsDirectory = Uri.joinPath(args.stagingDirectory, 'snapshots')
-    for (const [actionIndex, action] of args.recording.actions.entries()) {
-      if (!('locatorCandidates' in action)) {
-        continue
+      const stagedSnapshotsDirectory = Uri.joinPath(args.stagingDirectory, 'snapshots')
+      for (const [actionIndex, action] of args.recording.actions.entries()) {
+        if (!('locatorCandidates' in action)) {
+          continue
+        }
+
+        const name = getRecordingSnapshotFileName(actionIndex)
+        const contents = await workspace.fs.readFile(Uri.joinPath(stagedSnapshotsDirectory, name))
+        parseRecordingSnapshot(JSON.parse(decoder.decode(contents)))
+        await workspace.fs.writeFile(Uri.joinPath(pendingSnapshotsDirectory, name), contents)
       }
 
-      const name = getRecordingSnapshotFileName(actionIndex)
-      const contents = await workspace.fs.readFile(Uri.joinPath(stagedSnapshotsDirectory, name))
-      parseRecordingSnapshot(JSON.parse(decoder.decode(contents)))
-      await workspace.fs.writeFile(Uri.joinPath(pendingSnapshotsDirectory, name), contents)
-    }
-
-    parseRecording(JSON.parse(decoder.decode(await workspace.fs.readFile(Uri.joinPath(pendingDirectory, 'recording.json')))))
-    await workspace.fs.rename(pendingDirectory, args.destination, { overwrite: false })
-  } catch (error) {
-    await workspace.fs.delete(pendingDirectory, { recursive: true, useTrash: false }).then(undefined, () => undefined)
-    throw error
-  }
+      parseRecording(JSON.parse(decoder.decode(await workspace.fs.readFile(Uri.joinPath(pendingDirectory, 'recording.json')))))
+      await workspace.fs.rename(pendingDirectory, args.destination, { overwrite: false })
+    },
+    async error => {
+      await workspace.fs.delete(pendingDirectory, { recursive: true, useTrash: false }).then(undefined, () => undefined)
+      throw error
+    },
+  )
 }
 
 interface RecorderController {

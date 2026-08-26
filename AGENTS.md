@@ -6,6 +6,7 @@
 # When Coding
 
 - Always use the `matchBy` function over `switch` statements
+- Always use the `tryTo` function over `try` statements
 - Always use truthy/falsy checks over strict equality when it doesn't change the result
 - Always use early returns for negative conditions if applicable
 - Avoid one-off variables; Prefer nesting expressions and functions over many one-off variables

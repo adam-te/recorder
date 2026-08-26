@@ -1,5 +1,5 @@
 import type { RecordedAction, RecordedLocator, RecordedValue } from '@te/recorder-core'
-import { matchBy } from '@te/recorder-utils'
+import { matchBy, tryTo } from '@te/recorder-utils'
 
 export { actionKindLabel, actionProperties, displayUrl, formatDate, summarizeAction }
 
@@ -53,12 +53,13 @@ function actionKindLabel(kind: RecordedAction['kind']): string {
 }
 
 function displayUrl(value: string): string {
-  try {
-    const url = new URL(value)
-    return `${url.host}${url.pathname === '/' ? '' : url.pathname}`
-  } catch {
-    return value
-  }
+  return tryTo(
+    () => {
+      const url = new URL(value)
+      return `${url.host}${url.pathname === '/' ? '' : url.pathname}`
+    },
+    () => value,
+  )
 }
 
 function formatDate(value: string): string {

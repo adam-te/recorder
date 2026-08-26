@@ -10,6 +10,7 @@ import { getRecordingSnapshotFileName, parseRecording, parseRecordingSnapshot, t
 import type { RecordingEditorHostMessage, RecordingEditorUiMessage } from '@te/recorder-ui/recording-editor'
 import { createRecordingEditorHost } from '@te/recorder-ui/recording-editor-host'
 import { renderRecordingSnapshot } from '@te/recorder-ui/render-recording-snapshot'
+import { tryTo } from '@te/recorder-utils'
 
 export { runRecordingEditor }
 export type { RunRecordingEditorArgs }
@@ -32,15 +33,17 @@ async function runRecordingEditor(args: RunRecordingEditorArgs): Promise<void> {
   const routeToken = randomUUID()
   const server = createServer((request, response) => void handleRequest({ args, host, recordingPath, request, response, routeToken }))
 
-  try {
-    await listen(server)
-    const address = server.address() as AddressInfo
-    const url = `http://127.0.0.1:${address.port}/${routeToken}/`
-    await args.stdout.write(`Recording editor opened at ${url}\nClose its browser window to stop the server.\n`)
-    await (args.openBrowser ?? openBrowser)(url)
-  } finally {
-    await closeServer(server)
-  }
+  await tryTo(
+    async () => {
+      await listen(server)
+      const address = server.address() as AddressInfo
+      const url = `http://127.0.0.1:${address.port}/${routeToken}/`
+      await args.stdout.write(`Recording editor opened at ${url}\nClose its browser window to stop the server.\n`)
+      await (args.openBrowser ?? openBrowser)(url)
+    },
+    undefined,
+    () => closeServer(server),
+  )
 }
 
 async function handleRequest(context: RequestContext): Promise<void> {
@@ -49,45 +52,49 @@ async function handleRequest(context: RequestContext): Promise<void> {
   const root = `/${context.routeToken}/`
   setSecurityHeaders(response)
 
-  try {
-    if (request.method === 'GET' && route === root) return send(response, 200, html(root), 'text/html; charset=utf-8')
-    if (request.method === 'GET' && route === `${root}recordingEditor.js`) return send(response, 200, await readFile(join(assetDirectory, 'recordingEditor.js')), 'text/javascript; charset=utf-8')
-    if (request.method === 'GET' && route === `${root}recordingEditor.css`) return send(response, 200, await readFile(join(assetDirectory, 'recordingEditor.css')), 'text/css; charset=utf-8')
-    if (request.method === 'GET' && route === `${root}recording.json`) return send(response, 200, await readFile(context.recordingPath), 'application/json; charset=utf-8')
+  await tryTo(
+    async () => {
+      if (request.method === 'GET' && route === root) return send(response, 200, html(root), 'text/html; charset=utf-8')
+      if (request.method === 'GET' && route === `${root}recordingEditor.js`) return send(response, 200, await readFile(join(assetDirectory, 'recordingEditor.js')), 'text/javascript; charset=utf-8')
+      if (request.method === 'GET' && route === `${root}recordingEditor.css`) return send(response, 200, await readFile(join(assetDirectory, 'recordingEditor.css')), 'text/css; charset=utf-8')
+      if (request.method === 'GET' && route === `${root}recording.json`) return send(response, 200, await readFile(context.recordingPath), 'application/json; charset=utf-8')
 
-    if (request.method === 'POST' && route === `${root}api/messages`) {
-      const message = parseMessage(JSON.parse(await readBody(request)))
-      const messages = await context.host.handleMessage(message)
-      if (messages) return sendJson(response, 200, { messages })
+      if (request.method === 'POST' && route === `${root}api/messages`) {
+        const message = parseMessage(JSON.parse(await readBody(request)))
+        const messages = await context.host.handleMessage(message)
+        if (messages) return sendJson(response, 200, { messages })
 
-      if (message.type === 'play') {
-        try {
-          await context.args.onPlay(parseRecording(JSON.parse(await readFile(context.recordingPath, 'utf8'))))
-          return sendJson(response, 200, {})
-        } catch (error) {
-          return sendJson(response, 200, { error: getErrorMessage(error) })
+        if (message.type === 'play') {
+          return await tryTo(
+            async () => {
+              await context.args.onPlay(parseRecording(JSON.parse(await readFile(context.recordingPath, 'utf8'))))
+              sendJson(response, 200, {})
+            },
+            error => sendJson(response, 200, { error: getErrorMessage(error) }),
+          )
         }
+
+        return sendJson(response, 400, { error: `Unsupported recording editor message: ${message.type}` })
       }
 
-      return sendJson(response, 400, { error: `Unsupported recording editor message: ${message.type}` })
-    }
-
-    send(response, 404, 'Not found.', 'text/plain; charset=utf-8')
-  } catch (error) {
-    sendJson(response, 500, { error: getErrorMessage(error) })
-  }
+      send(response, 404, 'Not found.', 'text/plain; charset=utf-8')
+    },
+    error => sendJson(response, 500, { error: getErrorMessage(error) }),
+  )
 }
 
 async function openBrowser(url: string): Promise<void> {
   const browser = await chromium.launch({ headless: false })
   const page = await browser.newPage({ colorScheme: null })
 
-  try {
-    await page.goto(url)
-    await new Promise<void>(resolve => page.once('close', () => resolve()))
-  } finally {
-    await browser.close()
-  }
+  await tryTo(
+    async () => {
+      await page.goto(url)
+      await new Promise<void>(resolve => page.once('close', () => resolve()))
+    },
+    undefined,
+    () => browser.close(),
+  )
 }
 
 function html(root: string): string {
