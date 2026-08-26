@@ -12,6 +12,7 @@
   },
   "dependencies": {
     "@te/aria": "*",
+    "@te/recorder-utils": "*",
     "zod": "^4.4.3"
   }
 }

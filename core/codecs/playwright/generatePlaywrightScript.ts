@@ -1,87 +1,89 @@
 import { recordingDocumentSchema, type RecordedAction, type RecordedValue, type RecordingDocument } from '#core/document/recordingDocumentSchema.ts'
 
-import { formatPlaywrightLocator } from './formatPlaywrightLocator.ts'
-import { quoteTypeScriptString } from './quoteTypeScriptString.ts'
+import { matchBy } from '@te/recorder-utils'
+
+import { formatPlaywrightLocator as locator } from './formatPlaywrightLocator.ts'
+import { quoteTypeScriptString as quote } from './quoteTypeScriptString.ts'
 
 export { generatePlaywrightScript }
 
 function generatePlaywrightScript(document: RecordingDocument): string {
-  const parsedDocument = recordingDocumentSchema.parse(document)
-  const lines = ["import { test } from 'playwright/test'", '', parsedDocument.actions.length ? `test(${quoteTypeScriptString(parsedDocument.title)}, async ({ page }) => {` : `test(${quoteTypeScriptString(parsedDocument.title)}, async () => {})`]
+  const recording = recordingDocumentSchema.parse(document)
+  return `import { test } from 'playwright/test'
 
-  if (parsedDocument.actions.length) {
-    lines.push(...parsedDocument.actions.map(action => `  ${renderAction(action)}`), '})')
+test(${quote(recording.title)}, async ({ page }) => {
+${recording.actions.map(action => `  ${renderAction(action)}`).join('\n')}
+})${helpers(recording.actions)}
+`
+}
+
+function helpers(actions: RecordedAction[]): string {
+  if (!actions.some(action => action.kind === 'fill' && action.value.kind === 'secret')) return ''
+
+  return `
+
+function requiredSecret(name: string): string {
+  const value = process.env[name]
+
+  if (value === undefined) {
+    throw new Error(\`Missing required secret: \${name}\`)
   }
 
-  if (parsedDocument.actions.some(action => action.kind === 'fill' && action.value.kind === 'secret')) {
-    lines.push('', 'function requiredSecret(name: string): string {', '  const value = process.env[name]', '', '  if (value === undefined) {', '    throw new Error(`Missing required secret: ${name}`)', '  }', '', '  return value', '}')
-  }
-
-  return `${lines.join('\n')}\n`
+  return value
+}`
 }
 
 function renderAction(action: RecordedAction): string {
-  switch (action.kind) {
-    case 'assert-visible':
-      return `await ${formatPlaywrightLocator(action.locatorCandidates[0])}.waitFor({ state: "visible" })`
-    case 'check':
-      return `await ${formatPlaywrightLocator(action.locatorCandidates[0])}.${action.checked ? 'check' : 'uncheck'}()`
-    case 'click': {
-      const options = [
-        ...(action.button === undefined ? [] : [`button: ${quoteTypeScriptString(action.button)}`]),
-        ...(action.clickCount === undefined ? [] : [`clickCount: ${action.clickCount}`]),
-        ...(action.modifiers === undefined ? [] : [`modifiers: ${renderStringArray(action.modifiers)}`]),
-        ...(action.position === undefined ? [] : [`position: ${renderPosition(action.position)}`]),
-      ]
-
-      return `await ${formatPlaywrightLocator(action.locatorCandidates[0])}.click(${renderOptionalObject(options)})`
-    }
-    case 'fill':
-      return `await ${formatPlaywrightLocator(action.locatorCandidates[0])}.fill(${renderValue(action.value)})`
-    case 'go-back':
-      return 'await page.goBack()'
-    case 'go-forward':
-      return 'await page.goForward()'
-    case 'goto':
-      return `await page.goto(${quoteTypeScriptString(action.url)})`
-    case 'hover':
-      return `await ${formatPlaywrightLocator(action.locatorCandidates[0])}.hover(${renderOptionalObject(action.position === undefined ? [] : [`position: ${renderPosition(action.position)}`])})`
-    case 'press':
-      return `await ${formatPlaywrightLocator(action.locatorCandidates[0])}.press(${quoteTypeScriptString([...(action.modifiers ?? []), action.key].join('+'))})`
-    case 'reload':
-      return 'await page.reload()'
-    case 'select':
-      return `await ${formatPlaywrightLocator(action.locatorCandidates[0])}.selectOption(${renderStringArray(action.options)})`
-    case 'set-input-files':
-      return `await ${formatPlaywrightLocator(action.locatorCandidates[0])}.setInputFiles(${renderStringArray(action.files)})`
-  }
-
-  return assertNever(action)
+  return matchBy(action, 'kind', {
+    'assert-visible': current => `await ${target(current)}.waitFor({ state: "visible" })`,
+    check: current => `await ${target(current)}.${current.checked ? 'check' : 'uncheck'}()`,
+    click: current => `await ${target(current)}.click(${clickOptions(current)})`,
+    fill: current => `await ${target(current)}.fill(${value(current.value)})`,
+    'go-back': () => 'await page.goBack()',
+    'go-forward': () => 'await page.goForward()',
+    goto: current => `await page.goto(${quote(current.url)})`,
+    hover: current => `await ${target(current)}.hover(${positionOptions(current.position)})`,
+    press: current => `await ${target(current)}.press(${quote([...(current.modifiers ?? []), current.key].join('+'))})`,
+    reload: () => 'await page.reload()',
+    select: current => `await ${target(current)}.selectOption(${array(current.options)})`,
+    'set-input-files': current => `await ${target(current)}.setInputFiles(${array(current.files)})`,
+  })
 }
 
-function renderValue(value: RecordedValue): string {
-  switch (value.kind) {
-    case 'plain-text':
-      return quoteTypeScriptString(value.value)
-    case 'secret':
-      return `requiredSecret(${quoteTypeScriptString(value.name)})`
-  }
-
-  return assertNever(value)
+function value(recordedValue: RecordedValue): string {
+  return matchBy(recordedValue, 'kind', {
+    'plain-text': current => quote(current.value),
+    secret: current => `requiredSecret(${quote(current.name)})`,
+  })
 }
 
-function renderOptionalObject(properties: string[]): string {
+function target(action: LocatedAction): string {
+  return locator(action.locatorCandidates[0])
+}
+
+function clickOptions(action: ClickAction): string {
+  return options({
+    button: optional(action.button, quote),
+    clickCount: action.clickCount,
+    modifiers: optional(action.modifiers, array),
+    position: optional(action.position, point),
+  })
+}
+
+function positionOptions(position: Position | undefined): string {
+  return options({ position: optional(position, point) })
+}
+
+function options(values: Record<string, string | number | undefined>): string {
+  const properties = Object.entries(values).flatMap(([name, value]) => (value === undefined ? [] : `${name}: ${value}`))
+
   return properties.length ? `{ ${properties.join(', ')} }` : ''
 }
 
-function renderPosition(position: { x: number; y: number }): string {
-  return `{ x: ${position.x}, y: ${position.y} }`
-}
+const point = ({ x, y }: Position): string => `{ x: ${x}, y: ${y} }`
+const array = (values: string[]): string => `[${values.map(quote).join(', ')}]`
+const optional = <Value>(value: Value | undefined, render: (value: Value) => string): string | undefined => (value === undefined ? undefined : render(value))
 
-function renderStringArray(values: string[]): string {
-  return `[${values.map(quoteTypeScriptString).join(', ')}]`
-}
-
-function assertNever(value: never): never {
-  throw new Error(`Unsupported recorded value: ${JSON.stringify(value)}`)
-}
+type LocatedAction = Extract<RecordedAction, { locatorCandidates: unknown }>
+type ClickAction = Extract<RecordedAction, { kind: 'click' }>
+type Position = NonNullable<ClickAction['position']>

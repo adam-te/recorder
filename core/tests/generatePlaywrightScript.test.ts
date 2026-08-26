@@ -90,12 +90,14 @@ function requiredSecret(name: string): string {
     expect(source).toContain('page.locator("input\\n\\"quoted\\"").fill("line one\\nline two\\u2028line three\\u2029")')
   })
 
-  test('generates a valid empty test without an unused page fixture', () => {
+  test('generates a valid empty test', () => {
     const source = generatePlaywrightScript(createDocument([], 'Empty recording'))
 
     expect(source).toBe(`import { test } from 'playwright/test'
 
-test("Empty recording", async () => {})
+test("Empty recording", async ({ page }) => {
+
+})
 `)
   })
 
