@@ -33,7 +33,7 @@ if (!document.querySelector(`[${RECORDER_UI_ATTRIBUTE}]`)) {
   function describeElement(element: Element): string {
     const locator = generateLocatorCandidates(element, generateSelectorCandidates, ariaRuntime)[0] ?? { kind: 'css' as const, value: element.tagName.toLowerCase() }
 
-    return formatPlaywrightLocator(locator, { scope: 'implicit' })
+    return formatPlaywrightLocator(locator, { includePage: false })
   }
 
   async function disposeRecordingOverlay(): Promise<void> {

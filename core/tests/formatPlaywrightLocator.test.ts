@@ -9,9 +9,9 @@ describe('Playwright locator formatting', () => {
     expect(formatPlaywrightLocator({ kind: 'test-id', value: 'save' })).toBe('page.getByTestId("save")')
   })
 
-  test('formats locators without a receiver for an implicit page scope', () => {
-    expect(formatPlaywrightLocator({ kind: 'aria', steps: [{ method: 'role', name: 'Save', role: 'button' }] }, { scope: 'implicit' })).toBe('getByRole("button", { name: "Save" })')
-    expect(formatPlaywrightLocator({ kind: 'css', value: 'body' }, { scope: 'implicit' })).toBe('locator("body")')
+  test('formats locators without a page receiver', () => {
+    expect(formatPlaywrightLocator({ kind: 'aria', steps: [{ method: 'role', name: 'Save', role: 'button' }] }, { includePage: false })).toBe('getByRole("button", { name: "Save" })')
+    expect(formatPlaywrightLocator({ kind: 'css', value: 'body' }, { includePage: false })).toBe('locator("body")')
   })
 
   test('omits exact when the locator uses Playwright default matching', () => {
@@ -43,7 +43,7 @@ describe('Playwright locator formatting', () => {
     expect(formatPlaywrightLocator({ framePath: ['#outer', '#inner'], kind: 'css', value: '#target' })).toBe('page.locator("#outer").contentFrame().locator("#inner").contentFrame().locator("#target")')
   })
 
-  test('uses receiverless frame locators for an implicit page scope', () => {
-    expect(formatPlaywrightLocator({ framePath: ['#outer', '#inner'], kind: 'css', value: '#target' }, { scope: 'implicit' })).toBe('frameLocator("#outer").frameLocator("#inner").locator("#target")')
+  test('uses receiverless frame locators when the page is omitted', () => {
+    expect(formatPlaywrightLocator({ framePath: ['#outer', '#inner'], kind: 'css', value: '#target' }, { includePage: false })).toBe('frameLocator("#outer").frameLocator("#inner").locator("#target")')
   })
 })

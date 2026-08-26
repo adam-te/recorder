@@ -5,12 +5,11 @@ import { quoteTypeScriptString } from './quoteTypeScriptString.ts'
 export { formatPlaywrightLocator }
 export type { FormatPlaywrightLocatorOptions }
 
-function formatPlaywrightLocator(locator: RecordedLocator, options: FormatPlaywrightLocatorOptions = {}): string {
-  const scope = options.scope ?? 'page'
-  let source = scope === 'page' ? 'page' : ''
+function formatPlaywrightLocator(locator: RecordedLocator, { includePage = true }: FormatPlaywrightLocatorOptions = {}): string {
+  let source = includePage ? 'page' : ''
 
   for (const frameSelector of locator.framePath ?? []) {
-    source = scope === 'page' ? appendCall(source, `locator(${quoteTypeScriptString(frameSelector)}).contentFrame()`) : appendCall(source, `frameLocator(${quoteTypeScriptString(frameSelector)})`)
+    source = includePage ? appendCall(source, `locator(${quoteTypeScriptString(frameSelector)}).contentFrame()`) : appendCall(source, `frameLocator(${quoteTypeScriptString(frameSelector)})`)
   }
 
   if (locator.kind !== 'aria') {
@@ -40,5 +39,5 @@ function appendCall(receiver: string, call: string): string {
 }
 
 interface FormatPlaywrightLocatorOptions {
-  scope?: 'implicit' | 'page'
+  includePage?: boolean
 }
