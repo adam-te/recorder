@@ -1,29 +1,29 @@
 # ThousandEyes Transaction Recorder
 
-Provides the packages used to author, record, and play back ThousandEyes Transaction tests from Visual Studio Code.
-
-The domain model and recording UI are kept independent from browser automation and editor integration so each layer can evolve without coupling the others.
+Record, inspect, and replay ThousandEyes browser transaction tests from Visual Studio Code or the command line.
 
 ```text
-VS Code extension ──> UI ──────> core
-        │                         ▲
-        └──────────> runtime ─────┤
-CLI ───────────────> runtime      │
-                         │        │
-                         v        v
-                     Playwright  codecs/
-                                  └── thousandeyes
+VS Code extension ─┐
+                   ├──> UI (editor + recording overlay)
+CLI ───────────────┤
+                   └──> Runtime (record + play) ──> Playwright
+                              │
+                              v
+                   Core (document + codecs)
+                              │
+                              v
+                     .recording artifacts
+
+             ARIA and utilities support shared packages
 ```
 
-`ui` provides the host-neutral recording editor and typed host protocol, while the extension supplies a thin VS Code webview adapter and theme mapping. `runtime` provides the reusable browser-backed recorder API, and `core` owns the platform-independent recording document and pure format codecs.
+The VS Code extension and CLI host the shared UI and runtime. The UI provides the host-neutral editor and browser overlay, the runtime coordinates recording and playback with Playwright, and core owns the recording document, serialization, and format codecs.
 
 ## Development
 
-Install the standalone workspace and run its recursive check from this directory:
-
 ```text
 npm install
-npm run check
+npx te record https://example.com
 ```
 
-The check formats, lints, and type-checks the entire workspace, builds the extension, and runs the package-local test suites.
+To test the extension, open this repository in VS Code and press `F5`.
