@@ -36,21 +36,23 @@ function recordPageInteractions(args: RecordPageInteractionsArgs, ariaRuntime: A
   function captureEvent(event: Event, serialize: (event: never) => CapturedInteractionEvent): void {
     const targetPath = event.composedPath().filter((candidate): candidate is Element => candidate instanceof Element)
     const target = targetPath[0]
-    const isRecorderUiEvent = targetPath.some(candidate => candidate.hasAttribute(args.recorderUiAttribute))
 
-    if (target && !isRecorderUiEvent && !capturedEvents.has(event)) {
-      capturedEvents.add(event)
-      const snapshotOptions = { target, targetPath }
-      const locatorOptions = {
+    if (!target || targetPath.some(candidate => candidate.hasAttribute(args.recorderUiAttribute)) || capturedEvents.has(event)) {
+      return
+    }
+
+    capturedEvents.add(event)
+    const { snapshot: ariaSnapshot, targetRef } = ariaRuntime.generateAriaSnapshot({ target, targetPath })
+
+    void reportInteraction({
+      ariaSnapshot,
+      event: serialize(event as never),
+      selectors: generateLocatorCandidates(target, generateSelectorCandidates, ariaRuntime, {
         excludeElement: (element: Element) => element.hasAttribute(args.recorderUiAttribute) || Boolean(element.closest(`[${args.recorderUiAttribute}]`)),
         getShadowRoot: (element: Element) => element.shadowRoot ?? closedShadowRoots.get(element) ?? null,
-        target,
-      }
-      const { snapshot: ariaSnapshot, targetRef } = ariaRuntime.generateAriaSnapshot(snapshotOptions)
-      const selectors = generateLocatorCandidates(target, generateSelectorCandidates, ariaRuntime, locatorOptions)
-
-      void reportInteraction({ ariaSnapshot, event: serialize(event as never), selectors, ...(targetRef ? { targetRef } : {}) })
-    }
+      }),
+      ...(targetRef ? { targetRef } : {}),
+    })
   }
 }
 

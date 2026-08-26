@@ -30,9 +30,7 @@ async function createRecordedAction(interaction: CapturedInteraction): Promise<R
 }
 
 function markSnapshotTarget(snapshot: RecordedAriaSnapshot, targetRef: string | undefined): RecordedAriaSnapshot {
-  const markedSnapshot = markNode(snapshot)
-
-  return parseRecordingSnapshot(markedSnapshot)
+  return parseRecordingSnapshot(markNode(snapshot))
 
   function markNode(node: RecordedAriaNode): RecordedAriaNode {
     return {

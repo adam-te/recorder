@@ -6,10 +6,12 @@ export type { GenerateLocatorCandidates }
 
 function generateLocatorCandidates(element: Element, generateCssSelectorCandidates: (element: Element) => CapturedCssSelector[], ariaRuntime: AriaRuntime, options: Omit<AriaLocatorOptions, 'target'> = {}): CapturedSelector[] {
   const testIdSelector = generateTestIdSelector(element, options)
-  const ariaSelectors = ariaRuntime.generateAriaLocatorCandidates({ ...options, target: element }).map(candidate => ({ ...candidate, kind: 'aria' as const }))
-  const cssSelectors = generateCssSelectorCandidates(element).filter(selector => !testIdSelector || selector.value !== testIdCssSelector(testIdSelector.value))
 
-  return [...(testIdSelector ? [testIdSelector] : []), ...ariaSelectors, ...cssSelectors]
+  return [
+    ...(testIdSelector ? [testIdSelector] : []),
+    ...ariaRuntime.generateAriaLocatorCandidates({ ...options, target: element }).map(candidate => ({ ...candidate, kind: 'aria' as const })),
+    ...generateCssSelectorCandidates(element).filter(selector => !testIdSelector || selector.value !== testIdCssSelector(testIdSelector.value)),
+  ]
 }
 
 function generateTestIdSelector(element: Element, options: Omit<AriaLocatorOptions, 'target'>): CapturedTestIdSelector | undefined {

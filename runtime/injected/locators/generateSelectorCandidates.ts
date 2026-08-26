@@ -153,10 +153,11 @@ function generateSelectorCandidates(element: Element, maxCandidates = 3): Captur
     function* getCombinations(values: string[], size: number, selected: string[] = [], startIndex = 0): Generator<CompoundFragment> {
       if (selected.length === size) {
         yield { parts: selected, value: selected.join('') }
-      } else {
-        for (let index = startIndex; index <= values.length - (size - selected.length); index += 1) {
-          yield* getCombinations(values, size, [...selected, values[index]!], index + 1)
-        }
+        return
+      }
+
+      for (let index = startIndex; index <= values.length - (size - selected.length); index += 1) {
+        yield* getCombinations(values, size, [...selected, values[index]!], index + 1)
       }
     }
   }

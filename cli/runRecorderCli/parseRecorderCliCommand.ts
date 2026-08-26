@@ -3,25 +3,28 @@ export type { RecorderCliCommand }
 
 function parseRecorderCliCommand(argv: readonly string[]): RecorderCliCommand {
   const [commandName, ...commandArguments] = argv
-  let command: RecorderCliCommand
 
   if (!commandName || ['help', '--help', '-h'].includes(commandName)) {
     assertArgumentCount(commandArguments, 0, 'te help')
-    command = { kind: 'help' }
-  } else if (commandName === 'record') {
-    assertArgumentCountBetween(commandArguments, 1, 2, 'te record <url> [recording-directory]')
-    command = { directoryPath: commandArguments[1], kind: 'record', url: commandArguments[0] }
-  } else if (commandName === 'play') {
-    assertArgumentCount(commandArguments, 1, 'te play <directory>')
-    command = { directoryPath: commandArguments[0], kind: 'play' }
-  } else if (commandName === 'ui') {
-    assertArgumentCount(commandArguments, 1, 'te ui <directory>')
-    command = { directoryPath: commandArguments[0], kind: 'ui' }
-  } else {
-    throw new Error(`Unknown command "${commandName}". Run "te help" for usage.`)
+    return { kind: 'help' }
   }
 
-  return command
+  if (commandName === 'record') {
+    assertArgumentCountBetween(commandArguments, 1, 2, 'te record <url> [recording-directory]')
+    return { directoryPath: commandArguments[1], kind: 'record', url: commandArguments[0] }
+  }
+
+  if (commandName === 'play') {
+    assertArgumentCount(commandArguments, 1, 'te play <directory>')
+    return { directoryPath: commandArguments[0], kind: 'play' }
+  }
+
+  if (commandName === 'ui') {
+    assertArgumentCount(commandArguments, 1, 'te ui <directory>')
+    return { directoryPath: commandArguments[0], kind: 'ui' }
+  }
+
+  throw new Error(`Unknown command "${commandName}". Run "te help" for usage.`)
 }
 
 function assertArgumentCount(positionals: readonly string[], expectedCount: number, usage: string): void {

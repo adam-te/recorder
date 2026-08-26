@@ -13,21 +13,20 @@ async function captureBrowserNavigation(args: CaptureBrowserNavigationArgs): Pro
   let pendingCapture = Promise.resolve()
 
   cdpSession.on('Page.frameRequestedNavigation', event => {
-    if (event.frameId === frameTree.frameTree.frame.id) {
-      rendererNavigationRequested = true
-    }
+    if (event.frameId !== frameTree.frameTree.frame.id) return
+    rendererNavigationRequested = true
   })
   args.page.on('framenavigated', queueNavigationCapture)
 
   return { dispose, flush }
 
   function queueNavigationCapture(frame: Frame): void {
-    if (frame === args.page.mainFrame()) {
-      const rendererInitiated = rendererNavigationRequested
+    if (frame !== args.page.mainFrame()) return
 
-      rendererNavigationRequested = false
-      pendingCapture = pendingCapture.then(() => captureNavigation(rendererInitiated))
-    }
+    const rendererInitiated = rendererNavigationRequested
+
+    rendererNavigationRequested = false
+    pendingCapture = pendingCapture.then(() => captureNavigation(rendererInitiated))
   }
 
   async function captureNavigation(rendererInitiated: boolean): Promise<void> {

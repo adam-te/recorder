@@ -1,3 +1,5 @@
+import { matchBy } from '@te/recorder-utils'
+
 import { getAriaRole, getElementAccessibleNameText, isElementHiddenForAria } from '../../vendor/playwright/injected/roleUtils.ts'
 import { elementMatchesText, elementText, getElementLabels, type ElementText } from '../../vendor/playwright/injected/selectorUtils.ts'
 import { normalizeWhiteSpace } from '../../vendor/playwright/isomorphic/stringUtils.ts'
@@ -22,24 +24,21 @@ function createAriaQueryContext(options: AriaLocatorOptions): AriaQueryContext {
   function findMatches(scope: Element, step: AriaLocatorStep): Element[] {
     const elements = getElements(scope)
 
-    switch (step.method) {
-      case 'role':
-        return elements.filter(element => getRole(element) === step.role && !isInaccessible(element) && (step.name === undefined || textMatches(getName(element), step.name, step.exact)))
-      case 'label':
-        return elements.filter(element => getLabels(element).some(label => textMatches(label, step.text, step.exact)))
-      case 'text': {
-        const matcher = (text: ElementText): boolean => textMatches(text.normalized, step.text, step.exact)
+    return matchBy(step, 'method', {
+      alt: findAttributeMatches,
+      label: current => elements.filter(element => getLabels(element).some(label => textMatches(label, current.text, current.exact))),
+      placeholder: findAttributeMatches,
+      role: current => elements.filter(element => getRole(element) === current.role && !isInaccessible(element) && (current.name === undefined || textMatches(getName(element), current.name, current.exact))),
+      text: current => elements.filter(element => elementMatchesText(labelTextCache, element, text => textMatches(text.normalized, current.text, current.exact)) === 'self'),
+      title: findAttributeMatches,
+    })
 
-        return elements.filter(element => elementMatchesText(labelTextCache, element, matcher) === 'self')
-      }
-      case 'alt':
-      case 'placeholder':
-      case 'title':
-        return elements.filter(element => {
-          const value = element.getAttribute(step.method)
+    function findAttributeMatches(current: Extract<AriaLocatorStep, { method: 'alt' | 'placeholder' | 'title' }>): Element[] {
+      return elements.filter(element => {
+        const value = element.getAttribute(current.method)
 
-          return value !== null && textMatches(value, step.text, step.exact)
-        })
+        return value !== null && textMatches(value, current.text, current.exact)
+      })
     }
   }
 

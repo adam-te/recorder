@@ -72,9 +72,7 @@ function createRecorderController(args: CreateRecorderControllerArgs): RecorderC
       throw new Error('This recording preview is no longer available.')
     }
 
-    const contents = await workspace.fs.readFile(documentUri)
-    const document = parseRecordingDocument(JSON.parse(decoder.decode(contents)))
-    return promptToSave({ document, draftDirectory: Uri.joinPath(documentUri, '..') })
+    return promptToSave({ document: parseRecordingDocument(JSON.parse(decoder.decode(await workspace.fs.readFile(documentUri)))), draftDirectory: Uri.joinPath(documentUri, '..') })
   }
 
   async function discardPending(documentUri: Uri): Promise<boolean> {
@@ -91,8 +89,7 @@ function createRecorderController(args: CreateRecorderControllerArgs): RecorderC
       throw new Error('Cannot stage a snapshot without an active recording.')
     }
 
-    const snapshotsDirectory = Uri.joinPath(stagingDirectory, 'snapshots')
-    const destination = Uri.joinPath(snapshotsDirectory, getRecordingSnapshotFileName(args.actionIndex))
+    const destination = Uri.joinPath(stagingDirectory, 'snapshots', getRecordingSnapshotFileName(args.actionIndex))
     const temporary = destination.with({ path: `${destination.path}.pending` })
 
     await workspace.fs.writeFile(temporary, encoder.encode(serializeRecordingSnapshot(args.ariaSnapshot)))
@@ -153,8 +150,7 @@ function createRecorderController(args: CreateRecorderControllerArgs): RecorderC
 
   function getDraftRoot(): Uri {
     const activeDocumentUri = window.activeTextEditor?.document.uri
-    const activeWorkspaceFolder = activeDocumentUri ? workspace.getWorkspaceFolder(activeDocumentUri) : undefined
-    const workspaceFolder = activeWorkspaceFolder ?? workspace.workspaceFolders?.[0]
+    const workspaceFolder = (activeDocumentUri ? workspace.getWorkspaceFolder(activeDocumentUri) : undefined) ?? workspace.workspaceFolders?.[0]
 
     return workspaceFolder ? Uri.joinPath(workspaceFolder.uri, '.thousandeyes-recorder', 'drafts') : getPrivateDraftRoot()
   }
@@ -171,18 +167,16 @@ function createRecorderController(args: CreateRecorderControllerArgs): RecorderC
     const currentStagingDirectory = stagingDirectory
 
     stagingDirectory = undefined
-    if (currentStagingDirectory) {
-      await workspace.fs.delete(currentStagingDirectory, { recursive: true, useTrash: false })
-    }
+    if (!currentStagingDirectory) return
+    await workspace.fs.delete(currentStagingDirectory, { recursive: true, useTrash: false })
   }
 }
 
 function getDraftDirectoryName(): string {
-  const timestamp = new Date()
+  return `recording-${new Date()
     .toISOString()
     .replaceAll(/[-:]/g, '')
-    .replace(/\.\d{3}Z$/, 'Z')
-  return `recording-${timestamp}-${randomUUID().slice(0, 8)}.recording`
+    .replace(/\.\d{3}Z$/, 'Z')}-${randomUUID().slice(0, 8)}.recording`
 }
 
 function isDraftDocumentInRoot(documentUri: Uri, root: Uri): boolean {
@@ -215,8 +209,7 @@ async function commitRecording(args: { destination: Uri; document: RecordingDocu
       await workspace.fs.writeFile(Uri.joinPath(pendingSnapshotsDirectory, name), contents)
     }
 
-    const documentContents = await workspace.fs.readFile(Uri.joinPath(pendingDirectory, 'recording.json'))
-    parseRecordingDocument(JSON.parse(decoder.decode(documentContents)))
+    parseRecordingDocument(JSON.parse(decoder.decode(await workspace.fs.readFile(Uri.joinPath(pendingDirectory, 'recording.json')))))
     await workspace.fs.rename(pendingDirectory, args.destination, { overwrite: false })
   } catch (error) {
     await workspace.fs.delete(pendingDirectory, { recursive: true, useTrash: false }).then(undefined, () => undefined)

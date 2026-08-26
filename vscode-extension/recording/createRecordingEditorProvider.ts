@@ -1,5 +1,5 @@
 import { randomUUID } from 'node:crypto'
-import { commands, env, Uri, ViewColumn, window, workspace, type CustomTextEditorProvider, type Disposable, type ExtensionContext, type TextDocument, type WebviewPanel } from 'vscode'
+import { commands, env, Uri, ViewColumn, window, workspace, type Disposable, type ExtensionContext, type TextDocument, type WebviewPanel } from 'vscode'
 
 import { getRecordingSnapshotFileName, parseRecordingDocument, parseRecordingSnapshot, type RecordingDocument } from '@te/recorder-core'
 import type { RecordingEditorHostMessage, RecordingEditorUiMessage } from '@te/recorder-ui/recording-editor'
@@ -13,11 +13,7 @@ const recordingEditorViewType = 'thousandeyesRecorder.recording'
 const decoder = new TextDecoder()
 
 function createRecordingEditorProvider(args: CreateRecordingEditorProviderArgs): Disposable {
-  const provider: CustomTextEditorProvider = {
-    resolveCustomTextEditor: (document, panel) => resolveRecordingEditor({ ...args, document, panel }),
-  }
-
-  return window.registerCustomEditorProvider(recordingEditorViewType, provider, { supportsMultipleEditorsPerDocument: false, webviewOptions: { retainContextWhenHidden: true } })
+  return window.registerCustomEditorProvider(recordingEditorViewType, { resolveCustomTextEditor: (document, panel) => resolveRecordingEditor({ ...args, document, panel }) }, { supportsMultipleEditorsPerDocument: false, webviewOptions: { retainContextWhenHidden: true } })
 }
 
 function resolveRecordingEditor(args: ResolveRecordingEditorArgs): void {
@@ -29,13 +25,7 @@ function resolveRecordingEditor(args: ResolveRecordingEditorArgs): void {
   const host = createRecordingEditorHost({
     isPending: () => args.isPending(args.document.uri),
     readDocument,
-    readSnapshot: async actionIndex => {
-      const snapshotUri = Uri.joinPath(args.document.uri, '..', 'snapshots', getRecordingSnapshotFileName(actionIndex))
-      const contents = await workspace.fs.readFile(snapshotUri)
-      const snapshot = parseRecordingSnapshot(JSON.parse(decoder.decode(contents)))
-
-      return renderRecordingSnapshot(snapshot)
-    },
+    readSnapshot: async actionIndex => renderRecordingSnapshot(parseRecordingSnapshot(JSON.parse(decoder.decode(await workspace.fs.readFile(Uri.joinPath(args.document.uri, '..', 'snapshots', getRecordingSnapshotFileName(actionIndex))))))),
   })
 
   args.panel.webview.options = { enableScripts: true, localResourceRoots: [webviewDirectory] }
@@ -44,17 +34,15 @@ function resolveRecordingEditor(args: ResolveRecordingEditorArgs): void {
   const disposables = [
     args.panel.webview.onDidReceiveMessage(handleMessage),
     workspace.onDidChangeTextDocument(event => {
-      if (event.document === args.document) {
-        void publishDocument()
-      }
+      if (event.document !== args.document) return
+      void publishDocument()
     }),
   ]
   args.panel.onDidDispose(() => {
     disposed = true
     disposables.forEach(disposable => disposable.dispose())
-    if (!decisionInProgress && args.isPending(args.document.uri)) {
-      void handleClosedDraft()
-    }
+    if (decisionInProgress || !args.isPending(args.document.uri)) return
+    void handleClosedDraft()
   })
 
   async function handleMessage(message: RecordingEditorUiMessage): Promise<void> {
@@ -86,11 +74,13 @@ function resolveRecordingEditor(args: ResolveRecordingEditorArgs): void {
         if (savedDocumentUri) {
           args.panel.dispose()
           await commands.executeCommand('vscode.openWith', savedDocumentUri, recordingEditorViewType)
-        } else if (disposed) {
-          await handleClosedDraft()
-        } else {
-          await args.panel.webview.postMessage({ type: 'decisionCancelled' })
+          return
         }
+        if (!disposed) {
+          await args.panel.webview.postMessage({ type: 'decisionCancelled' })
+          return
+        }
+        await handleClosedDraft()
       },
       selectAction: handleHostMessage,
     })
@@ -110,17 +100,16 @@ function resolveRecordingEditor(args: ResolveRecordingEditorArgs): void {
   }
 
   async function handleClosedDraft(): Promise<void> {
-    const draftDirectory = Uri.joinPath(args.document.uri, '..')
-    const relativePath = workspace.asRelativePath(draftDirectory, false)
-    const action = await window.showWarningMessage(`Recording was not saved. The draft was retained at ${relativePath}.`, 'Save Recording', 'Reopen Draft')
+    const action = await window.showWarningMessage(`Recording was not saved. The draft was retained at ${workspace.asRelativePath(Uri.joinPath(args.document.uri, '..'), false)}.`, 'Save Recording', 'Reopen Draft')
 
     try {
       if (action === 'Save Recording') {
         const savedDocumentUri = await args.onSave(args.document.uri)
         if (savedDocumentUri) await commands.executeCommand('vscode.openWith', savedDocumentUri, recordingEditorViewType)
-      } else if (action === 'Reopen Draft') {
-        await commands.executeCommand('vscode.openWith', args.document.uri, recordingEditorViewType)
+        return
       }
+      if (action !== 'Reopen Draft') return
+      await commands.executeCommand('vscode.openWith', args.document.uri, recordingEditorViewType)
     } catch (error) {
       await window.showErrorMessage(getErrorMessage(error))
     }
@@ -134,8 +123,7 @@ function resolveRecordingEditor(args: ResolveRecordingEditorArgs): void {
     try {
       await operation()
     } catch (error) {
-      const message = getErrorMessage(error)
-      await window.showErrorMessage(message)
+      await window.showErrorMessage(getErrorMessage(error))
     }
   }
 }

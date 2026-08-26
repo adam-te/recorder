@@ -13,8 +13,7 @@ function generateAriaSnapshot(options: AriaSnapshotOptions): GeneratedAriaSnapsh
     throw new Error('Unable to capture an ARIA snapshot without a document root.')
   }
 
-  const treeOptions = { mode: 'ai' } as const
-  const tree = generateAriaTree(root, treeOptions)
+  const tree = generateAriaTree(root, { mode: 'ai' })
   const { nodesByRef, root: snapshot } = compactAriaTree(tree.root)
   const targetRef = findTargetRef(nodesByRef, tree.refs, options.targetPath ?? elementAncestry(options.target))
 

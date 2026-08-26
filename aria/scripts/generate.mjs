@@ -100,9 +100,8 @@ async function readAndValidatePlaywrightVersion() {
     })),
   )
   const playwrightVersion = ariaPackage.devDependencies?.playwright
-  const exactVersion = /^\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?$/
 
-  if (!exactVersion.test(playwrightVersion ?? '')) {
+  if (!/^\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?$/.test(playwrightVersion ?? '')) {
     throw new Error('Expected an exact playwright version in the ARIA dev dependencies')
   }
   for (const { directory, package: workspacePackage } of workspacePackages) {

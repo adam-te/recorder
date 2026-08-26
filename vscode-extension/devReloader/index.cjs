@@ -10,7 +10,9 @@ function activate(context) {
   }
 
   const bundleWatcher = workspace.createFileSystemWatcher(new RelativePattern(path.dirname(bundlePath), path.basename(bundlePath)))
-  const reloadSubscription = bundleWatcher.onDidChange(() => void commands.executeCommand('workbench.action.restartExtensionHost'))
 
-  context.subscriptions.push(bundleWatcher, reloadSubscription)
+  context.subscriptions.push(
+    bundleWatcher,
+    bundleWatcher.onDidChange(() => void commands.executeCommand('workbench.action.restartExtensionHost')),
+  )
 }

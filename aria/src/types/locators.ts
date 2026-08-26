@@ -6,11 +6,15 @@ interface AriaLabelLocatorStep {
   text: string
 }
 
-interface AriaTextLocatorStep {
-  exact?: boolean
-  method: 'alt' | 'placeholder' | 'text' | 'title'
-  text: string
-}
+type AriaTextLocatorMethod = 'alt' | 'placeholder' | 'text' | 'title'
+
+type AriaTextLocatorStep = {
+  [Method in AriaTextLocatorMethod]: {
+    exact?: boolean
+    method: Method
+    text: string
+  }
+}[AriaTextLocatorMethod]
 
 interface AriaRoleLocatorStep {
   exact?: boolean

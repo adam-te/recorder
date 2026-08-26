@@ -40,14 +40,14 @@
       const isRecorderUiEvent = path.some(candidate => candidate instanceof Element && candidate.hasAttribute(recorderUiAttribute))
       const nextElement = isRecorderUiEvent ? undefined : target
 
-      if (nextElement !== hoveredElement) {
-        resizeObserver.disconnect()
-        hoveredElement = nextElement
-        if (hoveredElement) {
-          resizeObserver.observe(hoveredElement)
-        }
-        queueRender()
+      if (nextElement === hoveredElement) return
+
+      resizeObserver.disconnect()
+      hoveredElement = nextElement
+      if (hoveredElement) {
+        resizeObserver.observe(hoveredElement)
       }
+      queueRender()
     }
 
     function queueRender(): void {

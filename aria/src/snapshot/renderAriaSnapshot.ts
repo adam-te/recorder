@@ -5,9 +5,7 @@ import type { AriaNode, AriaSnapshot } from '../types/snapshot.ts'
 export { renderAriaSnapshot }
 
 function renderAriaSnapshot(snapshot: AriaSnapshot): string {
-  const tree: PlaywrightAriaSnapshot = { iframeRefs: [], info: new Map(), refs: new Map(), root: toPlaywrightAriaNode(snapshot) }
-
-  return renderAriaTree(tree, { mode: 'ai' }).text
+  return renderAriaTree({ iframeRefs: [], info: new Map(), refs: new Map(), root: toPlaywrightAriaNode(snapshot) } satisfies PlaywrightAriaSnapshot, { mode: 'ai' }).text
 }
 
 function toPlaywrightAriaNode(node: AriaNode): PlaywrightAriaNode {

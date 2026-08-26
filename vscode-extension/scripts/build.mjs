@@ -10,8 +10,7 @@ const sveltePlugin = {
   name: 'svelte',
   setup(buildContext) {
     buildContext.onLoad({ filter: /\.svelte$/ }, async args => {
-      const source = await readFile(args.path, 'utf8')
-      const { js, warnings } = compile(source, {
+      const { js, warnings } = compile(await readFile(args.path, 'utf8'), {
         filename: args.path,
         generate: 'client',
         modernAst: true,
@@ -60,8 +59,7 @@ const configurations = [
 ]
 
 async function formatAsset(fileName) {
-  const source = await readFile(fileName, 'utf8')
-  const result = await format(fileName, source, { arrowParens: 'avoid', objectWrap: 'preserve', printWidth: 320, semi: false, singleQuote: true })
+  const result = await format(fileName, await readFile(fileName, 'utf8'), { arrowParens: 'avoid', objectWrap: 'preserve', printWidth: 320, semi: false, singleQuote: true })
   if (result.errors.length > 0) throw new Error(`Could not format ${fileName}: ${result.errors.map(error => error.message).join(', ')}`)
   await writeFile(fileName, result.code)
 }

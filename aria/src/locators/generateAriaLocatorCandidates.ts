@@ -39,16 +39,17 @@ function generateAriaLocatorCandidatesInternal(options: AriaLocatorOptions): Ari
 function getTargetSteps(query: AriaQueryContext, element: Element): AriaLocatorStep[] {
   const name = query.getName(element)
   const role = query.getRole(element)
-  const namedRole = name && role ? [{ method: 'role' as const, name, role }] : []
-  const labels = query.getLabels(element).map(text => ({ method: 'label' as const, text }))
-  const alt = getAttributeStep('alt')
-  const placeholder = getAttributeStep('placeholder')
   const text = query.getText(element)
-  const textSteps = text ? [{ method: 'text' as const, text }] : []
-  const title = getAttributeStep('title')
-  const unnamedRole = role ? [{ method: 'role' as const, role }] : []
 
-  return [...namedRole, ...labels, ...alt, ...placeholder, ...textSteps, ...title, ...unnamedRole]
+  return [
+    ...(name && role ? [{ method: 'role' as const, name, role }] : []),
+    ...query.getLabels(element).map(text => ({ method: 'label' as const, text })),
+    ...getAttributeStep('alt'),
+    ...getAttributeStep('placeholder'),
+    ...(text ? [{ method: 'text' as const, text }] : []),
+    ...getAttributeStep('title'),
+    ...(role ? [{ method: 'role' as const, role }] : []),
+  ]
 
   function getAttributeStep(method: 'alt' | 'placeholder' | 'title'): AriaLocatorStep[] {
     const text = element.getAttribute(method)

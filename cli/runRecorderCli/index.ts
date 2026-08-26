@@ -140,8 +140,7 @@ async function resolveRecordingDirectoryPath(args: { directoryPath?: string; url
   let suffix = 1
 
   while (true) {
-    const name = `${stem}${suffix === 1 ? '' : `-${suffix}`}.recording`
-    const directoryPath = resolve(args.workingDirectory, name)
+    const directoryPath = resolve(args.workingDirectory, `${stem}${suffix === 1 ? '' : `-${suffix}`}.recording`)
     if (!(await pathExists(directoryPath))) {
       return directoryPath
     }
@@ -152,10 +151,9 @@ async function resolveRecordingDirectoryPath(args: { directoryPath?: string; url
 
 function getRecordingNameStem(url: string): string {
   const hostname = new URL(url).hostname.replace(/^\[|\]$/g, '').replace(/^www\./i, '')
-  const source = isIP(hostname) ? hostname : (hostname.split('.')[0] ?? hostname)
 
   return (
-    source
+    (isIP(hostname) ? hostname : (hostname.split('.')[0] ?? hostname))
       .toLowerCase()
       .replace(/[^a-z0-9]+/g, '-')
       .replace(/^-|-$/g, '') || 'recording'

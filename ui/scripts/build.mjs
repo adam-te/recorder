@@ -7,8 +7,7 @@ const sveltePlugin = {
   name: 'svelte',
   setup(buildContext) {
     buildContext.onLoad({ filter: /\.svelte$/ }, async args => {
-      const source = await readFile(args.path, 'utf8')
-      const { js, warnings } = compile(source, { filename: args.path, generate: 'client', modernAst: true, runes: true })
+      const { js, warnings } = compile(await readFile(args.path, 'utf8'), { filename: args.path, generate: 'client', modernAst: true, runes: true })
 
       return {
         contents: js.code,

@@ -5,6 +5,7 @@
 
 # When Coding
 
+- These conventions apply to first-party, hand-written source. Do not edit vendored, generated, or compiled output to enforce them
 - Always use the `matchBy` function over `switch` statements
 - Always use truthy/falsy checks over strict equality when it doesn't change the result
 - Always use early returns for negative conditions if applicable

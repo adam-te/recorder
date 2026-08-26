@@ -19,9 +19,8 @@ async function captureInteraction(args: CaptureInteractionArgs): Promise<Interac
   const recordingCapture = await installRecordingCapture({
     context: args.fixture.context,
     onInteraction: async interaction => {
-      if (interaction.event.kind === args.expectedKind) {
-        captured.resolve({ ariaSnapshot: interaction.ariaSnapshot, frameHostname: new URL(interaction.frame.url()).hostname, kind: interaction.event.kind, selectors: interaction.selectors.filter(selector => selector.kind === 'css').map(selector => selector.value), targetRef: interaction.targetRef })
-      }
+      if (interaction.event.kind !== args.expectedKind) return
+      captured.resolve({ ariaSnapshot: interaction.ariaSnapshot, frameHostname: new URL(interaction.frame.url()).hostname, kind: interaction.event.kind, selectors: interaction.selectors.filter(selector => selector.kind === 'css').map(selector => selector.value), targetRef: interaction.targetRef })
     },
     page,
     recordingSession,

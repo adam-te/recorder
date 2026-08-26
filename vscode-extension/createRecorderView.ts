@@ -1,12 +1,10 @@
-import { window, type Disposable, type TreeDataProvider } from 'vscode'
+import { window, type Disposable } from 'vscode'
 
 export { createRecorderView }
 
 function createRecorderView(): Disposable {
-  const treeDataProvider: TreeDataProvider<never> = {
+  return window.registerTreeDataProvider('thousandeyesRecorder.controls', {
     getChildren: () => [],
     getTreeItem: item => item,
-  }
-
-  return window.registerTreeDataProvider('thousandeyesRecorder.controls', treeDataProvider)
+  })
 }
