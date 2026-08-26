@@ -1,6 +1,7 @@
 import { mkdir, readFile, writeFile } from 'node:fs/promises'
-import { dirname, join } from 'node:path'
+import { dirname, join, posix } from 'node:path'
 import { fileURLToPath } from 'node:url'
+import ts from 'typescript'
 
 const SCRIPT_DIRECTORY = dirname(fileURLToPath(import.meta.url))
 const ARIA_DIRECTORY = join(SCRIPT_DIRECTORY, '..')
@@ -20,37 +21,7 @@ const VENDOR_FILES = [
   ['packages/isomorphic/selectorParser.ts', 'isomorphic/selectorParser.ts'],
   ['packages/isomorphic/yaml.ts', 'isomorphic/yaml.ts'],
 ]
-const IMPORT_REWRITES = {
-  'injected/ariaSnapshot.ts': {
-    '@isomorphic/ariaSnapshot': '../isomorphic/ariaSnapshot.ts',
-    '@isomorphic/stringUtils': '../isomorphic/stringUtils.ts',
-    '@isomorphic/yaml': '../isomorphic/yaml.ts',
-    './ariaSnapshotDistiller': './ariaSnapshotDistiller.ts',
-    './domUtils': './domUtils.ts',
-    './roleUtils': './roleUtils.ts',
-  },
-  'injected/ariaSnapshotDistiller.ts': {
-    '@isomorphic/ariaSnapshot': '../isomorphic/ariaSnapshot.ts',
-    '@isomorphic/stringUtils': '../isomorphic/stringUtils.ts',
-    './ariaSnapshot': './ariaSnapshot.ts',
-  },
-  'injected/roleUtils.ts': {
-    '@isomorphic/ariaSnapshot': '../isomorphic/ariaSnapshot.ts',
-    '@isomorphic/cssTokenizer': '../isomorphic/cssTokenizer.ts',
-    './domUtils': './domUtils.ts',
-  },
-  'injected/selectorUtils.ts': {
-    '@isomorphic/selectorParser': '../isomorphic/selectorParser.ts',
-    '@isomorphic/stringUtils': '../isomorphic/stringUtils.ts',
-    './roleUtils': './roleUtils.ts',
-  },
-  'isomorphic/cssParser.ts': {
-    './cssTokenizer': './cssTokenizer.ts',
-  },
-  'isomorphic/selectorParser.ts': {
-    './cssParser': './cssParser.ts',
-  },
-}
+const VENDOR_DESTINATIONS = new Map(VENDOR_FILES.map(([source, destination]) => [withoutExtension(source), destination]))
 const MODIFICATION_NOTICE = '// Modified from the Playwright source only to use local TypeScript import paths.\n'
 
 await generate()
@@ -63,32 +34,61 @@ async function generate() {
   await Promise.all([
     writeFile(PLAYWRIGHT_LICENSE, license),
     ...sources.map(async (contents, index) => {
-      const destination = VENDOR_FILES[index][1]
+      const [source, destination] = VENDOR_FILES[index]
       const path = join(VENDOR_DIRECTORY, destination)
 
       await mkdir(dirname(path), { recursive: true })
-      await writeFile(path, rewriteImports(contents, destination))
+      await writeFile(path, rewriteImports(contents, source, destination))
     }),
   ])
   process.stdout.write(`Vendored Playwright ARIA sources from Playwright ${playwrightVersion}\n`)
 }
 
-function rewriteImports(contents, destination) {
-  const rewrites = IMPORT_REWRITES[destination]
+function rewriteImports(contents, source, destination) {
+  const rewrites = []
 
-  if (!rewrites) {
+  for (const { fileName, pos, end } of ts.preProcessFile(contents, true, true).importedFiles) {
+    const importedSource = resolveImport(source, fileName)
+
+    if (!importedSource) {
+      continue
+    }
+    const importedDestination = VENDOR_DESTINATIONS.get(importedSource)
+
+    if (!importedDestination) {
+      throw new Error(`${source} imports ${fileName}, which is not included in VENDOR_FILES`)
+    }
+    rewrites.push({ pos, end, replacement: relativeImport(destination, importedDestination) })
+  }
+  if (!rewrites.length) {
     return contents
   }
-  for (const [source, replacement] of Object.entries(rewrites)) {
-    const original = `from '${source}'`
-
-    if (!contents.includes(original)) {
-      throw new Error(`Expected ${destination} to import ${source}`)
-    }
-    contents = contents.replaceAll(original, `from '${replacement}'`)
+  for (const { pos, end, replacement } of rewrites.toReversed()) {
+    contents = contents.slice(0, pos + 1) + replacement + contents.slice(end + 1)
   }
 
   return MODIFICATION_NOTICE + contents
+}
+
+function resolveImport(source, specifier) {
+  if (specifier.startsWith('@isomorphic/')) {
+    return withoutExtension(`packages/${specifier.slice(1)}`)
+  }
+  if (!specifier.startsWith('.')) {
+    return
+  }
+
+  return withoutExtension(posix.join(posix.dirname(source), specifier))
+}
+
+function relativeImport(source, importedSource) {
+  const relative = posix.relative(posix.dirname(source), importedSource)
+
+  return relative.startsWith('.') ? relative : `./${relative}`
+}
+
+function withoutExtension(path) {
+  return path.replace(/\.[cm]?[jt]sx?$/, '')
 }
 
 async function readAndValidatePlaywrightVersion() {
