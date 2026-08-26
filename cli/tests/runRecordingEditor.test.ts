@@ -4,7 +4,7 @@ import { join } from 'node:path'
 import { chromium } from 'playwright'
 import { describe, expect, test, vi } from 'vitest'
 
-import { createRecordingDocument, serializeRecordingDocument, serializeRecordingSnapshot, type RecordingDocument } from '@te/recorder-core'
+import { createRecording, serializeRecording, serializeRecordingSnapshot, type Recording } from '@te/recorder-core'
 
 import { useTemporaryDirectories } from './support/temporaryDirectories.ts'
 
@@ -14,8 +14,8 @@ describe('runRecordingEditor', () => {
   test('serves a recording and handles editor messages', async () => {
     const temporaryDirectory = await temporaryDirectories.create()
     const directoryPath = join(temporaryDirectory, 'example.recording')
-    const document: RecordingDocument = {
-      ...createRecordingDocument({ startUrl: 'https://example.com', title: 'Example recording' }),
+    const recording: Recording = {
+      ...createRecording({ startUrl: 'https://example.com', title: 'Example recording' }),
       actions: [
         {
           kind: 'click',
@@ -33,7 +33,7 @@ describe('runRecordingEditor', () => {
       ],
     }
     await mkdir(join(directoryPath, 'snapshots'), { recursive: true })
-    await writeFile(join(directoryPath, 'recording.json'), serializeRecordingDocument(document))
+    await writeFile(join(directoryPath, 'recording.json'), serializeRecording(recording))
     await writeFile(
       join(directoryPath, 'snapshots', '0000.aria.json'),
       serializeRecordingSnapshot({
@@ -47,7 +47,7 @@ describe('runRecordingEditor', () => {
       }),
     )
 
-    const onPlay = vi.fn<(document: RecordingDocument) => Promise<void>>(async () => undefined)
+    const onPlay = vi.fn<(recording: Recording) => Promise<void>>(async () => undefined)
     const output: string[] = []
 
     await runRecordingEditor({

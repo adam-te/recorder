@@ -6,7 +6,7 @@ import { join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { chromium } from 'playwright'
 
-import { getRecordingSnapshotFileName, parseRecordingDocument, parseRecordingSnapshot, type RecordingDocument } from '@te/recorder-core'
+import { getRecordingSnapshotFileName, parseRecording, parseRecordingSnapshot, type Recording } from '@te/recorder-core'
 import type { RecordingEditorHostMessage, RecordingEditorUiMessage } from '@te/recorder-ui/recording-editor'
 import { createRecordingEditorHost } from '@te/recorder-ui/recording-editor-host'
 import { renderRecordingSnapshot } from '@te/recorder-ui/render-recording-snapshot'
@@ -17,20 +17,20 @@ export type { RunRecordingEditorArgs }
 const assetDirectory = fileURLToPath(new URL('../../ui/dist/standalone/', import.meta.url))
 
 async function runRecordingEditor(args: RunRecordingEditorArgs): Promise<void> {
-  const documentPath = join(args.directoryPath, 'recording.json')
-  const readDocument = async (): Promise<RecordingDocument> => parseRecordingDocument(JSON.parse(await readFile(documentPath, 'utf8')))
-  await readDocument()
+  const recordingPath = join(args.directoryPath, 'recording.json')
+  const readRecording = async (): Promise<Recording> => parseRecording(JSON.parse(await readFile(recordingPath, 'utf8')))
+  await readRecording()
 
   const host = createRecordingEditorHost({
     isPending: () => false,
-    readDocument,
+    readRecording,
     readSnapshot: async actionIndex => {
       const contents = await readFile(join(args.directoryPath, 'snapshots', getRecordingSnapshotFileName(actionIndex)), 'utf8')
       return renderRecordingSnapshot(parseRecordingSnapshot(JSON.parse(contents)))
     },
   })
   const routeToken = randomUUID()
-  const server = createServer((request, response) => void handleRequest({ args, documentPath, host, request, response, routeToken }))
+  const server = createServer((request, response) => void handleRequest({ args, host, recordingPath, request, response, routeToken }))
 
   try {
     await listen(server)
@@ -53,7 +53,7 @@ async function handleRequest(context: RequestContext): Promise<void> {
     if (request.method === 'GET' && route === root) return send(response, 200, html(root), 'text/html; charset=utf-8')
     if (request.method === 'GET' && route === `${root}recordingEditor.js`) return send(response, 200, await readFile(join(assetDirectory, 'recordingEditor.js')), 'text/javascript; charset=utf-8')
     if (request.method === 'GET' && route === `${root}recordingEditor.css`) return send(response, 200, await readFile(join(assetDirectory, 'recordingEditor.css')), 'text/css; charset=utf-8')
-    if (request.method === 'GET' && route === `${root}recording.json`) return send(response, 200, await readFile(context.documentPath), 'application/json; charset=utf-8')
+    if (request.method === 'GET' && route === `${root}recording.json`) return send(response, 200, await readFile(context.recordingPath), 'application/json; charset=utf-8')
 
     if (request.method === 'POST' && route === `${root}api/messages`) {
       const message = parseMessage(JSON.parse(await readBody(request)))
@@ -62,7 +62,7 @@ async function handleRequest(context: RequestContext): Promise<void> {
 
       if (message.type === 'play') {
         try {
-          await context.args.onPlay(parseRecordingDocument(JSON.parse(await readFile(context.documentPath, 'utf8'))))
+          await context.args.onPlay(parseRecording(JSON.parse(await readFile(context.recordingPath, 'utf8'))))
           return sendJson(response, 200, {})
         } catch (error) {
           return sendJson(response, 200, { error: getErrorMessage(error) })
@@ -164,15 +164,15 @@ function getErrorMessage(error: unknown): string {
 
 interface RunRecordingEditorArgs {
   directoryPath: string
-  onPlay: (document: RecordingDocument) => Promise<void>
+  onPlay: (recording: Recording) => Promise<void>
   openBrowser?: (url: string) => Promise<void>
   stdout: { write: (value: string) => Promise<unknown> | unknown }
 }
 
 interface RequestContext {
   args: RunRecordingEditorArgs
-  documentPath: string
   host: { handleMessage: (message: RecordingEditorUiMessage) => Promise<RecordingEditorHostMessage[] | undefined> }
+  recordingPath: string
   request: IncomingMessage
   response: ServerResponse
   routeToken: string

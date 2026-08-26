@@ -3,7 +3,7 @@ import { playRecording } from '#runtime/playback/playRecording.ts'
 import { appendCapturedInteraction } from '#runtime/recording/actions/appendCapturedInteraction.ts'
 import { installRecordingInstruments } from '#runtime/recording/capture/installRecordingInstruments.ts'
 
-import { createRecordingSession, type RecordedAriaSnapshot, type RecordingDocument, type RecordingSession } from '@te/recorder-core'
+import { createRecordingSession, type RecordedAriaSnapshot, type Recording, type RecordingSession } from '@te/recorder-core'
 import { tryTo } from '@te/recorder-utils'
 
 export { createRecorder }
@@ -22,7 +22,7 @@ function createRecorder(args: CreateRecorderArgs = {}): Recorder {
 
     const startUrl = new URL(args.startUrl)
     const currentRecordingSession = createRecordingSession({ startUrl: args.startUrl, title: startUrl.hostname || args.startUrl })
-    let pendingDocumentChange = Promise.resolve()
+    let pendingRecordingChange = Promise.resolve()
     const currentBrowserSession = await createSession()
     const currentRecording: ActiveRecording = { browserSession: currentBrowserSession, recordingSession: currentRecordingSession }
 
@@ -36,10 +36,10 @@ function createRecorder(args: CreateRecorderArgs = {}): Recorder {
 
             if (appendedInteraction) {
               await args.onSnapshotCaptured?.({ actionIndex: appendedInteraction.actionIndex, ariaSnapshot: appendedInteraction.ariaSnapshot })
-              await notifyDocumentChanged(appendedInteraction.document)
+              await notifyRecordingChanged(appendedInteraction.recording)
             }
           },
-          onNavigation: navigation => notifyDocumentChanged(currentRecordingSession.append({ kind: 'goto', ...navigation })),
+          onNavigation: navigation => notifyRecordingChanged(currentRecordingSession.append({ kind: 'goto', ...navigation })),
           onStopRequested: args.onStopRequested ?? stopFromOverlay,
           page: currentBrowserSession.page,
         })
@@ -54,14 +54,14 @@ function createRecorder(args: CreateRecorderArgs = {}): Recorder {
       },
     )
 
-    function notifyDocumentChanged(document: RecordingDocument): Promise<void> {
-      pendingDocumentChange = pendingDocumentChange.then(() => args.onDocumentChanged?.(document))
+    function notifyRecordingChanged(recording: Recording): Promise<void> {
+      pendingRecordingChange = pendingRecordingChange.then(() => args.onRecordingChanged?.(recording))
 
-      return pendingDocumentChange
+      return pendingRecordingChange
     }
   }
 
-  async function stop(): Promise<RecordingDocument | undefined> {
+  async function stop(): Promise<Recording | undefined> {
     const currentRecordingSession = activeRecording?.recordingSession
 
     return await tryTo(
@@ -102,7 +102,7 @@ function createRecorder(args: CreateRecorderArgs = {}): Recorder {
   async function play(args: PlayArgs): Promise<void> {
     const playbackSession = await createSession()
 
-    await playRecording({ document: args.document, session: playbackSession }).finally(() => playbackSession.close())
+    await playRecording({ recording: args.recording, session: playbackSession }).finally(() => playbackSession.close())
   }
 
   async function dispose(): Promise<void> {
@@ -121,18 +121,18 @@ interface ActiveRecordingCapture {
 }
 
 interface PlayArgs {
-  document: RecordingDocument
+  recording: Recording
 }
 
 interface Recorder {
   dispose: () => Promise<void>
   play: (args: PlayArgs) => Promise<void>
   start: (args: StartArgs) => Promise<void>
-  stop: () => Promise<RecordingDocument | undefined>
+  stop: () => Promise<Recording | undefined>
 }
 
 interface StartArgs {
-  onDocumentChanged?: (document: RecordingDocument) => Promise<void> | void
+  onRecordingChanged?: (recording: Recording) => Promise<void> | void
   onStopRequested?: () => Promise<void> | void
   onSnapshotCaptured?: (snapshot: CapturedSnapshot) => Promise<void> | void
   startUrl: string

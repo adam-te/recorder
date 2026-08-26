@@ -1,4 +1,4 @@
-import { recordingDocumentSchema, type RecordedAction, type RecordedValue, type RecordingDocument } from '#core/document/recordingDocumentSchema.ts'
+import { recordingSchema, type RecordedAction, type RecordedValue, type Recording } from '#core/recording/recordingSchema.ts'
 
 import { matchBy } from '@te/recorder-utils'
 
@@ -7,8 +7,8 @@ import { quoteTypeScriptString as quote } from './quoteTypeScriptString.ts'
 
 export { generatePlaywrightScript }
 
-function generatePlaywrightScript(document: RecordingDocument): string {
-  const recording = recordingDocumentSchema.parse(document)
+function generatePlaywrightScript(value: Recording): string {
+  const recording = recordingSchema.parse(value)
   return `import { test } from 'playwright/test'
 
 test(${quote(recording.title)}, async ({ page }) => {

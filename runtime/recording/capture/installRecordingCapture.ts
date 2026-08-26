@@ -2,7 +2,7 @@ import { installRecordingInstruments } from '#runtime/recording/capture/installR
 import type { CapturedInteraction } from '#runtime/recording/capture/types.ts'
 import type { BrowserContext, Page } from 'playwright'
 
-import type { RecordingDocument, RecordingSession } from '@te/recorder-core'
+import type { Recording, RecordingSession } from '@te/recorder-core'
 import { tryTo } from '@te/recorder-utils'
 
 export { installRecordingCapture }
@@ -13,9 +13,9 @@ async function installRecordingCapture(args: InstallRecordingCaptureArgs): Promi
     context: args.context,
     onInteraction: args.onInteraction,
     onNavigation: async navigation => {
-      const document = args.recordingSession.append({ kind: 'goto', ...navigation })
+      const recording = args.recordingSession.append({ kind: 'goto', ...navigation })
 
-      await args.onDocumentChanged?.(document)
+      await args.onRecordingChanged?.(recording)
     },
     onStopRequested: args.onStopRequested,
     page: args.page,
@@ -40,7 +40,7 @@ async function installRecordingCapture(args: InstallRecordingCaptureArgs): Promi
 
 interface InstallRecordingCaptureArgs {
   context: BrowserContext
-  onDocumentChanged?: (document: RecordingDocument) => Promise<void> | void
+  onRecordingChanged?: (recording: Recording) => Promise<void> | void
   onInteraction: (interaction: CapturedInteraction) => Promise<void> | void
   onStopRequested?: () => Promise<void> | void
   page: Page

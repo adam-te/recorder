@@ -35,7 +35,7 @@ describe('navigation recording', () => {
   })
 
   test('records a click through cross-origin redirects without recording the redirects as navigation', async () => {
-    const document = await browser.record({
+    const recording = await browser.record({
       documents: {
         'https://destination.test/after': '<p>After</p>',
         'https://recorder.test/content': '<a id="target" href="https://redirect.test/first">Continue</a>',
@@ -47,7 +47,7 @@ describe('navigation recording', () => {
       },
     })
 
-    expect(document.actions).toMatchObject([
+    expect(recording.actions).toMatchObject([
       { kind: 'goto', pageUrl: 'about:blank', url: 'https://recorder.test/content' },
       { kind: 'click', pageUrl: 'https://recorder.test/content' },
     ])
@@ -58,9 +58,9 @@ describe('navigation recording', () => {
       'https://recorder.test/after': `<button id="target" onclick="document.body.dataset.clicked = 'true'">Continue</button>`,
       'https://recorder.test/start': `<script>location.replace('https://recorder.test/after')</script>`,
     }
-    const { document, playbackPage } = await browser.recordAndPlay({ documents, interact: page => page.locator('#target').click(), startUrl: 'https://recorder.test/start' })
+    const { playbackPage, recording } = await browser.recordAndPlay({ documents, interact: page => page.locator('#target').click(), startUrl: 'https://recorder.test/start' })
 
-    expect(document).toMatchObject({
+    expect(recording).toMatchObject({
       actions: [
         { kind: 'goto', pageUrl: 'about:blank', url: 'https://recorder.test/start' },
         { kind: 'click', pageUrl: 'https://recorder.test/after' },
@@ -73,7 +73,7 @@ describe('navigation recording', () => {
 
   test('records subsequent browser address entry and ignores Back, Forward, and Reload', async () => {
     const documents = { 'https://recorder.test/after': '<p>After</p>', 'https://recorder.test/content': '<p>Before</p>' }
-    const { document, playbackPage } = await browser.recordAndPlay({
+    const { playbackPage, recording } = await browser.recordAndPlay({
       documents,
       interact: async page => {
         await page.goto('https://recorder.test/after')
@@ -83,11 +83,11 @@ describe('navigation recording', () => {
       },
     })
 
-    expect(document.actions).toStrictEqual([
+    expect(recording.actions).toStrictEqual([
       { kind: 'goto', pageUrl: 'about:blank', url: 'https://recorder.test/content' },
       { kind: 'goto', pageUrl: 'https://recorder.test/content', url: 'https://recorder.test/after' },
     ])
-    expect(document.startUrl).toBe('https://recorder.test/content')
+    expect(recording.startUrl).toBe('https://recorder.test/content')
 
     expect(playbackPage.url()).toBe('https://recorder.test/after')
   })

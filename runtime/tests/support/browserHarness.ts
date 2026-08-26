@@ -3,7 +3,7 @@ import type { Browser, BrowserContext, Page } from 'playwright'
 import { chromium } from 'playwright'
 import { afterAll, afterEach, beforeAll, beforeEach } from 'vitest'
 
-import { createRecordingSession, type RecordedAriaSnapshot, type RecordingDocument } from '@te/recorder-core'
+import { createRecordingSession, type RecordedAriaSnapshot, type Recording } from '@te/recorder-core'
 import { createRecorder, playRecording, type Recorder } from '@te/recorder-runtime'
 import { installRecordingCapture, type CapturedInteractionEvent } from '@te/recorder-runtime/capture'
 
@@ -57,28 +57,28 @@ function createTestRecorder(args: CreateTestRecorderArgs): Recorder {
 async function playTestRecording(args: PlayTestRecordingArgs): Promise<Page> {
   const page = await createPage({ context: args.fixture.context, documents: args.documents, html: args.html })
 
-  await playRecording({ document: args.document, session: { browser: args.fixture.browser, close: async () => undefined, context: args.fixture.context, page } })
+  await playRecording({ recording: args.recording, session: { browser: args.fixture.browser, close: async () => undefined, context: args.fixture.context, page } })
   return page
 }
 
-async function recordTest(args: RecordTestArgs): Promise<RecordingDocument> {
+async function recordTest(args: RecordTestArgs): Promise<Recording> {
   const page = await createPage({ context: args.fixture.context, documents: args.documents, html: args.html, redirects: args.redirects })
   const recorder = createTestRecorder({ browser: args.fixture.browser, context: args.fixture.context, page })
 
-  await recorder.start({ onDocumentChanged: args.onDocumentChanged, onSnapshotCaptured: args.onSnapshotCaptured, startUrl: args.startUrl })
+  await recorder.start({ onRecordingChanged: args.onRecordingChanged, onSnapshotCaptured: args.onSnapshotCaptured, startUrl: args.startUrl })
   await args.interact(page)
-  const document = await recorder.stop()
+  const recording = await recorder.stop()
 
-  if (!document) {
-    throw new Error('Expected the recorder to produce a document.')
+  if (!recording) {
+    throw new Error('Expected the recorder to produce a recording.')
   }
 
-  return document
+  return recording
 }
 
 function useBrowserTestHarness(): BrowserTestHarness {
   const fixture = {} as BrowserTestFixture
-  const record = (args: BrowserRecordArgs): Promise<RecordingDocument> => recordTest({ ...args, fixture, startUrl: args.startUrl ?? defaultStartUrl })
+  const record = (args: BrowserRecordArgs): Promise<Recording> => recordTest({ ...args, fixture, startUrl: args.startUrl ?? defaultStartUrl })
 
   beforeAll(async () => {
     fixture.browser = await chromium.launch({ headless: true })
@@ -102,10 +102,10 @@ function useBrowserTestHarness(): BrowserTestHarness {
     play: args => playTestRecording({ ...args, fixture }),
     record,
     recordAndPlay: async args => {
-      const document = await record(args)
-      const playbackPage = await playTestRecording({ document, documents: args.documents, fixture, html: args.html })
+      const recording = await record(args)
+      const playbackPage = await playTestRecording({ documents: args.documents, fixture, html: args.html, recording })
 
-      return { document, playbackPage }
+      return { playbackPage, recording }
     },
   }
 }
@@ -151,14 +151,14 @@ interface BrowserTestHarness {
   readonly context: BrowserContext
   page: (args: Omit<CreatePageArgs, 'context'>) => Promise<Page>
   play: (args: Omit<PlayTestRecordingArgs, 'fixture'>) => Promise<Page>
-  record: (args: BrowserRecordArgs) => Promise<RecordingDocument>
-  recordAndPlay: (args: BrowserRecordArgs) => Promise<{ document: RecordingDocument; playbackPage: Page }>
+  record: (args: BrowserRecordArgs) => Promise<Recording>
+  recordAndPlay: (args: BrowserRecordArgs) => Promise<{ playbackPage: Page; recording: Recording }>
 }
 
 type BrowserRecordArgs = Omit<RecordTestArgs, 'fixture' | 'startUrl'> & { startUrl?: string }
 
 interface PlayTestRecordingArgs {
-  document: RecordingDocument
+  recording: Recording
   documents?: Record<string, string>
   fixture: BrowserTestFixture
   html?: string
@@ -169,7 +169,7 @@ interface RecordTestArgs {
   fixture: BrowserTestFixture
   html?: string
   interact: (page: Page) => Promise<unknown>
-  onDocumentChanged?: (document: RecordingDocument) => Promise<void> | void
+  onRecordingChanged?: (recording: Recording) => Promise<void> | void
   onSnapshotCaptured?: (snapshot: { actionIndex: number; ariaSnapshot: RecordedAriaSnapshot }) => Promise<void> | void
   redirects?: Record<string, string>
   startUrl: string

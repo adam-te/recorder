@@ -1,12 +1,12 @@
 import { ModuleKind, ScriptTarget, transpileModule } from 'typescript'
 import { describe, expect, test } from 'vitest'
 
-import { generatePlaywrightScript, type RecordedAction, type RecordedLocator, type RecordingDocument } from '@te/recorder-core'
+import { generatePlaywrightScript, type RecordedAction, type RecordedLocator, type Recording } from '@te/recorder-core'
 
 describe('Playwright script generation', () => {
   test('generates every recorded action as Playwright TypeScript', () => {
     const source = generatePlaywrightScript(
-      createDocument([
+      createRecordingFixture([
         action({ kind: 'goto', url: 'https://example.com/start' }),
         action({ kind: 'go-back' }),
         action({ kind: 'go-forward' }),
@@ -56,14 +56,14 @@ test("Every action", async ({ page }) => {
         { exact: false, method: 'label', text: 'Save' },
       ],
     }
-    const source = generatePlaywrightScript(createDocument([action({ kind: 'click', locatorCandidates: locators(primary) })]))
+    const source = generatePlaywrightScript(createRecordingFixture([action({ kind: 'click', locatorCandidates: locators(primary) })]))
 
     expect(source).toContain(String.raw`await page.locator("#outer").contentFrame().locator("iframe[name=\"inner\"]").contentFrame().getByRole("dialog", { name: "Settings", exact: true }).getByLabel("Save", { exact: false }).click()`)
     expect(source).not.toContain('#fallback')
   })
 
   test('reads secret fills from environment variables without embedding values', () => {
-    const source = generatePlaywrightScript(createDocument([action({ kind: 'fill', locatorCandidates: locators(), value: { kind: 'secret', name: 'ACCOUNT_PASSWORD' } })]))
+    const source = generatePlaywrightScript(createRecordingFixture([action({ kind: 'fill', locatorCandidates: locators(), value: { kind: 'secret', name: 'ACCOUNT_PASSWORD' } })]))
 
     expect(source).toBe(`import { test } from 'playwright/test'
 
@@ -84,14 +84,14 @@ function requiredSecret(name: string): string {
   })
 
   test('escapes strings that would otherwise change the generated source structure', () => {
-    const source = generatePlaywrightScript(createDocument([action({ kind: 'fill', locatorCandidates: locators({ kind: 'css', value: 'input\n"quoted"' }), value: { kind: 'plain-text', value: 'line one\nline two\u2028line three\u2029' } })], 'Title\n"quoted"'))
+    const source = generatePlaywrightScript(createRecordingFixture([action({ kind: 'fill', locatorCandidates: locators({ kind: 'css', value: 'input\n"quoted"' }), value: { kind: 'plain-text', value: 'line one\nline two\u2028line three\u2029' } })], 'Title\n"quoted"'))
 
     expect(source).toContain('test("Title\\n\\"quoted\\"", async ({ page }) => {')
     expect(source).toContain('page.locator("input\\n\\"quoted\\"").fill("line one\\nline two\\u2028line three\\u2029")')
   })
 
   test('generates a valid empty test', () => {
-    const source = generatePlaywrightScript(createDocument([], 'Empty recording'))
+    const source = generatePlaywrightScript(createRecordingFixture([], 'Empty recording'))
 
     expect(source).toBe(`import { test } from 'playwright/test'
 
@@ -102,14 +102,14 @@ test("Empty recording", async ({ page }) => {
   })
 
   test('generates syntactically valid TypeScript', () => {
-    const source = generatePlaywrightScript(createDocument([action({ kind: 'click', locatorCandidates: locators() })]))
+    const source = generatePlaywrightScript(createRecordingFixture([action({ kind: 'click', locatorCandidates: locators() })]))
     const result = transpileModule(source, { compilerOptions: { module: ModuleKind.ESNext, target: ScriptTarget.ESNext }, fileName: 'recording.spec.ts', reportDiagnostics: true })
 
     expect(result.diagnostics).toStrictEqual([])
   })
 
   test('validates the recording before generating source', () => {
-    expect(() => generatePlaywrightScript({ ...createDocument([]), startUrl: 'not a URL' } as RecordingDocument)).toThrow()
+    expect(() => generatePlaywrightScript({ ...createRecordingFixture([]), startUrl: 'not a URL' } as Recording)).toThrow()
   })
 })
 
@@ -117,7 +117,7 @@ function action(action: RecordedActionInput): RecordedAction {
   return { ...action, pageUrl: 'https://example.com/current' } as RecordedAction
 }
 
-function createDocument(actions: RecordedAction[], title = 'Every action'): RecordingDocument {
+function createRecordingFixture(actions: RecordedAction[], title = 'Every action'): Recording {
   return { actions, createdAt: '2026-08-24T12:00:00.000Z', startUrl: 'https://metadata.example/not-used', title }
 }
 

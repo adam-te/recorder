@@ -4,7 +4,7 @@ import { isIP } from 'node:net'
 import { basename, dirname, join, resolve } from 'node:path'
 import { createInterface } from 'node:readline/promises'
 
-import { getRecordingSnapshotFileName, parseRecordingDocument, parseRecordingSnapshot, serializeRecordingDocument, serializeRecordingSnapshot, type RecordedAriaSnapshot, type RecordingDocument } from '@te/recorder-core'
+import { getRecordingSnapshotFileName, parseRecording, parseRecordingSnapshot, serializeRecording, serializeRecordingSnapshot, type RecordedAriaSnapshot, type Recording } from '@te/recorder-core'
 import { createRecorder, type Recorder } from '@te/recorder-runtime'
 import { matchBy, tryTo } from '@te/recorder-utils'
 
@@ -50,13 +50,13 @@ async function executeCommand(args: ExecuteCommandArgs): Promise<void> {
       await args.stdout.write(HELP)
     },
     play: async command => {
-      const document = parseRecordingDocument(JSON.parse(await readFile(join(command.directoryPath, 'recording.json'), 'utf8')))
+      const recording = parseRecording(JSON.parse(await readFile(join(command.directoryPath, 'recording.json'), 'utf8')))
 
-      await args.recorder.play({ document })
-      await args.stdout.write(`Played ${document.actions.length} recorded actions.\n`)
+      await args.recorder.play({ recording })
+      await args.stdout.write(`Played ${recording.actions.length} recorded actions.\n`)
     },
     ui: async command => {
-      await (args.args.runRecordingEditor ?? runRecordingEditor)({ directoryPath: command.directoryPath, onPlay: document => args.recorder.play({ document }), stdout: args.stdout })
+      await (args.args.runRecordingEditor ?? runRecordingEditor)({ directoryPath: command.directoryPath, onPlay: recording => args.recorder.play({ recording }), stdout: args.stdout })
     },
     record: async command => {
       const directoryPath = await resolveRecordingDirectoryPath({
@@ -78,14 +78,14 @@ async function executeCommand(args: ExecuteCommandArgs): Promise<void> {
       await args.stdout.write('Recording started. Press Enter or click Stop recording in the browser to stop and save.\n')
       await stopRequest.wait(args.args.waitForStop ?? waitForEnter)
 
-      const document = await args.recorder.stop()
-      if (!document) {
-        throw new Error('The recording stopped without producing a document.')
+      const recording = await args.recorder.stop()
+      if (!recording) {
+        throw new Error('The recording stopped without producing a recording.')
       }
 
-      await writeRecordingDirectory({ directoryPath, document, snapshots })
+      await writeRecordingDirectory({ directoryPath, recording, snapshots })
       await args.stdout.write(`Saved recording to ${directoryPath}.\n`)
-      await (args.args.runRecordingEditor ?? runRecordingEditor)({ directoryPath, onPlay: documentToPlay => args.recorder.play({ document: documentToPlay }), stdout: args.stdout })
+      await (args.args.runRecordingEditor ?? runRecordingEditor)({ directoryPath, onPlay: recordingToPlay => args.recorder.play({ recording: recordingToPlay }), stdout: args.stdout })
     },
   })
 }
@@ -173,15 +173,15 @@ async function pathExists(path: string): Promise<boolean> {
   }
 }
 
-async function writeRecordingDirectory(args: { directoryPath: string; document: RecordingDocument; snapshots: ReadonlyMap<number, RecordedAriaSnapshot> }): Promise<void> {
+async function writeRecordingDirectory(args: { directoryPath: string; recording: Recording; snapshots: ReadonlyMap<number, RecordedAriaSnapshot> }): Promise<void> {
   const pendingDirectory = join(dirname(args.directoryPath), `.${basename(args.directoryPath)}.pending-${randomUUID()}`)
 
   try {
     const snapshotsDirectory = join(pendingDirectory, 'snapshots')
     await mkdir(snapshotsDirectory, { recursive: true })
-    await writeFile(join(pendingDirectory, 'recording.json'), serializeRecordingDocument(args.document), 'utf8')
+    await writeFile(join(pendingDirectory, 'recording.json'), serializeRecording(args.recording), 'utf8')
 
-    for (const [actionIndex, action] of args.document.actions.entries()) {
+    for (const [actionIndex, action] of args.recording.actions.entries()) {
       if (!('locatorCandidates' in action)) {
         continue
       }
@@ -194,8 +194,8 @@ async function writeRecordingDirectory(args: { directoryPath: string; document: 
       await writeFile(join(snapshotsDirectory, getRecordingSnapshotFileName(actionIndex)), serializeRecordingSnapshot(snapshot), 'utf8')
     }
 
-    parseRecordingDocument(JSON.parse(await readFile(join(pendingDirectory, 'recording.json'), 'utf8')))
-    for (const [actionIndex, action] of args.document.actions.entries()) {
+    parseRecording(JSON.parse(await readFile(join(pendingDirectory, 'recording.json'), 'utf8')))
+    for (const [actionIndex, action] of args.recording.actions.entries()) {
       if (!('locatorCandidates' in action)) {
         continue
       }

@@ -3,7 +3,7 @@ import { mkdir, readFile } from 'node:fs/promises'
 import { join } from 'node:path'
 import { describe, expect, test } from 'vitest'
 
-import { createRecordingDocument, serializeRecordingDocument, type RecordedAriaSnapshot, type RecordingDocument } from '@te/recorder-core'
+import { createRecording, serializeRecording, type RecordedAriaSnapshot, type Recording } from '@te/recorder-core'
 
 import { useTemporaryDirectories } from './support/temporaryDirectories.ts'
 
@@ -13,8 +13,8 @@ describe('runRecorderCli', () => {
   test('saves a CLI recording and opens it in the editor', async () => {
     const workingDirectory = await temporaryDirectories.create()
     await mkdir(join(workingDirectory, 'example.recording'))
-    const document: RecordingDocument = {
-      ...createRecordingDocument({ startUrl: 'https://example.com', title: 'Example recording' }),
+    const recording: Recording = {
+      ...createRecording({ startUrl: 'https://example.com', title: 'Example recording' }),
       actions: [
         { kind: 'goto', pageUrl: 'about:blank', url: 'https://example.com' },
         { kind: 'click', locatorCandidates: [{ kind: 'aria', steps: [{ method: 'role', name: 'Save', role: 'button' }] }], pageUrl: 'https://example.com' },
@@ -35,7 +35,7 @@ describe('runRecorderCli', () => {
           await args.onSnapshotCaptured?.({ actionIndex: 1, ariaSnapshot })
           await args.onStopRequested?.()
         },
-        stop: async () => document,
+        stop: async () => recording,
       },
       runRecordingEditor: async args => {
         openedDirectories.push(args.directoryPath)
@@ -60,7 +60,7 @@ describe('runRecorderCli', () => {
     expect(recordedStartUrl).toBe('https://example.com')
     expect(terminalWaitAborted).toBe(true)
     expect(openedDirectories).toEqual([directoryPath])
-    expect(JSON.parse(await readFile(join(directoryPath, 'recording.json'), 'utf8'))).toEqual(JSON.parse(serializeRecordingDocument(document)))
+    expect(JSON.parse(await readFile(join(directoryPath, 'recording.json'), 'utf8'))).toEqual(JSON.parse(serializeRecording(recording)))
     expect(JSON.parse(await readFile(join(directoryPath, 'snapshots', '0001.aria.json'), 'utf8'))).toEqual(ariaSnapshot)
     expect(output.join('')).toContain(`Recording to ${directoryPath}.`)
     expect(output.join('')).toContain(`Saved recording to ${directoryPath}.`)

@@ -1,7 +1,7 @@
 # When Chatting
 
 - Always be concise and direct with your responses unless more detail is requested
-- Use ASCII diagrams and JavaSscript-style psuedocode when applicable to express your ideas more concisely
+- Use ASCII diagrams and JavaScript-style psuedocode when applicable to express your ideas more concisely
 
 # When Coding
 

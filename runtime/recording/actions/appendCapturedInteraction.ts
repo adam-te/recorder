@@ -1,7 +1,7 @@
 import { createRecordedAction } from '#runtime/recording/actions/createRecordedAction.ts'
 import type { CapturedInteraction } from '#runtime/recording/capture/types.ts'
 
-import type { RecordedAriaSnapshot, RecordingDocument, RecordingSession } from '@te/recorder-core'
+import type { RecordedAriaSnapshot, Recording, RecordingSession } from '@te/recorder-core'
 
 export { appendCapturedInteraction }
 
@@ -12,9 +12,9 @@ async function appendCapturedInteraction(args: AppendCapturedInteractionArgs): P
     return undefined
   }
 
-  const document = args.recordingSession.append(interaction.action)
+  const recording = args.recordingSession.append(interaction.action)
 
-  return { actionIndex: document.actions.length - 1, ariaSnapshot: interaction.ariaSnapshot, document }
+  return { actionIndex: recording.actions.length - 1, ariaSnapshot: interaction.ariaSnapshot, recording }
 }
 
 interface AppendCapturedInteractionArgs {
@@ -25,5 +25,5 @@ interface AppendCapturedInteractionArgs {
 interface AppendedInteraction {
   actionIndex: number
   ariaSnapshot: RecordedAriaSnapshot
-  document: RecordingDocument
+  recording: Recording
 }

@@ -1,10 +1,10 @@
-import type { RecordingDocument } from '#core/document/recordingDocumentSchema.ts'
+import type { Recording } from '#core/recording/recordingSchema.ts'
 
 export type { ThousandEyesTransactionCodec, ThousandEyesTransactionScript }
 
 interface ThousandEyesTransactionCodec {
-  generate: (document: RecordingDocument) => ThousandEyesTransactionScript | Promise<ThousandEyesTransactionScript>
-  parse: (script: ThousandEyesTransactionScript) => RecordingDocument | Promise<RecordingDocument>
+  generate: (recording: Recording) => ThousandEyesTransactionScript | Promise<ThousandEyesTransactionScript>
+  parse: (script: ThousandEyesTransactionScript) => Recording | Promise<Recording>
 }
 
 interface ThousandEyesTransactionScript {

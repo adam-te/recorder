@@ -12,16 +12,16 @@ describe('recording playback', () => {
   test('records and plays back clicks', async () => {
     const html = `<button data-testid="target" onclick="document.body.dataset.clicked = 'true'">Click</button>`
     const recordedActionCounts: number[] = []
-    const document = await browser.record({
+    const recording = await browser.record({
       html,
       interact: page => page.getByTestId('target').click(),
-      onDocumentChanged: currentDocument => {
-        recordedActionCounts.push(currentDocument.actions.length)
+      onRecordingChanged: currentRecording => {
+        recordedActionCounts.push(currentRecording.actions.length)
       },
     })
 
     expect(recordedActionCounts).toStrictEqual([1, 2])
-    expect(document).toMatchObject({
+    expect(recording).toMatchObject({
       actions: [
         { kind: 'goto', pageUrl: 'about:blank', url: 'https://recorder.test/content' },
         {
@@ -36,16 +36,16 @@ describe('recording playback', () => {
       ],
       startUrl: 'https://recorder.test/content',
     })
-    const playbackPage = await browser.play({ document: { ...document, startUrl: 'https://metadata.test/not-used' }, html })
+    const playbackPage = await browser.play({ recording: { ...recording, startUrl: 'https://metadata.test/not-used' }, html })
 
     expect(await playbackPage.locator('body').getAttribute('data-clicked')).toBe('true')
   })
 
   test('records and plays back key presses', async () => {
     const html = `<input id="search" onkeydown="document.body.dataset.key = event.key">`
-    const { document, playbackPage } = await browser.recordAndPlay({ html, interact: page => page.locator('#search').press('Enter') })
+    const { playbackPage, recording } = await browser.recordAndPlay({ html, interact: page => page.locator('#search').press('Enter') })
 
-    expect(document.actions).toMatchObject([
+    expect(recording.actions).toMatchObject([
       { kind: 'goto', url: 'https://recorder.test/content' },
       { key: 'Enter', kind: 'press', pageUrl: 'https://recorder.test/content' },
     ])
@@ -54,8 +54,8 @@ describe('recording playback', () => {
 
   test('uses test IDs only when they are unique', async () => {
     const html = `<button data-testid="action" id="target" onclick="document.body.dataset.clicked = 'true'">Save</button><button data-testid="action">Cancel</button>`
-    const { document, playbackPage } = await browser.recordAndPlay({ html, interact: page => page.locator('#target').click() })
-    const click = getOnlyAction(document, 'click')
+    const { playbackPage, recording } = await browser.recordAndPlay({ html, interact: page => page.locator('#target').click() })
+    const click = getOnlyAction(recording, 'click')
 
     expect(click.locatorCandidates[0]).toStrictEqual({ kind: 'aria', steps: [{ method: 'role', name: 'Save', role: 'button' }] })
     expect(await playbackPage.locator('body').getAttribute('data-clicked')).toBe('true')
@@ -63,8 +63,8 @@ describe('recording playback', () => {
 
   test('leaves non-standard test attributes to CSS selection', async () => {
     const html = `<div data-cy="target" id="target" style="height: 10px; width: 10px" onclick="document.body.dataset.clicked = 'true'"></div>`
-    const { document, playbackPage } = await browser.recordAndPlay({ html, interact: page => page.locator('#target').click() })
-    const click = getOnlyAction(document, 'click')
+    const { playbackPage, recording } = await browser.recordAndPlay({ html, interact: page => page.locator('#target').click() })
+    const click = getOnlyAction(recording, 'click')
 
     expect(click.locatorCandidates[0]).toStrictEqual({ kind: 'css', value: '#target' })
     expect(click.locatorCandidates[1]).toStrictEqual({ kind: 'css', value: '[data-cy="target"]' })
@@ -77,7 +77,7 @@ describe('recording playback', () => {
       'https://recorder.test/content': '<iframe id="action-frame" src="https://frame.test/content"></iframe>',
     }
     let recordedSnapshot: { actionIndex: number; ariaSnapshot: RecordedAriaSnapshot } | undefined
-    const { document, playbackPage } = await browser.recordAndPlay({
+    const { playbackPage, recording } = await browser.recordAndPlay({
       documents,
       interact: page => page.frameLocator('#action-frame').locator('#target').click(),
       onSnapshotCaptured: snapshot => {
@@ -85,7 +85,7 @@ describe('recording playback', () => {
       },
     })
 
-    expect(document.actions).toMatchObject([
+    expect(recording.actions).toMatchObject([
       { kind: 'goto', pageUrl: 'about:blank', url: 'https://recorder.test/content' },
       {
         kind: 'click',
@@ -97,7 +97,7 @@ describe('recording playback', () => {
         pageUrl: 'https://recorder.test/content',
       },
     ])
-    const click = getOnlyAction(document, 'click')
+    const click = getOnlyAction(recording, 'click')
     const target = findTarget(recordedSnapshot?.ariaSnapshot)
 
     expect(recordedSnapshot?.actionIndex).toBe(1)
@@ -111,8 +111,8 @@ describe('recording playback', () => {
   })
 
   test.each(locatorPlaybackCases)('$name', async ({ expectedLocator, html }) => {
-    const { document, playbackPage } = await browser.recordAndPlay({ html, interact: page => page.locator('#target').click() })
-    const click = getOnlyAction(document, 'click')
+    const { playbackPage, recording } = await browser.recordAndPlay({ html, interact: page => page.locator('#target').click() })
+    const click = getOnlyAction(recording, 'click')
 
     expect(click.locatorCandidates[0]).toStrictEqual(expectedLocator)
     expect(await playbackPage.locator('body').getAttribute('data-clicked')).toBe('true')
@@ -120,8 +120,8 @@ describe('recording playback', () => {
 
   test('does not generate ARIA locators through hidden shadow hosts', async () => {
     const html = `<div id="host" aria-hidden="true"></div><script>document.querySelector('#host').attachShadow({ mode: 'open' }).innerHTML = '<button id="target" onclick="document.body.dataset.clicked = true">Save</button>'</script>`
-    const { document, playbackPage } = await browser.recordAndPlay({ html, interact: page => page.locator('#target').click() })
-    const click = getOnlyAction(document, 'click')
+    const { playbackPage, recording } = await browser.recordAndPlay({ html, interact: page => page.locator('#target').click() })
+    const click = getOnlyAction(recording, 'click')
 
     expect(click.locatorCandidates[0]).toMatchObject({ kind: 'css' })
     expect(await playbackPage.locator('body').getAttribute('data-clicked')).toBe('true')

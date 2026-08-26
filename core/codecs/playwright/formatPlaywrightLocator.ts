@@ -1,4 +1,4 @@
-import type { RecordedLocator } from '#core/document/recordingDocumentSchema.ts'
+import type { RecordedLocator } from '#core/recording/recordingSchema.ts'
 
 import { quoteTypeScriptString } from './quoteTypeScriptString.ts'
 

@@ -2,7 +2,7 @@ import { recordingEditorViewType } from '#vscode-extension/recording/createRecor
 import { randomUUID } from 'node:crypto'
 import { commands, Uri, window, workspace, type ExtensionContext } from 'vscode'
 
-import { getRecordingSnapshotFileName, parseRecordingDocument, parseRecordingSnapshot, serializeRecordingDocument, serializeRecordingSnapshot, type RecordedAriaSnapshot, type RecordingDocument } from '@te/recorder-core'
+import { getRecordingSnapshotFileName, parseRecording, parseRecordingSnapshot, serializeRecording, serializeRecordingSnapshot, type RecordedAriaSnapshot, type Recording } from '@te/recorder-core'
 import { createRecorder } from '@te/recorder-runtime'
 
 export { createRecorderController }
@@ -34,28 +34,28 @@ function createRecorderController(args: CreateRecorderControllerArgs): RecorderC
   }
 
   async function stop(): Promise<void> {
-    const document = await recorder.stop()
+    const recording = await recorder.stop()
 
-    if (!document) {
+    if (!recording) {
       await discardStagingDirectory()
       return
     }
 
-    await openPreview(document)
+    await openPreview(recording)
   }
 
-  async function play(document?: RecordingDocument): Promise<void> {
-    if (!document) {
+  async function play(recording?: Recording): Promise<void> {
+    if (!recording) {
       const editor = window.activeTextEditor
       if (!editor || editor.document.uri.path.split('/').at(-1) !== 'recording.json') {
-        throw new Error('Open a recording.json document before starting playback.')
+        throw new Error('Open a recording.json file before starting playback.')
       }
 
-      document = parseRecordingDocument(JSON.parse(editor.document.getText()))
+      recording = parseRecording(JSON.parse(editor.document.getText()))
     }
 
-    await recorder.play({ document })
-    await window.showInformationMessage(`Played ${document.actions.length} recorded actions.`)
+    await recorder.play({ recording })
+    await window.showInformationMessage(`Played ${recording.actions.length} recorded actions.`)
   }
 
   async function dispose(): Promise<void> {
@@ -72,7 +72,7 @@ function createRecorderController(args: CreateRecorderControllerArgs): RecorderC
       throw new Error('This recording preview is no longer available.')
     }
 
-    return promptToSave({ document: parseRecordingDocument(JSON.parse(decoder.decode(await workspace.fs.readFile(documentUri)))), draftDirectory: Uri.joinPath(documentUri, '..') })
+    return promptToSave({ draftDirectory: Uri.joinPath(documentUri, '..'), recording: parseRecording(JSON.parse(decoder.decode(await workspace.fs.readFile(documentUri)))) })
   }
 
   async function discardPending(documentUri: Uri): Promise<boolean> {
@@ -96,29 +96,29 @@ function createRecorderController(args: CreateRecorderControllerArgs): RecorderC
     await workspace.fs.rename(temporary, destination, { overwrite: true })
   }
 
-  async function openPreview(document: RecordingDocument): Promise<void> {
+  async function openPreview(recording: Recording): Promise<void> {
     if (!stagingDirectory) {
       throw new Error('Cannot preview a recording without staged files.')
     }
 
     const destination = Uri.joinPath(stagingDirectory, 'recording.json')
     const temporary = destination.with({ path: `${destination.path}.pending` })
-    await workspace.fs.writeFile(temporary, encoder.encode(serializeRecordingDocument(document)))
+    await workspace.fs.writeFile(temporary, encoder.encode(serializeRecording(recording)))
     await workspace.fs.rename(temporary, destination, { overwrite: true })
     stagingDirectory = undefined
     await commands.executeCommand('vscode.openWith', destination, recordingEditorViewType)
   }
 
-  async function promptToSave(args: { document: RecordingDocument; draftDirectory: Uri }): Promise<Uri | undefined> {
+  async function promptToSave(args: { draftDirectory: Uri; recording: Recording }): Promise<Uri | undefined> {
     while (isPending(Uri.joinPath(args.draftDirectory, 'recording.json'))) {
-      const destination = await window.showSaveDialog({ defaultUri: defaultRecordingUri(args.document, args.draftDirectory), saveLabel: 'Save Recording' })
+      const destination = await window.showSaveDialog({ defaultUri: defaultRecordingUri(args.recording, args.draftDirectory), saveLabel: 'Save Recording' })
       if (!destination) {
         return undefined
       }
 
       const recordingDirectory = destination.path.endsWith('.recording') ? destination : destination.with({ path: `${destination.path}.recording` })
       try {
-        await commitRecording({ destination: recordingDirectory, document: args.document, stagingDirectory: args.draftDirectory })
+        await commitRecording({ destination: recordingDirectory, recording: args.recording, stagingDirectory: args.draftDirectory })
         await workspace.fs.delete(args.draftDirectory, { recursive: true, useTrash: false })
 
         await window.showInformationMessage(`Saved recording to ${recordingDirectory.fsPath}.`)
@@ -134,13 +134,13 @@ function createRecorderController(args: CreateRecorderControllerArgs): RecorderC
     return undefined
   }
 
-  function defaultRecordingUri(document: RecordingDocument, draftDirectory: Uri): Uri | undefined {
+  function defaultRecordingUri(recording: Recording, draftDirectory: Uri): Uri | undefined {
     const workspaceFolder = workspace.getWorkspaceFolder(draftDirectory) ?? workspace.workspaceFolders?.[0]
     if (!workspaceFolder) {
       return undefined
     }
 
-    const name = document.title
+    const name = recording.title
       .toLowerCase()
       .replace(/[^a-z0-9]+/g, '-')
       .replace(/^-|-$/g, '')
@@ -189,16 +189,16 @@ function isDraftDocumentInRoot(documentUri: Uri, root: Uri): boolean {
   return Boolean(relativePath && /^[^/]+\.recording\/recording\.json$/.test(relativePath))
 }
 
-async function commitRecording(args: { destination: Uri; document: RecordingDocument; stagingDirectory: Uri }): Promise<void> {
+async function commitRecording(args: { destination: Uri; recording: Recording; stagingDirectory: Uri }): Promise<void> {
   const pendingDirectory = args.destination.with({ path: `${args.destination.path}.pending-${randomUUID()}` })
 
   try {
     const pendingSnapshotsDirectory = Uri.joinPath(pendingDirectory, 'snapshots')
     await workspace.fs.createDirectory(pendingSnapshotsDirectory)
-    await workspace.fs.writeFile(Uri.joinPath(pendingDirectory, 'recording.json'), encoder.encode(serializeRecordingDocument(args.document)))
+    await workspace.fs.writeFile(Uri.joinPath(pendingDirectory, 'recording.json'), encoder.encode(serializeRecording(args.recording)))
 
     const stagedSnapshotsDirectory = Uri.joinPath(args.stagingDirectory, 'snapshots')
-    for (const [actionIndex, action] of args.document.actions.entries()) {
+    for (const [actionIndex, action] of args.recording.actions.entries()) {
       if (!('locatorCandidates' in action)) {
         continue
       }
@@ -209,7 +209,7 @@ async function commitRecording(args: { destination: Uri; document: RecordingDocu
       await workspace.fs.writeFile(Uri.joinPath(pendingSnapshotsDirectory, name), contents)
     }
 
-    parseRecordingDocument(JSON.parse(decoder.decode(await workspace.fs.readFile(Uri.joinPath(pendingDirectory, 'recording.json')))))
+    parseRecording(JSON.parse(decoder.decode(await workspace.fs.readFile(Uri.joinPath(pendingDirectory, 'recording.json')))))
     await workspace.fs.rename(pendingDirectory, args.destination, { overwrite: false })
   } catch (error) {
     await workspace.fs.delete(pendingDirectory, { recursive: true, useTrash: false }).then(undefined, () => undefined)
@@ -221,7 +221,7 @@ interface RecorderController {
   discardPending: (documentUri: Uri) => Promise<boolean>
   dispose: () => Promise<void>
   isPending: (documentUri: Uri) => boolean
-  play: (document?: RecordingDocument) => Promise<void>
+  play: (recording?: Recording) => Promise<void>
   savePending: (documentUri: Uri) => Promise<Uri | undefined>
   start: (startUrl: string) => Promise<void>
   stop: () => Promise<void>

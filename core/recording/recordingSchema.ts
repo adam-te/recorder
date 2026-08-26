@@ -1,8 +1,8 @@
 import type { AriaNode } from '@te/aria'
 import { z } from 'zod'
 
-export { recordedActionSchema, recordedAriaSnapshotSchema, recordedLocatorSchema, recordedValueSchema, recordingDocumentSchema }
-export type { RecordedAction, RecordedAriaNode, RecordedAriaSnapshot, RecordedLocator, RecordedValue, RecordingDocument }
+export { recordedActionSchema, recordedAriaSnapshotSchema, recordedLocatorSchema, recordedValueSchema, recordingSchema }
+export type { RecordedAction, RecordedAriaNode, RecordedAriaSnapshot, RecordedLocator, RecordedValue, Recording }
 
 const recordedLocatorContextSchema = { framePath: z.array(z.string().min(1)).optional() }
 const recordedTextLocatorStepSchema = <Method extends 'alt' | 'label' | 'placeholder' | 'text' | 'title'>(method: Method) => z.object({ exact: z.boolean().optional(), method: z.literal(method), text: z.string().min(1) })
@@ -78,7 +78,7 @@ const recordedActionSchema = z.discriminatedUnion('kind', [
   z.object({ ...recordedActionContextSchema, ...recordedActionLocatorContextSchema, kind: z.literal('assert-visible') }),
 ])
 
-const recordingDocumentSchema = z.object({
+const recordingSchema = z.object({
   title: z.string().min(1),
   startUrl: z.url(),
   createdAt: z.iso.datetime(),
@@ -89,7 +89,7 @@ type RecordedAction = z.infer<typeof recordedActionSchema>
 type RecordedAriaSnapshot = z.infer<typeof recordedAriaSnapshotSchema>
 type RecordedLocator = z.infer<typeof recordedLocatorSchema>
 type RecordedValue = z.infer<typeof recordedValueSchema>
-type RecordingDocument = z.infer<typeof recordingDocumentSchema>
+type Recording = z.infer<typeof recordingSchema>
 
 interface RecordedAriaNode extends Omit<AriaNode, 'children'> {
   children?: (RecordedAriaNode | string)[]

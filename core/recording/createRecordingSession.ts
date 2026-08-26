@@ -1,32 +1,32 @@
-import { createRecordingDocument } from '#core/document/createRecordingDocument.ts'
-import { recordingDocumentSchema, type RecordedAction, type RecordingDocument } from '#core/document/recordingDocumentSchema.ts'
+import { createRecording } from '#core/recording/createRecording.ts'
+import { recordingSchema, type RecordedAction, type Recording } from '#core/recording/recordingSchema.ts'
 
 export { createRecordingSession }
 export type { RecordingSession }
 
 function createRecordingSession(args: CreateRecordingSessionArgs): RecordingSession {
-  let document = createRecordingDocument(args)
+  let recording = createRecording(args)
 
   return { append, replaceLast, snapshot }
 
-  function append(action: RecordedAction): RecordingDocument {
-    document = recordingDocumentSchema.parse({ ...document, actions: [...document.actions, action] })
+  function append(action: RecordedAction): Recording {
+    recording = recordingSchema.parse({ ...recording, actions: [...recording.actions, action] })
 
-    return document
+    return recording
   }
 
-  function replaceLast(action: RecordedAction): RecordingDocument {
-    if (!document.actions.length) {
+  function replaceLast(action: RecordedAction): Recording {
+    if (!recording.actions.length) {
       throw new Error('Cannot replace an action in an empty recording session.')
     }
 
-    document = recordingDocumentSchema.parse({ ...document, actions: [...document.actions.slice(0, -1), action] })
+    recording = recordingSchema.parse({ ...recording, actions: [...recording.actions.slice(0, -1), action] })
 
-    return document
+    return recording
   }
 
-  function snapshot(): RecordingDocument {
-    return document
+  function snapshot(): Recording {
+    return recording
   }
 }
 
@@ -37,7 +37,7 @@ interface CreateRecordingSessionArgs {
 }
 
 interface RecordingSession {
-  append: (action: RecordedAction) => RecordingDocument
-  replaceLast: (action: RecordedAction) => RecordingDocument
-  snapshot: () => RecordingDocument
+  append: (action: RecordedAction) => Recording
+  replaceLast: (action: RecordedAction) => Recording
+  snapshot: () => Recording
 }

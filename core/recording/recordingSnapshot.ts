@@ -1,4 +1,4 @@
-import { recordedAriaSnapshotSchema, type RecordedAriaSnapshot } from './recordingDocumentSchema.ts'
+import { recordedAriaSnapshotSchema, type RecordedAriaSnapshot } from './recordingSchema.ts'
 
 export { getRecordingSnapshotFileName, parseRecordingSnapshot, serializeRecordingSnapshot }
 

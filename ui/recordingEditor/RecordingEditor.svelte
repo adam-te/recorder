@@ -1,5 +1,5 @@
 <script lang="ts">
-  import type { RecordingDocument } from '@te/recorder-core'
+  import type { Recording } from '@te/recorder-core'
 
   import ActionList from './components/ActionList.svelte'
   import DetailsPanel from './components/DetailsPanel.svelte'
@@ -13,7 +13,7 @@
   }
 
   let { sendMessage }: Props = $props()
-  let recording = $state<RecordingDocument>()
+  let recording = $state<Recording>()
   let pending = $state(false)
   let selectedActionIndex = $state(0)
   let snapshotState = $state<SnapshotState>({ loading: true })
@@ -25,9 +25,9 @@
   }
 
   export function receive(message: RecordingEditorHostMessage): void {
-    if (message.type === 'document') {
+    if (message.type === 'recording') {
       fatalError = undefined
-      recording = message.document
+      recording = message.recording
       pending = message.pending
       selectedActionIndex = message.selectedActionIndex
       snapshotState = { loading: true }

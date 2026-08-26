@@ -1,7 +1,7 @@
 import { randomUUID } from 'node:crypto'
 import { commands, env, Uri, ViewColumn, window, workspace, type Disposable, type ExtensionContext, type TextDocument, type WebviewPanel } from 'vscode'
 
-import { getRecordingSnapshotFileName, parseRecordingDocument, parseRecordingSnapshot, type RecordingDocument } from '@te/recorder-core'
+import { getRecordingSnapshotFileName, parseRecording, parseRecordingSnapshot, type Recording } from '@te/recorder-core'
 import type { RecordingEditorHostMessage, RecordingEditorUiMessage } from '@te/recorder-ui/recording-editor'
 import { createRecordingEditorHost } from '@te/recorder-ui/recording-editor-host'
 import { renderRecordingSnapshot } from '@te/recorder-ui/render-recording-snapshot'
@@ -24,7 +24,7 @@ function resolveRecordingEditor(args: ResolveRecordingEditorArgs): void {
 
   const host = createRecordingEditorHost({
     isPending: () => args.isPending(args.document.uri),
-    readDocument,
+    readRecording,
     readSnapshot: async actionIndex => renderRecordingSnapshot(parseRecordingSnapshot(JSON.parse(decoder.decode(await workspace.fs.readFile(Uri.joinPath(args.document.uri, '..', 'snapshots', getRecordingSnapshotFileName(actionIndex))))))),
   })
 
@@ -35,7 +35,7 @@ function resolveRecordingEditor(args: ResolveRecordingEditorArgs): void {
     args.panel.webview.onDidReceiveMessage(handleMessage),
     workspace.onDidChangeTextDocument(event => {
       if (event.document !== args.document) return
-      void publishDocument()
+      void publishRecording()
     }),
   ]
   args.panel.onDidDispose(() => {
@@ -60,7 +60,7 @@ function resolveRecordingEditor(args: ResolveRecordingEditorArgs): void {
         await commands.executeCommand('vscode.openWith', args.document.uri, 'default', ViewColumn.Beside)
       },
       play: async () => {
-        await withErrorMessage(async () => args.onPlay(readDocument()))
+        await withErrorMessage(async () => args.onPlay(readRecording()))
       },
       ready: handleHostMessage,
       save: async () => {
@@ -91,8 +91,8 @@ function resolveRecordingEditor(args: ResolveRecordingEditorArgs): void {
     if (hostMessages) await postMessages(hostMessages)
   }
 
-  async function publishDocument(): Promise<void> {
-    await postMessages(await host.publishDocument())
+  async function publishRecording(): Promise<void> {
+    await postMessages(await host.publishRecording())
   }
 
   async function postMessages(messages: RecordingEditorHostMessage[]): Promise<void> {
@@ -115,8 +115,8 @@ function resolveRecordingEditor(args: ResolveRecordingEditorArgs): void {
     }
   }
 
-  function readDocument(): RecordingDocument {
-    return parseRecordingDocument(JSON.parse(args.document.getText()))
+  function readRecording(): Recording {
+    return parseRecording(JSON.parse(args.document.getText()))
   }
 
   async function withErrorMessage(operation: () => Promise<void>): Promise<void> {
@@ -153,7 +153,7 @@ interface CreateRecordingEditorProviderArgs {
   context: ExtensionContext
   isPending: (documentUri: Uri) => boolean
   onDiscard: (documentUri: Uri) => Promise<boolean>
-  onPlay: (document?: RecordingDocument) => Promise<void>
+  onPlay: (recording?: Recording) => Promise<void>
   onSave: (documentUri: Uri) => Promise<Uri | undefined>
 }
 

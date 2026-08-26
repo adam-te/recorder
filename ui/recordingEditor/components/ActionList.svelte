@@ -1,11 +1,11 @@
 <script lang="ts">
-  import type { RecordingDocument } from '@te/recorder-core'
+  import type { Recording } from '@te/recorder-core'
 
   import { actionKindLabel, summarizeAction } from '../presentation.ts'
 
   interface Props {
     onSelect: (actionIndex: number) => void
-    recording: RecordingDocument
+    recording: Recording
     selectedActionIndex: number
   }
 

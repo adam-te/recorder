@@ -1,4 +1,4 @@
-import type { RecordingDocument } from '@te/recorder-core'
+import type { Recording } from '@te/recorder-core'
 
 export interface CreateRecordingEditorArgs {
   root: HTMLElement
@@ -10,7 +10,7 @@ export interface RecordingEditor {
   receive: (message: RecordingEditorHostMessage) => void
 }
 
-export type RecordingEditorHostMessage = { type: 'decisionCancelled' } | { message: string; type: 'error' } | { document: RecordingDocument; pending: boolean; selectedActionIndex: number; type: 'document' } | { actionIndex: number; error?: string; targetLine?: number; type: 'snapshot'; yaml?: string }
+export type RecordingEditorHostMessage = { type: 'decisionCancelled' } | { message: string; type: 'error' } | { recording: Recording; pending: boolean; selectedActionIndex: number; type: 'recording' } | { actionIndex: number; error?: string; targetLine?: number; type: 'snapshot'; yaml?: string }
 
 export type RecordingEditorUiMessage = { type: 'copy'; text: string } | { type: 'discard' | 'openJson' | 'play' | 'ready' | 'save' } | { type: 'selectAction'; actionIndex: number }
 

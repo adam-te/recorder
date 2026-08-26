@@ -1,5 +1,5 @@
 <script lang="ts">
-  import type { RecordingDocument } from '@te/recorder-core'
+  import type { Recording } from '@te/recorder-core'
 
   import { actionProperties, summarizeAction } from '../presentation.ts'
   import EmptyState from './EmptyState.svelte'
@@ -10,7 +10,7 @@
 
   interface Props {
     onCopy: (text: string) => void
-    recording: RecordingDocument
+    recording: Recording
     selectedActionIndex: number
     snapshotState: SnapshotState
   }
