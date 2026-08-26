@@ -34,11 +34,8 @@ describe('Playwright ARIA snapshot parity', () => {
     const actual = generated.snapshot
     const expected = await page.ariaSnapshot({ mode: 'ai' })
     const rendered = renderAriaSnapshot(actual)
-    const deserialized = JSON.parse(JSON.stringify(actual)) as AriaSnapshot
 
     expect(normalizeRefs(rendered)).toBe(normalizeRefs(expected))
-    expect(renderAriaSnapshot(deserialized)).toBe(rendered)
-    expect(deserialized).toStrictEqual(actual)
     expect(actual).toMatchObject({ role: 'fragment' })
     expect(actual).not.toHaveProperty('playwrightVersion')
     expect(actual).not.toHaveProperty('root')

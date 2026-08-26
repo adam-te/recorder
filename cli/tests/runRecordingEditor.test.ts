@@ -4,7 +4,7 @@ import { join } from 'node:path'
 import { chromium } from 'playwright'
 import { describe, expect, test, vi } from 'vitest'
 
-import { createRecordingDocument, serializeRecordingDocument, type RecordingDocument } from '@te/recorder-core'
+import { createRecordingDocument, serializeRecordingDocument, serializeRecordingSnapshot, type RecordingDocument } from '@te/recorder-core'
 
 import { useTemporaryDirectories } from './support/temporaryDirectories.ts'
 
@@ -14,8 +14,38 @@ describe('runRecordingEditor', () => {
   test('serves a recording and handles editor messages', async () => {
     const temporaryDirectory = await temporaryDirectories.create()
     const directoryPath = join(temporaryDirectory, 'example.recording')
-    await mkdir(directoryPath)
-    await writeFile(join(directoryPath, 'recording.json'), serializeRecordingDocument(createRecordingDocument({ startUrl: 'https://example.com', title: 'Example recording' })))
+    const document: RecordingDocument = {
+      ...createRecordingDocument({ startUrl: 'https://example.com', title: 'Example recording' }),
+      actions: [
+        {
+          kind: 'click',
+          locatorCandidates: [
+            {
+              kind: 'aria',
+              steps: [
+                { exact: true, method: 'role', name: 'Settings', role: 'dialog' },
+                { exact: false, method: 'label', text: 'Save' },
+              ],
+            },
+          ],
+          pageUrl: 'https://example.com',
+        },
+      ],
+    }
+    await mkdir(join(directoryPath, 'snapshots'), { recursive: true })
+    await writeFile(join(directoryPath, 'recording.json'), serializeRecordingDocument(document))
+    await writeFile(
+      join(directoryPath, 'snapshots', '0000.aria.json'),
+      serializeRecordingSnapshot({
+        children: [
+          { name: 'Show [ref=e2]', props: {}, ref: 'e1', role: 'button' },
+          { cursor: 'pointer', name: 'Save', props: {}, ref: 'e2', role: 'button', target: true },
+        ],
+        name: '',
+        props: {},
+        role: 'fragment',
+      }),
+    )
 
     const onPlay = vi.fn<(document: RecordingDocument) => Promise<void>>(async () => undefined)
     const output: string[] = []
@@ -31,6 +61,10 @@ describe('runRecordingEditor', () => {
           const pageResponse = await page.goto(url)
           expect(pageResponse?.status()).toBe(200)
           expect(await page.locator('h1').textContent()).toBe('Example recording')
+          expect(await page.locator('.locator-list').textContent()).toContain('page.getByRole("dialog", { name: "Settings", exact: true }).getByLabel("Save", { exact: false })')
+          expect(await page.locator('.snapshot-yaml').textContent()).toContain('Show [ref=e2]')
+          expect(await page.locator('.snapshot-yaml').textContent()).not.toContain('[ref=e1]')
+          expect(await page.locator('.target-line').textContent()).toContain('Save')
 
           const assetResponse = await page.request.get(new URL('recordingEditor.js', url).href)
           expect(assetResponse.status()).toBe(200)

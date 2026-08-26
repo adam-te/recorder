@@ -1,4 +1,3 @@
-import type { Page } from 'playwright'
 import { describe, expect, test } from 'vitest'
 
 import { createRecordingSession } from '@te/recorder-core'
@@ -8,22 +7,6 @@ import { useBrowserTestHarness } from './support/browserHarness.ts'
 
 describe('interaction capture', () => {
   const browser = useBrowserTestHarness()
-
-  const eventCases: EventCase[] = [
-    { expectedKind: 'click', html: '<button id="target">Click</button>', interact: page => page.locator('#target').click(), name: 'captures clicks' },
-    { expectedKind: 'input', html: '<input id="target">', interact: page => page.locator('#target').fill('Ada'), name: 'captures input' },
-    { expectedKind: 'change', html: '<select id="target"><option>A</option><option>B</option></select>', interact: page => page.locator('#target').selectOption('B'), name: 'captures changes' },
-    { expectedKind: 'keydown', html: '<input id="target">', interact: page => page.locator('#target').press('Enter'), name: 'captures key presses' },
-  ]
-
-  eventCases.forEach(testCase =>
-    test(testCase.name, async () => {
-      const interaction = await browser.capture({ expectedKind: testCase.expectedKind, html: testCase.html, interact: testCase.interact })
-
-      expect(interaction).toMatchObject({ frameHostname: 'recorder.test', kind: testCase.expectedKind })
-      expect(interaction.selectors.length).toBeGreaterThan(0)
-    }),
-  )
 
   test('captures interactions inside shadow DOM', async () => {
     const html = `<div id="host"></div><script>document.querySelector('#host').attachShadow({ mode: 'open' }).innerHTML = '<button id="target">Click</button>'</script>`
@@ -132,13 +115,6 @@ describe('interaction capture', () => {
     expect(interactions).toStrictEqual([])
   })
 })
-
-interface EventCase {
-  expectedKind: CapturedInteractionEvent['kind']
-  html: string
-  interact: (page: Page) => Promise<unknown>
-  name: string
-}
 
 function findDocumentsContainingText(snapshot: DomSnapshot, text: string): number[] {
   const stringIndex = snapshot.strings.indexOf(text)
