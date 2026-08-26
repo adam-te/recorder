@@ -44,7 +44,7 @@ function compactAriaTree(root: PlaywrightAriaNode): { nodesByRef: Map<string, Ar
       ...(node.invalid ? { invalid: node.invalid } : {}),
       ...(node.level !== undefined ? { level: node.level } : {}),
       ...(node.pressed ? { pressed: node.pressed } : {}),
-      ...(node.ref !== undefined ? { ref: node.ref } : {}),
+      ...(node.ref ? { ref: node.ref } : {}),
       ...(node.selected ? { selected: true } : {}),
     }
 

@@ -37,7 +37,7 @@ function markSnapshotTarget(snapshot: RecordedAriaSnapshot, targetRef: string | 
   function markNode(node: RecordedAriaNode): RecordedAriaNode {
     return {
       ...node,
-      ...(targetRef !== undefined && node.ref === targetRef ? { target: true as const } : {}),
+      ...(targetRef && node.ref === targetRef ? { target: true as const } : {}),
       ...(node.children ? { children: node.children.map(child => (typeof child === 'string' ? child : markNode(child))) } : {}),
     }
   }

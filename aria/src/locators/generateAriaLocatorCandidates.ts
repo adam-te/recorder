@@ -64,7 +64,7 @@ function uniquelyMatchesTarget(query: AriaQueryContext, target: Element, candida
 }
 
 function withNecessaryExactness(steps: AriaLocatorStep[]): AriaLocatorCandidate[] {
-  const exactableStepIndexes = steps.flatMap((step, index) => (step.method !== 'role' || step.name !== undefined ? [index] : []))
+  const exactableStepIndexes = steps.flatMap((step, index) => (step.method !== 'role' || step.name ? [index] : []))
   const candidates: AriaLocatorCandidate[] = []
 
   for (let exactCount = 0; exactCount <= exactableStepIndexes.length; exactCount++) {

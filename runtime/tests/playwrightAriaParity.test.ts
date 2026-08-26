@@ -67,5 +67,5 @@ function findNodeByRef(node: AriaSnapshot, ref: string | undefined): AriaSnapsho
     return node
   }
 
-  return (node.children ?? []).flatMap(child => (typeof child === 'string' ? [] : [findNodeByRef(child, ref)])).find(child => child !== undefined)
+  return (node.children ?? []).flatMap(child => (typeof child === 'string' ? [] : [findNodeByRef(child, ref)])).find(child => child)
 }

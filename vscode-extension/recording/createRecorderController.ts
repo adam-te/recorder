@@ -192,7 +192,7 @@ function isDraftDocumentInRoot(documentUri: Uri, root: Uri): boolean {
 
   const rootPath = root.path.endsWith('/') ? root.path : `${root.path}/`
   const relativePath = documentUri.path.startsWith(rootPath) ? documentUri.path.slice(rootPath.length) : undefined
-  return relativePath !== undefined && /^[^/]+\.recording\/recording\.json$/.test(relativePath)
+  return Boolean(relativePath && /^[^/]+\.recording\/recording\.json$/.test(relativePath))
 }
 
 async function commitRecording(args: { destination: Uri; document: RecordingDocument; stagingDirectory: Uri }): Promise<void> {

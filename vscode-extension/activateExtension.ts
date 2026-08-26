@@ -38,7 +38,7 @@ function activateExtension(args: ActivateExtensionArgs): ActiveExtension {
       prompt: 'Enter the initial URL for the transaction recording.',
       validateInput: validateStartUrl,
     })
-    if (startUrl === undefined) {
+    if (!startUrl) {
       await setRecorderState('idle')
       return
     }

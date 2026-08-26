@@ -27,7 +27,7 @@ function formatPlaywrightLocator(locator: RecordedLocator, { includePage = true 
       continue
     }
 
-    const stepOptions = [...(step.name === undefined ? [] : [`name: ${quoteTypeScriptString(step.name)}`]), ...(step.exact === undefined ? [] : [`exact: ${step.exact}`])]
+    const stepOptions = [...(step.name ? [`name: ${quoteTypeScriptString(step.name)}`] : []), ...(step.exact === undefined ? [] : [`exact: ${step.exact}`])]
     source = appendCall(source, `getByRole(${quoteTypeScriptString(step.role)}${stepOptions.length ? `, { ${stepOptions.join(', ')} }` : ''})`)
   }
 
