@@ -1,9 +1,18 @@
-# ARIA utilities
+# ARIA Utilities
 
-Utilities for generating and rendering Playwright-compatible AI ARIA snapshots and semantic locator candidates. Semantic candidates use role, label, alt text, placeholder, text, and title in that preference order when they uniquely identify the target. Snapshots are compact JSON-safe tree DTOs that retain semantic content, refs, and the pointer-cursor hint while omitting empty leaf `children`.
+Generates compact, Playwright-compatible accessibility snapshots and unique semantic locator candidates for recorder browser bundles. Snapshot generation also identifies the nearest relevant ARIA node for the captured target.
 
-Both features use vendored TypeScript accessibility and selector utilities from the Playwright version declared by this package's `playwright` development dependency; the locator candidate selection algorithm remains local. The snapshot generator accepts the event's element-only composed path so it can select the nearest ARIA-visible, non-generic ancestor with a Playwright ref at capture time; recording consumers store that `targetRef` on the interaction or action rather than in the tree.
+## Entry points
 
-Run `npm run generate:aria` in this workspace to refresh the committed Playwright sources, or run the command with the same name at the repository root to refresh both the sources and downstream injected runtime. The generator downloads the pinned Apache-2.0 Playwright sources and verifies that every consumer uses the same version. Runtime consumers do not need network access.
+- `@te/aria` exports portable snapshot and locator types plus snapshot rendering.
+- `@te/aria/browser` exports DOM-dependent snapshot capture and locator generation.
 
-The portable `@te/aria` entry point exports snapshot DTOs, locator DTOs, and `renderAriaSnapshot`. The DOM-dependent `@te/aria/browser` entry point exports snapshot capture and locator generation for browser bundles. The locator generator accepts callbacks for excluding application-owned elements and traversing closed shadow roots; snapshot capture follows Playwright's open-shadow-root traversal.
+## Vendored Playwright sources
+
+The implementation uses committed Playwright accessibility and selector sources pinned to the package's Playwright version. Runtime consumers do not require network access.
+
+From the repository root, refresh the vendored sources and generated browser runtime with:
+
+```text
+npm run generate:aria
+```

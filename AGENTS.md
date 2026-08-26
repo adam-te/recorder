@@ -15,3 +15,7 @@
 
 - Only write top-level integration style tests unless specifically requested otherwise
 - Never write low value tests that assert trivial conditions or otherwise assert something non-core to the project
+
+# When Documenting
+
+- Keep README files concise and to the point; don't explain low level project details; Use ASCII diagrams when applicable

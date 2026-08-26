@@ -1,9 +1,12 @@
 # Recorder UI
 
-Provides the host-neutral Svelte 5 interfaces used while recording and editing transactions.
+Provides the host-neutral recording editor and browser overlay shared by recorder applications.
 
-The editor owns components and local interaction state, communicates through typed host and UI messages, and styles itself with semantic `--recorder-*` design tokens. It does not import VS Code, Node.js, filesystem, or recorder runtime APIs; hosts supply document updates, snapshots, persistence decisions, clipboard access, and playback behavior through an adapter.
+Hosts communicate with the UI through typed messages and callbacks while retaining responsibility for persistence, clipboard access, and playback. The editor uses semantic `--recorder-*` design tokens so each host can supply its own theme.
 
-`createRecordingEditorHost` contains the shared document-selection and snapshot-message behavior used by both the VS Code and standalone browser hosts. Run `te ui <recording-directory>` to open the latter.
+## APIs
 
-`recordingOverlay/` provides the browser-injected recording controls and hovered-element presentation. Runtime supplies recorder-specific locator descriptions and lifecycle callbacks when it mounts the overlay.
+- `@te/recorder-ui/recording-editor` mounts the transaction editor and exposes its typed protocol.
+- `@te/recorder-ui/recording-editor-host` coordinates document selection and snapshots.
+- `@te/recorder-ui/recording-overlay` mounts the browser recording controls and element highlight.
+- `@te/recorder-ui/render-recording-snapshot` prepares ARIA snapshots for presentation.

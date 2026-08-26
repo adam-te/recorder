@@ -1,5 +1,7 @@
 # Recorder Core
 
-Defines the recording document, recording snapshots, recording session, serialization, playback contracts, and pure format codecs shared by the recorder packages.
+Defines the platform-independent recording model and transformations shared by the recorder packages.
 
-This package has no dependency on Playwright, ThousandEyes APIs, or Visual Studio Code.
+It provides document and snapshot validation, serialization, recording sessions, playback contracts, Playwright script generation, and ThousandEyes codec interfaces.
+
+Core performs no browser automation, filesystem access, editor integration, or ThousandEyes API calls.
