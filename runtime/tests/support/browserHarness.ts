@@ -39,6 +39,10 @@ async function createPage(args: CreatePageArgs): Promise<Page> {
   const documents: Record<string, string | undefined> = { 'https://recorder.test/content': args.html, ...args.documents }
 
   await page.route('**/*', route => {
+    const redirect = args.redirects?.[route.request().url()]
+
+    if (redirect) return route.fulfill({ headers: { location: redirect }, status: 302 })
+
     const document = documents[route.request().url()]
 
     return route.fulfill({ body: document ?? 'Not found', contentType: 'text/html', headers: args.headers, status: document ? 200 : 404 })
@@ -58,7 +62,7 @@ async function playTestRecording(args: PlayTestRecordingArgs): Promise<Page> {
 }
 
 async function recordTest(args: RecordTestArgs): Promise<RecordingDocument> {
-  const page = await createPage({ context: args.fixture.context, documents: args.documents, html: args.html })
+  const page = await createPage({ context: args.fixture.context, documents: args.documents, html: args.html, redirects: args.redirects })
   const recorder = createTestRecorder({ browser: args.fixture.browser, context: args.fixture.context, page })
 
   await recorder.start({ onDocumentChanged: args.onDocumentChanged, onSnapshotCaptured: args.onSnapshotCaptured, startUrl: args.startUrl })
@@ -120,6 +124,7 @@ interface CreatePageArgs {
   documents?: Record<string, string>
   headers?: Record<string, string>
   html?: string
+  redirects?: Record<string, string>
 }
 
 interface CreateTestRecorderArgs {
@@ -166,5 +171,6 @@ interface RecordTestArgs {
   interact: (page: Page) => Promise<unknown>
   onDocumentChanged?: (document: RecordingDocument) => Promise<void> | void
   onSnapshotCaptured?: (snapshot: { actionIndex: number; ariaSnapshot: RecordedAriaSnapshot }) => Promise<void> | void
+  redirects?: Record<string, string>
   startUrl: string
 }

@@ -1,3 +1,4 @@
+import type { Protocol } from 'devtools-protocol'
 import type { Frame, Page } from 'playwright'
 
 export { captureBrowserNavigation }
@@ -5,14 +6,14 @@ export type { BrowserNavigationCapture, CapturedBrowserNavigation }
 
 /** Observes top-level browser navigation while a recording is active. */
 async function captureBrowserNavigation(args: CaptureBrowserNavigationArgs): Promise<BrowserNavigationCapture> {
-  const cdpSession = await args.page.context().newCDPSession(args.page)
-  await cdpSession.send('Page.enable')
-  const frameTree = await cdpSession.send('Page.getFrameTree')
-  let history = await cdpSession.send('Page.getNavigationHistory')
+  const navigationSession = await args.page.context().newCDPSession(args.page)
+  await navigationSession.send('Page.enable')
+  const frameTree = await navigationSession.send('Page.getFrameTree')
+  let history = await readNavigationHistory()
   let rendererNavigationRequested = false
   let pendingCapture = Promise.resolve()
 
-  cdpSession.on('Page.frameRequestedNavigation', event => {
+  navigationSession.on('Page.frameRequestedNavigation', event => {
     if (event.frameId !== frameTree.frameTree.frame.id) return
     rendererNavigationRequested = true
   })
@@ -27,10 +28,11 @@ async function captureBrowserNavigation(args: CaptureBrowserNavigationArgs): Pro
 
     rendererNavigationRequested = false
     pendingCapture = pendingCapture.then(() => captureNavigation(rendererInitiated))
+    void pendingCapture.catch(() => undefined)
   }
 
   async function captureNavigation(rendererInitiated: boolean): Promise<void> {
-    const nextHistory = await cdpSession.send('Page.getNavigationHistory')
+    const nextHistory = await readNavigationHistory()
     const previousEntry = history.entries[history.currentIndex]
     const currentEntry = nextHistory.entries[nextHistory.currentIndex]
     if (!rendererInitiated && previousEntry && currentEntry) {
@@ -46,12 +48,30 @@ async function captureBrowserNavigation(args: CaptureBrowserNavigationArgs): Pro
 
   async function dispose(): Promise<void> {
     args.page.off('framenavigated', queueNavigationCapture)
-    await flush()
-    await cdpSession.detach()
+    try {
+      await flush()
+    } finally {
+      await navigationSession.detach()
+    }
   }
 
   async function flush(): Promise<void> {
     await pendingCapture
+  }
+
+  async function readNavigationHistory(attemptsRemaining = 3): Promise<Protocol.Page.GetNavigationHistoryResponse> {
+    const historySession = await args.page.context().newCDPSession(args.page)
+
+    try {
+      return await historySession.send('Page.getNavigationHistory')
+    } catch (error) {
+      if (attemptsRemaining <= 1 || !error.message.includes('Not attached to an active page')) throw error
+    } finally {
+      await historySession.detach()
+    }
+
+    await new Promise<void>(resolve => setTimeout(resolve))
+    return readNavigationHistory(attemptsRemaining - 1)
   }
 }
 

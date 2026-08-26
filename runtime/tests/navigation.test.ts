@@ -34,6 +34,25 @@ describe('navigation recording', () => {
     expect(click.locatorCandidates).toContainEqual({ kind: 'css', value: '#target' })
   })
 
+  test('records a click through cross-origin redirects without recording the redirects as navigation', async () => {
+    const document = await browser.record({
+      documents: {
+        'https://destination.test/after': '<p>After</p>',
+        'https://recorder.test/content': '<a id="target" href="https://redirect.test/first">Continue</a>',
+      },
+      interact: page => page.locator('#target').click(),
+      redirects: {
+        'https://redirect.test/first': 'https://redirect.test/second',
+        'https://redirect.test/second': 'https://destination.test/after',
+      },
+    })
+
+    expect(document.actions).toMatchObject([
+      { kind: 'goto', pageUrl: 'about:blank', url: 'https://recorder.test/content' },
+      { kind: 'click', pageUrl: 'https://recorder.test/content' },
+    ])
+  })
+
   test('uses the requested start URL when it redirects', async () => {
     const documents = {
       'https://recorder.test/after': `<button id="target" onclick="document.body.dataset.clicked = 'true'">Continue</button>`,
