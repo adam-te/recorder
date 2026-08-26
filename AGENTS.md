@@ -1,15 +1,15 @@
 # When Chatting
 
 - Always be concise and direct with your responses unless more detail is requested
-- Use ASCII diagrams, JavaSscript-style psuedocode, and minimal bulleted lists when applicable to express your ideas more succicnctly
+- Use ASCII diagrams and JavaSscript-style psuedocode when applicable to express your ideas more concisely
 
 # When Coding
 
-- These conventions apply to first-party, hand-written source. Do not edit vendored, generated, or compiled output to enforce them
 - Always use the `matchBy` function over `switch` statements
 - Always use truthy/falsy checks over strict equality when it doesn't change the result
 - Always use early returns for negative conditions if applicable
 - Avoid one-off variables; Prefer nesting expressions and functions over many one-off variables
+- Do not edit vendored, generated, or compiled output (these rules do not apply there)
 
 # When Testing
 
