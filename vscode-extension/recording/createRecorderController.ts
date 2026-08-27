@@ -2,7 +2,7 @@ import { recordingEditorViewType } from '#vscode-extension/recording/createRecor
 import { randomUUID } from 'node:crypto'
 import { commands, Uri, window, workspace, type ExtensionContext } from 'vscode'
 
-import { parseRecording, RECORDING_DOCUMENT_PATH, type RecordedAriaSnapshot, type Recording } from '@te/recorder-core'
+import { parseRecording, RECORDING_DOCUMENT_PATH, type Recording, type RecordingArtifact } from '@te/recorder-core'
 import { createRecorder } from '@te/recorder-runtime'
 import { tryTo } from '@te/recorder-utils'
 
@@ -26,7 +26,7 @@ function createRecorderController(args: CreateRecorderControllerArgs): RecorderC
     await workspace.fs.createDirectory(stagingDirectory)
 
     await tryTo(
-      () => recorder.start({ onSnapshotCaptured: stageSnapshot, onStopRequested: args.onStopRequested, startUrl }),
+      () => recorder.start({ onStopRequested: args.onStopRequested, startUrl }),
       async error => {
         await discardStagingDirectory()
         throw error
@@ -35,14 +35,14 @@ function createRecorderController(args: CreateRecorderControllerArgs): RecorderC
   }
 
   async function stop(): Promise<void> {
-    const recording = await recorder.stop()
+    const artifact = await recorder.stop()
 
-    if (!recording) {
+    if (!artifact) {
       await discardStagingDirectory()
       return
     }
 
-    await openPreview(recording)
+    await openPreview(artifact)
   }
 
   async function play(recording?: Recording): Promise<void> {
@@ -85,20 +85,12 @@ function createRecorderController(args: CreateRecorderControllerArgs): RecorderC
     return true
   }
 
-  async function stageSnapshot(args: { actionIndex: number; ariaSnapshot: RecordedAriaSnapshot }): Promise<void> {
-    if (!stagingDirectory) {
-      throw new Error('Cannot stage a snapshot without an active recording.')
-    }
-
-    await createWorkspaceRecordingArtifactStore(stagingDirectory).saveSnapshot({ actionIndex: args.actionIndex, snapshot: args.ariaSnapshot })
-  }
-
-  async function openPreview(recording: Recording): Promise<void> {
+  async function openPreview(artifact: RecordingArtifact): Promise<void> {
     if (!stagingDirectory) {
       throw new Error('Cannot preview a recording without staged files.')
     }
 
-    await createWorkspaceRecordingArtifactStore(stagingDirectory).saveRecording(recording)
+    await createWorkspaceRecordingArtifactStore(stagingDirectory).save(artifact)
     const destination = getRecordingDocumentUri(stagingDirectory)
     stagingDirectory = undefined
     await commands.executeCommand('vscode.openWith', destination, recordingEditorViewType)

@@ -5,7 +5,7 @@ import type { Browser, BrowserContext, Page } from 'playwright'
 import { chromium } from 'playwright'
 import { afterAll, afterEach, beforeAll, beforeEach } from 'vitest'
 
-import type { RecordedAriaSnapshot, Recording } from '@te/recorder-core'
+import type { Recording, RecordingArtifact } from '@te/recorder-core'
 import { createRecorder, playRecording, type Recorder } from '@te/recorder-runtime'
 import { tryTo } from '@te/recorder-utils'
 
@@ -63,24 +63,25 @@ async function playTestRecording(args: PlayTestRecordingArgs): Promise<Page> {
   return page
 }
 
-async function recordTest(args: RecordTestArgs): Promise<Recording> {
+async function recordTest(args: RecordTestArgs): Promise<RecordingArtifact> {
   const page = await createPage({ context: args.fixture.context, documents: args.documents, html: args.html, redirects: args.redirects })
   const recorder = createTestRecorder({ browser: args.fixture.browser, context: args.fixture.context, page })
 
-  await recorder.start({ onRecordingChanged: args.onRecordingChanged, onSnapshotCaptured: args.onSnapshotCaptured, startUrl: args.startUrl })
+  await recorder.start({ onRecordingChanged: args.onRecordingChanged, startUrl: args.startUrl })
   await args.interact(page)
-  const recording = await recorder.stop()
+  const artifact = await recorder.stop()
 
-  if (!recording) {
+  if (!artifact) {
     throw new Error('Expected the recorder to produce a recording.')
   }
 
-  return recording
+  return artifact
 }
 
 function useBrowserTestHarness(): BrowserTestHarness {
   const fixture = {} as BrowserTestFixture
-  const record = (args: BrowserRecordArgs): Promise<Recording> => recordTest({ ...args, fixture, startUrl: args.startUrl ?? defaultStartUrl })
+  const recordArtifact = (args: BrowserRecordArgs): Promise<RecordingArtifact> => recordTest({ ...args, fixture, startUrl: args.startUrl ?? defaultStartUrl })
+  const record = async (args: BrowserRecordArgs): Promise<Recording> => (await recordArtifact(args)).recording
 
   beforeAll(async () => {
     fixture.browser = await chromium.launch({ headless: true })
@@ -103,8 +104,9 @@ function useBrowserTestHarness(): BrowserTestHarness {
     page: args => createPage({ ...args, context: fixture.context }),
     play: args => playTestRecording({ ...args, fixture }),
     record,
+    recordArtifact,
     recordAndPlay: async args => {
-      const recording = await record(args)
+      const recording = (await recordArtifact(args)).recording
       const playbackPage = await playTestRecording({ documents: args.documents, fixture, html: args.html, recording })
 
       return { playbackPage, recording }
@@ -154,6 +156,7 @@ interface BrowserTestHarness {
   page: (args: Omit<CreatePageArgs, 'context'>) => Promise<Page>
   play: (args: Omit<PlayTestRecordingArgs, 'fixture'>) => Promise<Page>
   record: (args: BrowserRecordArgs) => Promise<Recording>
+  recordArtifact: (args: BrowserRecordArgs) => Promise<RecordingArtifact>
   recordAndPlay: (args: BrowserRecordArgs) => Promise<{ playbackPage: Page; recording: Recording }>
 }
 
@@ -172,7 +175,6 @@ interface RecordTestArgs {
   html?: string
   interact: (page: Page) => Promise<unknown>
   onRecordingChanged?: (recording: Recording) => Promise<void> | void
-  onSnapshotCaptured?: (snapshot: { actionIndex: number; ariaSnapshot: RecordedAriaSnapshot }) => Promise<void> | void
   redirects?: Record<string, string>
   startUrl: string
 }

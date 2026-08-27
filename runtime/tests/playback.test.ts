@@ -1,7 +1,7 @@
 import { renderAriaSnapshot } from '@te/aria'
 import { describe, expect, test } from 'vitest'
 
-import { createRecording, type RecordedAriaSnapshot, type RecordedLocator } from '@te/recorder-core'
+import { createRecording, type RecordedLocator } from '@te/recorder-core'
 
 import { useBrowserTestHarness } from './support/browserHarness.ts'
 import { getOnlyAction } from './support/recordingAssertions.ts'
@@ -99,22 +99,17 @@ describe('recording playback', () => {
     ])
   })
 
-  test('emits frame snapshots outside recorded actions', async () => {
-    let recordedSnapshot: { actionIndex: number; ariaSnapshot: RecordedAriaSnapshot } | undefined
-    const recording = await browser.record({
+  test('returns frame snapshots outside recorded actions', async () => {
+    const artifact = await browser.recordArtifact({
       documents: frameDocuments,
       interact: page => page.frameLocator('#action-frame').locator('#target').click(),
-      onSnapshotCaptured: snapshot => {
-        recordedSnapshot = snapshot
-      },
     })
-    const click = getOnlyAction(recording, 'click')
+    const click = getOnlyAction(artifact.recording, 'click')
 
     expect({
       actionSnapshotKeys: Object.keys(click).filter(key => ['ariaSnapshot', 'targetRef'].includes(key)),
-      renderedSnapshot: renderAriaSnapshot(recordedSnapshot!.ariaSnapshot),
-      snapshotActionIndex: recordedSnapshot?.actionIndex,
-    }).toMatchObject({ actionSnapshotKeys: [], renderedSnapshot: expect.stringMatching(/^- button "Click" \[active\] \[ref=e\d+\]$/), snapshotActionIndex: 1 })
+      renderedSnapshot: renderAriaSnapshot(await artifact.readSnapshot(1)),
+    }).toMatchObject({ actionSnapshotKeys: [], renderedSnapshot: expect.stringMatching(/^- button "Click" \[active\] \[ref=e\d+\]$/) })
   })
 
   test('plays back interactions inside frames', async () => {

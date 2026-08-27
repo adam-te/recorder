@@ -4,12 +4,12 @@ import { getRecordingSnapshotFileName, parseRecordingSnapshot, serializeRecordin
 import { serializeRecording } from '#core/recording/serializeRecording.ts'
 
 export { createRecordingArtifactStore, RECORDING_DOCUMENT_PATH }
-export type { RecordingArtifactStore }
+export type { RecordingArtifact, RecordingArtifactStore }
 
 const RECORDING_DOCUMENT_PATH = 'recording.json'
 
 function createRecordingArtifactStore(config: CreateRecordingArtifactStoreArgs): RecordingArtifactStore {
-  return { load, loadSnapshot, save, saveRecording, saveSnapshot }
+  return { load, loadSnapshot, save }
 
   async function load(): Promise<Recording> {
     return parseRecording(JSON.parse(await config.read(RECORDING_DOCUMENT_PATH)))
@@ -19,13 +19,13 @@ function createRecordingArtifactStore(config: CreateRecordingArtifactStoreArgs):
     return parseRecordingSnapshot(JSON.parse(await config.read(getSnapshotPath(actionIndex))))
   }
 
-  async function save(args: SaveRecordingArtifactArgs): Promise<void> {
-    const recording = parseRecording(args.recording)
+  async function save(artifact: RecordingArtifact): Promise<void> {
+    const recording = parseRecording(artifact.recording)
     const snapshots = await Promise.all(
       recording.actions.flatMap((action, actionIndex) =>
         'locatorCandidates' in action
           ? [
-              Promise.resolve(args.readSnapshot(actionIndex)).then(snapshot => ({
+              Promise.resolve(artifact.readSnapshot(actionIndex)).then(snapshot => ({
                 actionIndex,
                 snapshot: parseRecordingSnapshot(snapshot),
               })),
@@ -59,7 +59,7 @@ interface CreateRecordingArtifactStoreArgs {
   write: (relativePath: string, contents: string) => Promise<void>
 }
 
-interface SaveRecordingArtifactArgs {
+interface RecordingArtifact {
   readSnapshot: (actionIndex: number) => Promise<RecordedAriaSnapshot> | RecordedAriaSnapshot
   recording: Recording
 }
@@ -72,7 +72,5 @@ interface SaveRecordingSnapshotArgs {
 interface RecordingArtifactStore {
   load: () => Promise<Recording>
   loadSnapshot: (actionIndex: number) => Promise<RecordedAriaSnapshot>
-  save: (args: SaveRecordingArtifactArgs) => Promise<void>
-  saveRecording: (recording: Recording) => Promise<void>
-  saveSnapshot: (args: SaveRecordingSnapshotArgs) => Promise<void>
+  save: (artifact: RecordingArtifact) => Promise<void>
 }

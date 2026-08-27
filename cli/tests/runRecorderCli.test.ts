@@ -59,10 +59,9 @@ async function runCliRecording(workingDirectory: string): Promise<CliRecordingRe
       play: async () => undefined,
       start: async args => {
         recordedStartUrl = args.startUrl
-        await args.onSnapshotCaptured?.({ actionIndex: 1, ariaSnapshot })
         await args.onStopRequested?.()
       },
-      stop: async () => recording,
+      stop: async () => ({ readSnapshot: () => ariaSnapshot, recording }),
     },
     runRecordingEditor: async args => {
       openedDirectories.push(args.directoryPath)

@@ -2,7 +2,7 @@ import { createBrowserSession, type BrowserSession } from '#runtime/browser/crea
 import { playRecording } from '#runtime/playback/playRecording.ts'
 import { createRecordingCapture, type RecordingCapture } from '#runtime/recording/capture/createRecordingCapture.ts'
 
-import type { RecordedAriaSnapshot, Recording } from '@te/recorder-core'
+import type { Recording, RecordingArtifact } from '@te/recorder-core'
 import { tryTo } from '@te/recorder-utils'
 
 export { createRecorder }
@@ -28,7 +28,6 @@ function createRecorder(args: CreateRecorderArgs = {}): Recorder {
         currentRecording.capture = await createRecordingCapture({
           context: currentBrowserSession.context,
           onRecordingChanged: args.onRecordingChanged,
-          onSnapshotCaptured: args.onSnapshotCaptured,
           onStopRequested: args.onStopRequested ?? stopFromOverlay,
           page: currentBrowserSession.page,
           startUrl: args.startUrl,
@@ -42,7 +41,7 @@ function createRecorder(args: CreateRecorderArgs = {}): Recorder {
     )
   }
 
-  async function stop(): Promise<Recording | undefined> {
+  async function stop(): Promise<RecordingArtifact | undefined> {
     const currentCapture = activeRecording?.capture
 
     return await tryTo(
@@ -104,19 +103,13 @@ interface Recorder {
   dispose: () => Promise<void>
   play: (args: PlayArgs) => Promise<void>
   start: (args: StartArgs) => Promise<void>
-  stop: () => Promise<Recording | undefined>
+  stop: () => Promise<RecordingArtifact | undefined>
 }
 
 interface StartArgs {
   onRecordingChanged?: (recording: Recording) => Promise<void> | void
   onStopRequested?: () => Promise<void> | void
-  onSnapshotCaptured?: (snapshot: CapturedSnapshot) => Promise<void> | void
   startUrl: string
-}
-
-interface CapturedSnapshot {
-  actionIndex: number
-  ariaSnapshot: RecordedAriaSnapshot
 }
 
 interface CreateRecorderArgs {

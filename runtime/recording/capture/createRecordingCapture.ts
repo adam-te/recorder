@@ -3,7 +3,7 @@ import { installRecordingInstruments } from '#runtime/recording/capture/installR
 import type { CapturedInteraction } from '#runtime/recording/capture/types.ts'
 import type { BrowserContext, Page } from 'playwright'
 
-import { createRecordingSession, type RecordedAriaSnapshot, type Recording } from '@te/recorder-core'
+import { createRecordingSession, type RecordedAriaSnapshot, type Recording, type RecordingArtifact } from '@te/recorder-core'
 import { tryTo } from '@te/recorder-utils'
 
 export { createRecordingCapture }
@@ -12,6 +12,7 @@ export type { CreateRecordingCaptureArgs, RecordingCapture }
 async function createRecordingCapture(args: CreateRecordingCaptureArgs): Promise<RecordingCapture> {
   const startUrl = new URL(args.startUrl)
   const recordingSession = createRecordingSession({ startUrl: args.startUrl, title: startUrl.hostname || args.startUrl })
+  const snapshots = new Map<number, RecordedAriaSnapshot>()
   let disposed = false
   let pendingRecordingChange = Promise.resolve()
   const instruments = await installRecordingInstruments({
@@ -22,7 +23,7 @@ async function createRecordingCapture(args: CreateRecordingCaptureArgs): Promise
       const appendedInteraction = await appendCapturedInteraction({ interaction, recordingSession })
 
       if (!appendedInteraction) return
-      await args.onSnapshotCaptured?.({ actionIndex: appendedInteraction.actionIndex, ariaSnapshot: appendedInteraction.ariaSnapshot })
+      snapshots.set(appendedInteraction.actionIndex, appendedInteraction.ariaSnapshot)
       await notifyRecordingChanged(appendedInteraction.recording)
     },
     onNavigation: navigation => notifyRecordingChanged(recordingSession.append({ kind: 'goto', ...navigation })),
@@ -30,7 +31,7 @@ async function createRecordingCapture(args: CreateRecordingCaptureArgs): Promise
     page: args.page,
   })
 
-  return { dispose, snapshot: recordingSession.snapshot, start }
+  return { dispose, snapshot, start }
 
   async function start(): Promise<void> {
     await tryTo(
@@ -56,25 +57,30 @@ async function createRecordingCapture(args: CreateRecordingCaptureArgs): Promise
 
     return pendingRecordingChange
   }
+
+  function snapshot(): RecordingArtifact {
+    return { readSnapshot, recording: recordingSession.snapshot() }
+  }
+
+  function readSnapshot(actionIndex: number): RecordedAriaSnapshot {
+    const snapshot = snapshots.get(actionIndex)
+
+    if (!snapshot) throw new Error(`Missing ARIA snapshot for action ${actionIndex}.`)
+    return snapshot
+  }
 }
 
 interface CreateRecordingCaptureArgs {
   context: BrowserContext
   onInteraction?: (interaction: CapturedInteraction) => Promise<void> | void
   onRecordingChanged?: (recording: Recording) => Promise<void> | void
-  onSnapshotCaptured?: (snapshot: CapturedSnapshot) => Promise<void> | void
   onStopRequested?: () => Promise<void> | void
   page: Page
   startUrl: string
 }
 
-interface CapturedSnapshot {
-  actionIndex: number
-  ariaSnapshot: RecordedAriaSnapshot
-}
-
 interface RecordingCapture {
   dispose: () => Promise<void>
-  snapshot: () => Recording
+  snapshot: () => RecordingArtifact
   start: () => Promise<void>
 }

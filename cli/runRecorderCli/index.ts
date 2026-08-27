@@ -4,7 +4,7 @@ import { isIP } from 'node:net'
 import { basename, dirname, join, resolve } from 'node:path'
 import { createInterface } from 'node:readline/promises'
 
-import type { RecordedAriaSnapshot, Recording } from '@te/recorder-core'
+import type { RecordingArtifact } from '@te/recorder-core'
 import { createRecorder, type Recorder } from '@te/recorder-runtime'
 import { matchBy, tryTo } from '@te/recorder-utils'
 
@@ -65,26 +65,22 @@ async function executeCommand(args: ExecuteCommandArgs): Promise<void> {
         url: command.url,
         workingDirectory: args.args.workingDirectory ?? process.cwd(),
       })
-      const snapshots = new Map<number, RecordedAriaSnapshot>()
       const stopRequest = createRecordingStopRequest()
 
       await args.stdout.write(`Recording to ${directoryPath}.\n`)
       await args.recorder.start({
-        onSnapshotCaptured: snapshot => {
-          snapshots.set(snapshot.actionIndex, snapshot.ariaSnapshot)
-        },
         onStopRequested: stopRequest.request,
         startUrl: command.url,
       })
       await args.stdout.write('Recording started. Press Enter or click Stop recording in the browser to stop and save.\n')
       await stopRequest.wait(args.args.waitForStop ?? waitForEnter)
 
-      const recording = await args.recorder.stop()
-      if (!recording) {
+      const artifact = await args.recorder.stop()
+      if (!artifact) {
         throw new Error('The recording stopped without producing a recording.')
       }
 
-      await writeRecordingDirectory({ directoryPath, recording, snapshots })
+      await writeRecordingDirectory({ artifact, directoryPath })
       await args.stdout.write(`Saved recording to ${directoryPath}.\n`)
       await (args.args.runRecordingEditor ?? runRecordingEditor)({ directoryPath, onPlay: recordingToPlay => args.recorder.play({ recording: recordingToPlay }), stdout: args.stdout })
     },
@@ -176,19 +172,12 @@ async function pathExists(path: string): Promise<boolean> {
   )
 }
 
-async function writeRecordingDirectory(args: { directoryPath: string; recording: Recording; snapshots: ReadonlyMap<number, RecordedAriaSnapshot> }): Promise<void> {
+async function writeRecordingDirectory(args: { artifact: RecordingArtifact; directoryPath: string }): Promise<void> {
   const pendingDirectory = join(dirname(args.directoryPath), `.${basename(args.directoryPath)}.pending-${randomUUID()}`)
 
   await tryTo(
     async () => {
-      await createFileRecordingArtifactStore(pendingDirectory).save({
-        recording: args.recording,
-        readSnapshot: actionIndex => {
-          const snapshot = args.snapshots.get(actionIndex)
-          if (!snapshot) throw new Error(`Missing ARIA snapshot for action ${actionIndex}.`)
-          return snapshot
-        },
-      })
+      await createFileRecordingArtifactStore(pendingDirectory).save(args.artifact)
 
       await rename(pendingDirectory, args.directoryPath)
     },
