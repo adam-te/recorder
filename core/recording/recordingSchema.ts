@@ -1,4 +1,3 @@
-import type { AriaNode } from '@te/aria'
 import { z } from 'zod'
 
 export { recordedActionSchema, recordedAriaSnapshotSchema, recordedLocatorSchema, recordedValueSchema, recordingSchema }
@@ -25,29 +24,25 @@ const recordedValueSchema = z.discriminatedUnion('kind', [z.object({ kind: z.lit
 const recordedModifierSchema = z.enum(['Alt', 'Control', 'Meta', 'Shift'])
 const recordedPositionSchema = z.object({ x: z.number(), y: z.number() })
 const recordedActionContextSchema = { pageUrl: z.url() }
-const recordedAriaRoleSchema = z
-  .string()
-  .min(1)
-  .transform(value => value as AriaNode['role'])
-const recordedAriaNodeSchema: z.ZodType<RecordedAriaNode> = z.lazy(() =>
-  z.object({
-    active: z.boolean().optional(),
-    checked: z.union([z.boolean(), z.literal('mixed')]).optional(),
-    children: z.array(z.union([recordedAriaNodeSchema, z.string()])).optional(),
-    cursor: z.literal('pointer').optional(),
-    disabled: z.boolean().optional(),
-    expanded: z.boolean().optional(),
-    invalid: z.union([z.boolean(), z.literal('grammar'), z.literal('spelling')]).optional(),
-    level: z.number().optional(),
-    name: z.string(),
-    pressed: z.union([z.boolean(), z.literal('mixed')]).optional(),
-    props: z.record(z.string(), z.string()),
-    ref: z.string().min(1).optional(),
-    role: recordedAriaRoleSchema,
-    selected: z.boolean().optional(),
-    target: z.literal(true).optional(),
-  }),
-)
+const recordedAriaNodeSchema = z.object({
+  active: z.boolean().optional(),
+  checked: z.union([z.boolean(), z.literal('mixed')]).optional(),
+  get children() {
+    return z.array(z.union([recordedAriaNodeSchema, z.string()])).optional()
+  },
+  cursor: z.literal('pointer').optional(),
+  disabled: z.boolean().optional(),
+  expanded: z.boolean().optional(),
+  invalid: z.union([z.boolean(), z.literal('grammar'), z.literal('spelling')]).optional(),
+  level: z.number().optional(),
+  name: z.string(),
+  pressed: z.union([z.boolean(), z.literal('mixed')]).optional(),
+  props: z.record(z.string(), z.string()),
+  ref: z.string().min(1).optional(),
+  role: z.string().min(1),
+  selected: z.boolean().optional(),
+  target: z.literal(true).optional(),
+})
 const recordedAriaSnapshotSchema = recordedAriaNodeSchema.superRefine((snapshot, context) => {
   let targetCount = 0
   visit(snapshot)
@@ -86,12 +81,8 @@ const recordingSchema = z.object({
 })
 
 type RecordedAction = z.infer<typeof recordedActionSchema>
+type RecordedAriaNode = z.infer<typeof recordedAriaNodeSchema>
 type RecordedAriaSnapshot = z.infer<typeof recordedAriaSnapshotSchema>
 type RecordedLocator = z.infer<typeof recordedLocatorSchema>
 type RecordedValue = z.infer<typeof recordedValueSchema>
 type Recording = z.infer<typeof recordingSchema>
-
-interface RecordedAriaNode extends Omit<AriaNode, 'children'> {
-  children?: (RecordedAriaNode | string)[]
-  target?: true
-}
