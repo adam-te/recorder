@@ -8,16 +8,8 @@ const root = document.querySelector<HTMLElement>('#app')
 if (!root) throw new Error('Recording editor root was not found.')
 
 const editor = createRecordingEditor({
-  callbacks: {
-    onCopy: text => void sendMessage({ type: 'copy', text }),
-    onDiscard: () => void sendMessage({ type: 'discard' }),
-    onOpenJson: () => void sendMessage({ type: 'openJson' }),
-    onPlay: () => void sendMessage({ type: 'play' }),
-    onReady: () => void sendMessage({ type: 'ready' }),
-    onSave: () => void sendMessage({ type: 'save' }),
-    onSelectAction: actionIndex => void sendMessage({ type: 'selectAction', actionIndex }),
-  },
   root,
+  send: message => void sendMessage(message),
 })
 
 async function sendMessage(message: RecordingEditorUiMessage): Promise<void> {

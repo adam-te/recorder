@@ -1,8 +1,8 @@
 import type { Recording } from '@te/recorder-core'
 
 export interface CreateRecordingEditorArgs {
-  callbacks: RecordingEditorCallbacks
   root: HTMLElement
+  send: (message: RecordingEditorUiMessage) => void
 }
 
 export interface RecordingEditorCallbacks {

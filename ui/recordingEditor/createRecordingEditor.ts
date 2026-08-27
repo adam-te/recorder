@@ -6,9 +6,17 @@ import type { CreateRecordingEditorArgs, RecordingEditor, RecordingEditorCallbac
 
 export { createRecordingEditor }
 
-function createRecordingEditor({ callbacks, root }: CreateRecordingEditorArgs): RecordingEditor {
+function createRecordingEditor({ root, send }: CreateRecordingEditorArgs): RecordingEditor {
   const component = mount(RecordingEditorComponent as unknown as Component<RecordingEditorCallbacks, RecordingEditor>, {
-    props: callbacks,
+    props: {
+      onCopy: text => send({ type: 'copy', text }),
+      onDiscard: () => send({ type: 'discard' }),
+      onOpenJson: () => send({ type: 'openJson' }),
+      onPlay: () => send({ type: 'play' }),
+      onReady: () => send({ type: 'ready' }),
+      onSave: () => send({ type: 'save' }),
+      onSelectAction: actionIndex => send({ type: 'selectAction', actionIndex }),
+    },
     target: root,
   })
 
