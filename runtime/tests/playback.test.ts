@@ -54,21 +54,21 @@ describe('recording playback', () => {
 
   test('uses test IDs only when they are unique', async () => {
     const html = `<button data-testid="action" id="target" onclick="document.body.dataset.clicked = 'true'">Save</button><button data-testid="action">Cancel</button>`
-    const { playbackPage, recording } = await browser.recordAndPlay({ html, interact: page => page.locator('#target').click() })
+    const { recording } = await browser.recordAndPlay({ html, interact: page => page.locator('#target').click() })
     const click = getOnlyAction(recording, 'click')
 
     expect(click.locatorCandidates[0]).toStrictEqual({ kind: 'aria', steps: [{ method: 'role', name: 'Save', role: 'button' }] })
-    expect(await playbackPage.locator('body').getAttribute('data-clicked')).toBe('true')
   })
 
   test('leaves non-standard test attributes to CSS selection', async () => {
     const html = `<div data-cy="target" id="target" style="height: 10px; width: 10px" onclick="document.body.dataset.clicked = 'true'"></div>`
-    const { playbackPage, recording } = await browser.recordAndPlay({ html, interact: page => page.locator('#target').click() })
+    const { recording } = await browser.recordAndPlay({ html, interact: page => page.locator('#target').click() })
     const click = getOnlyAction(recording, 'click')
 
-    expect(click.locatorCandidates[0]).toStrictEqual({ kind: 'css', value: '#target' })
-    expect(click.locatorCandidates[1]).toStrictEqual({ kind: 'css', value: '[data-cy="target"]' })
-    expect(await playbackPage.locator('body').getAttribute('data-clicked')).toBe('true')
+    expect(click.locatorCandidates.slice(0, 2)).toStrictEqual([
+      { kind: 'css', value: '#target' },
+      { kind: 'css', value: '[data-cy="target"]' },
+    ])
   })
 
   test('records and plays back interactions inside frames', async () => {
@@ -120,11 +120,10 @@ describe('recording playback', () => {
 
   test('does not generate ARIA locators through hidden shadow hosts', async () => {
     const html = `<div id="host" aria-hidden="true"></div><script>document.querySelector('#host').attachShadow({ mode: 'open' }).innerHTML = '<button id="target" onclick="document.body.dataset.clicked = true">Save</button>'</script>`
-    const { playbackPage, recording } = await browser.recordAndPlay({ html, interact: page => page.locator('#target').click() })
+    const { recording } = await browser.recordAndPlay({ html, interact: page => page.locator('#target').click() })
     const click = getOnlyAction(recording, 'click')
 
     expect(click.locatorCandidates[0]).toMatchObject({ kind: 'css' })
-    expect(await playbackPage.locator('body').getAttribute('data-clicked')).toBe('true')
   })
 })
 

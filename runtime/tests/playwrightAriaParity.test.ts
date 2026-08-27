@@ -36,15 +36,7 @@ describe('Playwright ARIA snapshot parity', () => {
     const rendered = renderAriaSnapshot(actual)
 
     expect(normalizeRefs(rendered)).toBe(normalizeRefs(expected))
-    expect(actual).toMatchObject({ role: 'fragment' })
-    expect(actual).not.toHaveProperty('playwrightVersion')
-    expect(actual).not.toHaveProperty('root')
-    expect(actual).not.toHaveProperty('schemaVersion')
-    expect(actual).not.toHaveProperty('targetRef')
-    expect(generated.targetRef).toMatch(/^e\d+$/)
-    expect(rendered).toContain(`[ref=${generated.targetRef}]`)
-    expect(rendered).toContain(`[cursor=pointer]`)
-    expect(findNodeByRef(actual, generated.targetRef)?.cursor).toBe('pointer')
+    expect({ role: actual.role, target: findNodeByRef(actual, generated.targetRef) }).toMatchObject({ role: 'fragment', target: { cursor: 'pointer', ref: generated.targetRef } })
     expect(allNodesHaveCompactShape(actual)).toBe(true)
   })
 })
@@ -54,9 +46,10 @@ function normalizeRefs(snapshot: string): string {
 }
 
 function allNodesHaveCompactShape(node: AriaSnapshot): boolean {
+  const forbiddenProperties = ['ariaVisible', 'box', 'playwrightVersion', 'receivesPointerEvents', 'root', 'schemaVersion', 'targetRef']
   const states = [node.active, node.checked, node.disabled, node.expanded, node.pressed, node.selected]
 
-  return !('ariaVisible' in node) && !('box' in node) && !('receivesPointerEvents' in node) && !states.includes(false) && (node.children ?? []).every(child => typeof child === 'string' || allNodesHaveCompactShape(child))
+  return forbiddenProperties.every(property => !(property in node)) && !states.includes(false) && (node.children ?? []).every(child => typeof child === 'string' || allNodesHaveCompactShape(child))
 }
 
 function findNodeByRef(node: AriaSnapshot, ref: string | undefined): AriaSnapshot | undefined {

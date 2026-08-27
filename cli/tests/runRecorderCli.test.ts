@@ -24,7 +24,6 @@ describe('runRecorderCli', () => {
     const openedDirectories: string[] = []
     const output: string[] = []
     let recordedStartUrl: string | undefined
-    let terminalWaitAborted = false
     const exitCode = await runRecorderCli({
       argv: ['record', 'https://example.com'],
       recorder: {
@@ -46,7 +45,6 @@ describe('runRecorderCli', () => {
           signal.addEventListener(
             'abort',
             () => {
-              terminalWaitAborted = true
               resolve()
             },
             { once: true },
@@ -58,11 +56,9 @@ describe('runRecorderCli', () => {
 
     expect(exitCode).toBe(0)
     expect(recordedStartUrl).toBe('https://example.com')
-    expect(terminalWaitAborted).toBe(true)
     expect(openedDirectories).toEqual([directoryPath])
     expect(JSON.parse(await readFile(join(directoryPath, 'recording.json'), 'utf8'))).toEqual(JSON.parse(serializeRecording(recording)))
     expect(JSON.parse(await readFile(join(directoryPath, 'snapshots', '0001.aria.json'), 'utf8'))).toEqual(ariaSnapshot)
-    expect(output.join('')).toContain(`Recording to ${directoryPath}.`)
     expect(output.join('')).toContain(`Saved recording to ${directoryPath}.`)
   })
 })

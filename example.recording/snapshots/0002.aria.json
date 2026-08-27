@@ -1,0 +1,818 @@
+{
+  "children": [
+    {
+      "children": [
+        {
+          "children": [
+            {
+              "children": [
+                {
+                  "children": [
+                    {
+                      "cursor": "pointer",
+                      "name": "Homepage",
+                      "props": {},
+                      "ref": "e6",
+                      "role": "img"
+                    }
+                  ],
+                  "cursor": "pointer",
+                  "name": "",
+                  "props": {
+                    "url": "/"
+                  },
+                  "ref": "e5",
+                  "role": "link"
+                },
+                {
+                  "children": [
+                    {
+                      "children": [
+                        {
+                          "children": [
+                            {
+                              "cursor": "pointer",
+                              "name": "Domains",
+                              "props": {
+                                "url": "/domains"
+                              },
+                              "ref": "e9",
+                              "role": "link"
+                            }
+                          ],
+                          "level": 0,
+                          "name": "",
+                          "props": {},
+                          "ref": "e8",
+                          "role": "listitem"
+                        },
+                        {
+                          "children": [
+                            {
+                              "cursor": "pointer",
+                              "name": "Protocols",
+                              "props": {
+                                "url": "/protocols"
+                              },
+                              "ref": "e11",
+                              "role": "link"
+                            }
+                          ],
+                          "level": 0,
+                          "name": "",
+                          "props": {},
+                          "ref": "e10",
+                          "role": "listitem"
+                        },
+                        {
+                          "children": [
+                            {
+                              "cursor": "pointer",
+                              "name": "Numbers",
+                              "props": {
+                                "url": "/numbers"
+                              },
+                              "ref": "e13",
+                              "role": "link"
+                            }
+                          ],
+                          "level": 0,
+                          "name": "",
+                          "props": {},
+                          "ref": "e12",
+                          "role": "listitem"
+                        },
+                        {
+                          "children": [
+                            {
+                              "cursor": "pointer",
+                              "name": "About",
+                              "props": {
+                                "url": "/about"
+                              },
+                              "ref": "e15",
+                              "role": "link"
+                            }
+                          ],
+                          "level": 0,
+                          "name": "",
+                          "props": {},
+                          "ref": "e14",
+                          "role": "listitem"
+                        }
+                      ],
+                      "name": "",
+                      "props": {},
+                      "role": "list"
+                    }
+                  ],
+                  "name": "",
+                  "props": {},
+                  "ref": "e7",
+                  "role": "generic"
+                }
+              ],
+              "name": "",
+              "props": {},
+              "ref": "e3",
+              "role": "generic"
+            }
+          ],
+          "name": "",
+          "props": {},
+          "ref": "e2",
+          "role": "banner"
+        },
+        {
+          "children": [
+            {
+              "children": [
+                {
+                  "children": [
+                    {
+                      "children": [
+                        {
+                          "cursor": "pointer",
+                          "name": "← Instructions and Guides",
+                          "props": {
+                            "url": "/help"
+                          },
+                          "ref": "e21",
+                          "role": "link"
+                        }
+                      ],
+                      "level": 0,
+                      "name": "",
+                      "props": {},
+                      "ref": "e20",
+                      "role": "listitem"
+                    }
+                  ],
+                  "name": "",
+                  "props": {},
+                  "ref": "e19",
+                  "role": "list"
+                },
+                {
+                  "level": 1,
+                  "name": "Example Domains",
+                  "props": {},
+                  "ref": "e22",
+                  "role": "heading"
+                },
+                {
+                  "children": [
+                    {
+                      "children": [
+                        "As described in",
+                        {
+                          "active": true,
+                          "cursor": "pointer",
+                          "name": "RFC 2606",
+                          "props": {
+                            "url": "/go/rfc2606"
+                          },
+                          "ref": "e26",
+                          "role": "link",
+                          "target": true
+                        },
+                        "and",
+                        {
+                          "cursor": "pointer",
+                          "name": "RFC 6761",
+                          "props": {
+                            "url": "/go/rfc6761"
+                          },
+                          "ref": "e27",
+                          "role": "link"
+                        },
+                        ", a number of domains such as example.com and example.org are maintained for documentation purposes. These domains may be used as illustrative examples in documents without prior coordination with us. They are not available for registration or transfer."
+                      ],
+                      "name": "",
+                      "props": {},
+                      "ref": "e25",
+                      "role": "paragraph"
+                    },
+                    {
+                      "children": [
+                        "We provide a web service on the example domain hosts to provide basic information on the purpose of the domain. These web services are provided as best effort, but are not designed to support production applications. While incidental traffic for incorrectly configured applications is expected, please do not design applications that require the example domains to have operating HTTP service."
+                      ],
+                      "name": "",
+                      "props": {},
+                      "ref": "e28",
+                      "role": "paragraph"
+                    },
+                    {
+                      "level": 2,
+                      "name": "Further Reading",
+                      "props": {},
+                      "ref": "e29",
+                      "role": "heading"
+                    },
+                    {
+                      "children": [
+                        {
+                          "children": [
+                            {
+                              "cursor": "pointer",
+                              "name": "IANA-managed Reserved Domains",
+                              "props": {
+                                "url": "/domains/reserved"
+                              },
+                              "ref": "e32",
+                              "role": "link"
+                            }
+                          ],
+                          "level": 0,
+                          "name": "",
+                          "props": {},
+                          "ref": "e31",
+                          "role": "listitem"
+                        }
+                      ],
+                      "name": "",
+                      "props": {},
+                      "ref": "e30",
+                      "role": "list"
+                    },
+                    {
+                      "children": [
+                        "Last revised",
+                        {
+                          "children": [
+                            "9 years ago"
+                          ],
+                          "name": "",
+                          "props": {},
+                          "ref": "e34",
+                          "role": "time"
+                        },
+                        "."
+                      ],
+                      "name": "",
+                      "props": {},
+                      "ref": "e33",
+                      "role": "generic"
+                    }
+                  ],
+                  "name": "",
+                  "props": {},
+                  "ref": "e24",
+                  "role": "generic"
+                }
+              ],
+              "name": "",
+              "props": {},
+              "ref": "e18",
+              "role": "main"
+            },
+            {
+              "name": "",
+              "props": {},
+              "role": "navigation"
+            }
+          ],
+          "name": "",
+          "props": {},
+          "ref": "e17",
+          "role": "article"
+        },
+        {
+          "children": [
+            {
+              "children": [
+                {
+                  "children": [
+                    {
+                      "children": [
+                        {
+                          "children": [
+                            {
+                              "children": [
+                                {
+                                  "cursor": "pointer",
+                                  "name": "Domain Names",
+                                  "props": {
+                                    "url": "/domains"
+                                  },
+                                  "ref": "e41",
+                                  "role": "link"
+                                }
+                              ],
+                              "name": "",
+                              "props": {},
+                              "ref": "e40",
+                              "role": "cell"
+                            },
+                            {
+                              "children": [
+                                {
+                                  "children": [
+                                    {
+                                      "children": [
+                                        {
+                                          "cursor": "pointer",
+                                          "name": "Root Zone Registry",
+                                          "props": {
+                                            "url": "/domains/root"
+                                          },
+                                          "ref": "e44",
+                                          "role": "link"
+                                        }
+                                      ],
+                                      "level": 0,
+                                      "name": "",
+                                      "props": {},
+                                      "ref": "e43",
+                                      "role": "listitem"
+                                    },
+                                    {
+                                      "children": [
+                                        {
+                                          "cursor": "pointer",
+                                          "name": ".INT Registry",
+                                          "props": {
+                                            "url": "/domains/int"
+                                          },
+                                          "ref": "e46",
+                                          "role": "link"
+                                        }
+                                      ],
+                                      "level": 0,
+                                      "name": "",
+                                      "props": {},
+                                      "ref": "e45",
+                                      "role": "listitem"
+                                    },
+                                    {
+                                      "children": [
+                                        {
+                                          "cursor": "pointer",
+                                          "name": ".ARPA Registry",
+                                          "props": {
+                                            "url": "/domains/arpa"
+                                          },
+                                          "ref": "e48",
+                                          "role": "link"
+                                        }
+                                      ],
+                                      "level": 0,
+                                      "name": "",
+                                      "props": {},
+                                      "ref": "e47",
+                                      "role": "listitem"
+                                    },
+                                    {
+                                      "children": [
+                                        {
+                                          "cursor": "pointer",
+                                          "name": "IDN Repository",
+                                          "props": {
+                                            "url": "/domains/idn-tables"
+                                          },
+                                          "ref": "e50",
+                                          "role": "link"
+                                        }
+                                      ],
+                                      "level": 0,
+                                      "name": "",
+                                      "props": {},
+                                      "ref": "e49",
+                                      "role": "listitem"
+                                    }
+                                  ],
+                                  "name": "",
+                                  "props": {},
+                                  "role": "list"
+                                }
+                              ],
+                              "name": "",
+                              "props": {},
+                              "ref": "e42",
+                              "role": "cell"
+                            }
+                          ],
+                          "level": 0,
+                          "name": "",
+                          "props": {},
+                          "ref": "e39",
+                          "role": "row"
+                        },
+                        {
+                          "children": [
+                            {
+                              "children": [
+                                {
+                                  "cursor": "pointer",
+                                  "name": "Number Resources",
+                                  "props": {
+                                    "url": "/numbers"
+                                  },
+                                  "ref": "e53",
+                                  "role": "link"
+                                }
+                              ],
+                              "name": "",
+                              "props": {},
+                              "ref": "e52",
+                              "role": "cell"
+                            },
+                            {
+                              "children": [
+                                {
+                                  "children": [
+                                    {
+                                      "children": [
+                                        {
+                                          "cursor": "pointer",
+                                          "name": "Number Registries",
+                                          "props": {
+                                            "url": "/numbers/registries"
+                                          },
+                                          "ref": "e56",
+                                          "role": "link"
+                                        }
+                                      ],
+                                      "level": 0,
+                                      "name": "",
+                                      "props": {},
+                                      "ref": "e55",
+                                      "role": "listitem"
+                                    },
+                                    {
+                                      "children": [
+                                        {
+                                          "cursor": "pointer",
+                                          "name": "RIR Allocation Data",
+                                          "props": {
+                                            "url": "/numbers/allocations/"
+                                          },
+                                          "ref": "e58",
+                                          "role": "link"
+                                        }
+                                      ],
+                                      "level": 0,
+                                      "name": "",
+                                      "props": {},
+                                      "ref": "e57",
+                                      "role": "listitem"
+                                    },
+                                    {
+                                      "children": [
+                                        {
+                                          "cursor": "pointer",
+                                          "name": "Abuse Information",
+                                          "props": {
+                                            "url": "/help/abuse"
+                                          },
+                                          "ref": "e60",
+                                          "role": "link"
+                                        }
+                                      ],
+                                      "level": 0,
+                                      "name": "",
+                                      "props": {},
+                                      "ref": "e59",
+                                      "role": "listitem"
+                                    }
+                                  ],
+                                  "name": "",
+                                  "props": {},
+                                  "role": "list"
+                                }
+                              ],
+                              "name": "",
+                              "props": {},
+                              "ref": "e54",
+                              "role": "cell"
+                            }
+                          ],
+                          "level": 0,
+                          "name": "",
+                          "props": {},
+                          "ref": "e51",
+                          "role": "row"
+                        },
+                        {
+                          "children": [
+                            {
+                              "children": [
+                                {
+                                  "cursor": "pointer",
+                                  "name": "Protocols",
+                                  "props": {
+                                    "url": "/protocols"
+                                  },
+                                  "ref": "e63",
+                                  "role": "link"
+                                }
+                              ],
+                              "name": "",
+                              "props": {},
+                              "ref": "e62",
+                              "role": "cell"
+                            },
+                            {
+                              "children": [
+                                {
+                                  "children": [
+                                    {
+                                      "children": [
+                                        {
+                                          "cursor": "pointer",
+                                          "name": "Protocol Registries",
+                                          "props": {
+                                            "url": "/protocols"
+                                          },
+                                          "ref": "e66",
+                                          "role": "link"
+                                        }
+                                      ],
+                                      "level": 0,
+                                      "name": "",
+                                      "props": {},
+                                      "ref": "e65",
+                                      "role": "listitem"
+                                    },
+                                    {
+                                      "children": [
+                                        {
+                                          "cursor": "pointer",
+                                          "name": "Time Zone Database",
+                                          "props": {
+                                            "url": "/time-zones"
+                                          },
+                                          "ref": "e68",
+                                          "role": "link"
+                                        }
+                                      ],
+                                      "level": 0,
+                                      "name": "",
+                                      "props": {},
+                                      "ref": "e67",
+                                      "role": "listitem"
+                                    }
+                                  ],
+                                  "name": "",
+                                  "props": {},
+                                  "role": "list"
+                                }
+                              ],
+                              "name": "",
+                              "props": {},
+                              "ref": "e64",
+                              "role": "cell"
+                            }
+                          ],
+                          "level": 0,
+                          "name": "",
+                          "props": {},
+                          "ref": "e61",
+                          "role": "row"
+                        },
+                        {
+                          "children": [
+                            {
+                              "children": [
+                                {
+                                  "cursor": "pointer",
+                                  "name": "About Us",
+                                  "props": {
+                                    "url": "/about"
+                                  },
+                                  "ref": "e71",
+                                  "role": "link"
+                                }
+                              ],
+                              "name": "",
+                              "props": {},
+                              "ref": "e70",
+                              "role": "cell"
+                            },
+                            {
+                              "children": [
+                                {
+                                  "children": [
+                                    {
+                                      "children": [
+                                        {
+                                          "cursor": "pointer",
+                                          "name": "News",
+                                          "props": {
+                                            "url": "/news"
+                                          },
+                                          "ref": "e74",
+                                          "role": "link"
+                                        }
+                                      ],
+                                      "level": 0,
+                                      "name": "",
+                                      "props": {},
+                                      "ref": "e73",
+                                      "role": "listitem"
+                                    },
+                                    {
+                                      "children": [
+                                        {
+                                          "cursor": "pointer",
+                                          "name": "Performance",
+                                          "props": {
+                                            "url": "/performance"
+                                          },
+                                          "ref": "e76",
+                                          "role": "link"
+                                        }
+                                      ],
+                                      "level": 0,
+                                      "name": "",
+                                      "props": {},
+                                      "ref": "e75",
+                                      "role": "listitem"
+                                    },
+                                    {
+                                      "children": [
+                                        {
+                                          "cursor": "pointer",
+                                          "name": "The Organization",
+                                          "props": {
+                                            "url": "/about/organization"
+                                          },
+                                          "ref": "e78",
+                                          "role": "link"
+                                        }
+                                      ],
+                                      "level": 0,
+                                      "name": "",
+                                      "props": {},
+                                      "ref": "e77",
+                                      "role": "listitem"
+                                    },
+                                    {
+                                      "children": [
+                                        {
+                                          "cursor": "pointer",
+                                          "name": "Archive",
+                                          "props": {
+                                            "url": "/archive"
+                                          },
+                                          "ref": "e80",
+                                          "role": "link"
+                                        }
+                                      ],
+                                      "level": 0,
+                                      "name": "",
+                                      "props": {},
+                                      "ref": "e79",
+                                      "role": "listitem"
+                                    },
+                                    {
+                                      "children": [
+                                        {
+                                          "cursor": "pointer",
+                                          "name": "Contact Us",
+                                          "props": {
+                                            "url": "/contact"
+                                          },
+                                          "ref": "e82",
+                                          "role": "link"
+                                        }
+                                      ],
+                                      "level": 0,
+                                      "name": "",
+                                      "props": {},
+                                      "ref": "e81",
+                                      "role": "listitem"
+                                    }
+                                  ],
+                                  "name": "",
+                                  "props": {},
+                                  "role": "list"
+                                }
+                              ],
+                              "name": "",
+                              "props": {},
+                              "ref": "e72",
+                              "role": "cell"
+                            }
+                          ],
+                          "level": 0,
+                          "name": "",
+                          "props": {},
+                          "ref": "e69",
+                          "role": "row"
+                        }
+                      ],
+                      "name": "",
+                      "props": {},
+                      "ref": "e38",
+                      "role": "rowgroup"
+                    }
+                  ],
+                  "name": "",
+                  "props": {},
+                  "ref": "e37",
+                  "role": "table"
+                },
+                {
+                  "children": [
+                    "The IANA functions coordinate the Internet’s globally unique identifiers, and are provided by",
+                    {
+                      "cursor": "pointer",
+                      "name": "Public Technical Identifiers",
+                      "props": {
+                        "url": "https://pti.icann.org"
+                      },
+                      "ref": "e85",
+                      "role": "link"
+                    },
+                    ", an affiliate of",
+                    {
+                      "cursor": "pointer",
+                      "name": "ICANN",
+                      "props": {
+                        "url": "https://www.icann.org/"
+                      },
+                      "ref": "e86",
+                      "role": "link"
+                    },
+                    "."
+                  ],
+                  "name": "",
+                  "props": {},
+                  "ref": "e84",
+                  "role": "paragraph"
+                },
+                {
+                  "children": [
+                    {
+                      "children": [
+                        {
+                          "children": [
+                            {
+                              "cursor": "pointer",
+                              "name": "Privacy Policy",
+                              "props": {
+                                "url": "https://www.icann.org/privacy/policy"
+                              },
+                              "ref": "e89",
+                              "role": "link"
+                            }
+                          ],
+                          "level": 0,
+                          "name": "",
+                          "props": {},
+                          "ref": "e88",
+                          "role": "listitem"
+                        },
+                        {
+                          "children": [
+                            {
+                              "cursor": "pointer",
+                              "name": "Terms of Service",
+                              "props": {
+                                "url": "https://www.icann.org/privacy/tos"
+                              },
+                              "ref": "e91",
+                              "role": "link"
+                            }
+                          ],
+                          "level": 0,
+                          "name": "",
+                          "props": {},
+                          "ref": "e90",
+                          "role": "listitem"
+                        }
+                      ],
+                      "name": "",
+                      "props": {},
+                      "role": "list"
+                    }
+                  ],
+                  "name": "",
+                  "props": {},
+                  "ref": "e87",
+                  "role": "generic"
+                }
+              ],
+              "name": "",
+              "props": {},
+              "ref": "e36",
+              "role": "generic"
+            }
+          ],
+          "name": "",
+          "props": {},
+          "ref": "e35",
+          "role": "contentinfo"
+        }
+      ],
+      "name": "",
+      "props": {},
+      "ref": "e1",
+      "role": "generic"
+    }
+  ],
+  "name": "",
+  "props": {},
+  "role": "fragment"
+}

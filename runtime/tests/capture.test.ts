@@ -12,8 +12,7 @@ describe('interaction capture', () => {
     const html = `<div id="host"></div><script>document.querySelector('#host').attachShadow({ mode: 'open' }).innerHTML = '<button id="target">Click</button>'</script>`
     const interaction = await browser.capture({ expectedKind: 'click', html, interact: page => page.locator('#host').locator('#target').click() })
 
-    expect(interaction).toMatchObject({ frameHostname: 'recorder.test', kind: 'click' })
-    expect(interaction.selectors.length).toBeGreaterThan(0)
+    expect(interaction).toMatchObject({ frameHostname: 'recorder.test', kind: 'click', selectors: expect.arrayContaining([expect.any(String)]) })
   })
 
   test('captures interactions inside cross-origin frames', async () => {
@@ -24,8 +23,7 @@ describe('interaction capture', () => {
       interact: page => page.frameLocator('iframe').locator('#target').click(),
     })
 
-    expect(interaction).toMatchObject({ frameHostname: 'frame.test', kind: 'click' })
-    expect(interaction.selectors.length).toBeGreaterThan(0)
+    expect(interaction).toMatchObject({ frameHostname: 'frame.test', kind: 'click', selectors: expect.arrayContaining([expect.any(String)]) })
   })
 
   test('captures interactions under a strict content security policy', async () => {
@@ -36,8 +34,7 @@ describe('interaction capture', () => {
       interact: page => page.locator('#target').click(),
     })
 
-    expect(interaction).toMatchObject({ frameHostname: 'recorder.test', kind: 'click' })
-    expect(interaction.selectors.length).toBeGreaterThan(0)
+    expect(interaction).toMatchObject({ frameHostname: 'recorder.test', kind: 'click', selectors: expect.arrayContaining([expect.any(String)]) })
   })
 
   test('does not change page markup or click targeting while highlighting', async () => {

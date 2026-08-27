@@ -22,21 +22,16 @@ describe('ARIA interaction snapshots', () => {
     const interaction = await browser.capture({ expectedKind: 'click', html, interact: page => page.locator('#target').click() })
     const yaml = renderAriaSnapshot(interaction.ariaSnapshot)
 
-    expect(yaml).toContain('- main "Account settings"')
-    expect(yaml).toContain('- heading "Profile"')
-    expect(yaml).toContain('[level=2]')
-    expect(yaml).toContain('- textbox "Email"')
-    expect(yaml).toContain('[invalid=grammar]')
-    expect(yaml).toContain(': ada@example.com')
-    expect(yaml).toContain('- text: Used for notifications')
-    expect(yaml).toContain('- button "Open settings"')
-    expect(yaml).not.toContain('[expanded]')
-    expect(yaml).toContain('- button "Unavailable"')
-    expect(yaml).toContain('[disabled]')
-    expect(yaml).not.toContain('Changed')
-    expect(yaml).not.toContain('Secret content')
     expect(interaction.targetRef).toMatch(/^e\d+$/)
-    expect(yaml).toContain(`[ref=${interaction.targetRef}]`)
+    expect(normalizeRefs(yaml, interaction.targetRef)).toMatchInlineSnapshot(`
+      "- main "Account settings" [ref=eN]:
+        - heading "Profile" [level=2] [ref=eN]
+        - textbox "Email" [invalid=grammar] [ref=eN]: ada@example.com
+        - text: Used for notifications
+        - button "Open settings" [active] [ref=target]
+        - button "Unavailable" [disabled] [ref=eN]
+        - button [ref=eN]: Accessibility hidden"
+    `)
     expect(findNodes(interaction.ariaSnapshot).every(node => !('ariaVisible' in node) && !('box' in node) && !('receivesPointerEvents' in node))).toBe(true)
   })
 
@@ -92,4 +87,8 @@ async function clickClosedShadowButton(page: Page): Promise<void> {
 
 function findNodes(root: AriaNode): AriaNode[] {
   return [root, ...(root.children ?? []).flatMap(child => (typeof child === 'string' ? [] : findNodes(child)))]
+}
+
+function normalizeRefs(snapshot: string, targetRef: string | undefined): string {
+  return snapshot.replace(`ref=${targetRef}`, 'ref=target').replace(/ref=e\d+/g, 'ref=eN')
 }
