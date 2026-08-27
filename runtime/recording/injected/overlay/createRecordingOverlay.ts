@@ -6,6 +6,8 @@ import { RECORDING_OVERLAY_STYLES } from './styles.ts'
 export { createRecordingOverlay }
 export type { CreateRecordingOverlayArgs, RecordingOverlay }
 
+// This DOM adapter is bundled for execution inside recorded pages.
+
 function createRecordingOverlay(args: CreateRecordingOverlayArgs): RecordingOverlay {
   const host = document.createElement('div')
   const shadowRoot = host.attachShadow({ mode: 'closed' })

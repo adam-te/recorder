@@ -1,5 +1,4 @@
-import { RECORDER_UI_ATTRIBUTE } from '#runtime/recording/injection/protocol.ts'
-import type { CapturedCssSelector } from '#runtime/recording/injection/protocol.ts'
+import { RECORDER_UI_ATTRIBUTE, type CapturedCssSelector } from '#runtime/recording/protocol.ts'
 
 export { generateSelectorCandidates }
 

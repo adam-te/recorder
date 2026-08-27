@@ -1,6 +1,6 @@
 import { createBrowserSession, type BrowserSession } from '#runtime/browser/createBrowserSession.ts'
 import { playRecording } from '#runtime/playback/playRecording.ts'
-import { createRecordingCapture, type RecordingCapture } from '#runtime/recording/capture/createRecordingCapture.ts'
+import { createRecordingCapture, type RecordingCapture } from '#runtime/recording/host/createRecordingCapture.ts'
 
 import type { Recording, RecordingArtifact } from '@te/recorder-core'
 import { tryTo } from '@te/recorder-utils'

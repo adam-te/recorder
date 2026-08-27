@@ -1,6 +1,6 @@
-import { appendCapturedInteraction } from '#runtime/recording/actions/appendCapturedInteraction.ts'
-import { installRecordingInstruments } from '#runtime/recording/capture/installRecordingInstruments.ts'
-import type { CapturedInteraction } from '#runtime/recording/capture/types.ts'
+import { appendCapturedInteraction } from '#runtime/recording/host/actions/appendCapturedInteraction.ts'
+import { installRecordingInstruments } from '#runtime/recording/host/installRecordingInstruments.ts'
+import type { CapturedInteraction } from '#runtime/recording/host/types.ts'
 import type { BrowserContext, Page } from 'playwright'
 
 import { createRecordingSession, type RecordedAriaSnapshot, type Recording, type RecordingArtifact } from '@te/recorder-core'

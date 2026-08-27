@@ -1,6 +1,6 @@
 export { RECORDING_OVERLAY_STYLES }
 
-// A constructed stylesheet keeps the injected overlay styled on pages whose CSP blocks inline styles.
+// The constructed stylesheet keeps this injected UI styled when a page blocks inline styles.
 const RECORDING_OVERLAY_STYLES = `
   .highlight {
     background: rgb(79 155 229 / 18%);

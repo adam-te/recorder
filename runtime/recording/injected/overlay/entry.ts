@@ -1,7 +1,7 @@
-import { generateLocatorCandidates } from '#runtime/recording/injection/page/locators/generateLocatorCandidates.ts'
-import { generateSelectorCandidates } from '#runtime/recording/injection/page/locators/generateSelectorCandidates.ts'
-import { createRecordingOverlay, type RecordingOverlay } from '#runtime/recording/injection/page/overlay/createRecordingOverlay.ts'
-import { DISPOSE_OVERLAY_FUNCTION_NAME, OVERLAY_CONFIG_NAME, RECORDER_UI_ATTRIBUTE, STOP_BINDING_NAME } from '#runtime/recording/injection/protocol.ts'
+import { generateLocatorCandidates } from '#runtime/recording/injected/locators/generateLocatorCandidates.ts'
+import { generateSelectorCandidates } from '#runtime/recording/injected/locators/generateSelectorCandidates.ts'
+import { createRecordingOverlay, type RecordingOverlay } from '#runtime/recording/injected/overlay/createRecordingOverlay.ts'
+import { DISPOSE_OVERLAY_FUNCTION_NAME, OVERLAY_CONFIG_NAME, RECORDER_UI_ATTRIBUTE, STOP_BINDING_NAME } from '#runtime/recording/protocol.ts'
 import * as ariaRuntime from '@te/aria/browser'
 
 import { formatPlaywrightLocator } from '@te/recorder-core/playwright/locator'

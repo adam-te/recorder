@@ -1,5 +1,5 @@
-import { createRecordingCapture, type RecordingCapture } from '#runtime/recording/capture/createRecordingCapture.ts'
-import type { CapturedInteractionEvent } from '#runtime/recording/capture/types.ts'
+import { createRecordingCapture, type RecordingCapture } from '#runtime/recording/host/createRecordingCapture.ts'
+import type { CapturedInteractionEvent } from '#runtime/recording/host/types.ts'
 import { describe, expect, test } from 'vitest'
 
 import { useBrowserTestHarness } from './support/browserHarness.ts'

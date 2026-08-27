@@ -1,15 +1,14 @@
-import type { CapturedInteraction } from '#runtime/recording/capture/types.ts'
-import { recordingRuntimeSource } from '#runtime/recording/injection/generated/recordingRuntimeSource.generated.ts'
-import { DISPOSE_OVERLAY_FUNCTION_NAME, INTERACTION_BINDING_NAME, OVERLAY_CONFIG_NAME, STOP_BINDING_NAME } from '#runtime/recording/injection/protocol.ts'
-import type { SerializedInteraction } from '#runtime/recording/injection/protocol.ts'
+import { recordingRuntimeSource } from '#runtime/recording/generated/recordingRuntimeSource.generated.ts'
+import type { CapturedInteraction } from '#runtime/recording/host/types.ts'
+import { DISPOSE_OVERLAY_FUNCTION_NAME, INTERACTION_BINDING_NAME, OVERLAY_CONFIG_NAME, STOP_BINDING_NAME, type SerializedInteraction } from '#runtime/recording/protocol.ts'
 import type { BrowserContext, Frame, Page } from 'playwright'
 
 import { tryTo } from '@te/recorder-utils'
 
-export { attachRecordingPageRuntime }
-export type { AttachRecordingPageRuntimeArgs, RecordingPageRuntime }
+export { attachInjectedRecorder }
+export type { AttachInjectedRecorderArgs, InjectedRecorder }
 
-async function attachRecordingPageRuntime(args: AttachRecordingPageRuntimeArgs): Promise<RecordingPageRuntime> {
+async function attachInjectedRecorder(args: AttachInjectedRecorderArgs): Promise<InjectedRecorder> {
   const pendingInteractions = new Set<Promise<void>>()
   const interactionBinding = await args.context.exposeBinding(INTERACTION_BINDING_NAME, receiveInteraction)
   const stopBinding = await tryTo(
@@ -56,13 +55,13 @@ function createRecordingPageRuntimeSource(showsControls: boolean): string {
   return `${configSource};${recordingRuntimeSource}`
 }
 
-interface AttachRecordingPageRuntimeArgs {
+interface AttachInjectedRecorderArgs {
   context: BrowserContext
   onInteraction: (interaction: CapturedInteraction) => Promise<void> | void
   onStopRequested?: () => Promise<void> | void
   page: Page
 }
 
-interface RecordingPageRuntime {
+interface InjectedRecorder {
   dispose: () => Promise<void>
 }

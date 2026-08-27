@@ -1,5 +1,5 @@
-import { createRecordingCapture } from '#runtime/recording/capture/createRecordingCapture.ts'
-import type { CapturedInteractionEvent } from '#runtime/recording/capture/types.ts'
+import { createRecordingCapture } from '#runtime/recording/host/createRecordingCapture.ts'
+import type { CapturedInteractionEvent } from '#runtime/recording/host/types.ts'
 import type { AriaSnapshot } from '@te/aria'
 import type { Browser, BrowserContext, Page } from 'playwright'
 import { chromium } from 'playwright'

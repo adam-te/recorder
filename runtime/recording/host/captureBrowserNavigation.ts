@@ -6,7 +6,7 @@ import { tryTo } from '@te/recorder-utils'
 export { captureBrowserNavigation }
 export type { BrowserNavigationCapture, CapturedBrowserNavigation }
 
-/** Observes top-level browser navigation while a recording is active. */
+/** Observes top-level browser navigation from the Playwright host process. */
 async function captureBrowserNavigation(args: CaptureBrowserNavigationArgs): Promise<BrowserNavigationCapture> {
   const navigationSession = await args.page.context().newCDPSession(args.page)
   await navigationSession.send('Page.enable')
