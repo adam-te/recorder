@@ -5,6 +5,7 @@ import { parseRecording, type Recording } from '@te/recorder-core'
 import { createRecordingEditorHost, renderRecordingSnapshot, type RecordingEditorHostMessage, type RecordingEditorUiMessage } from '@te/recorder-ui/recording-editor/host'
 import { matchBy, tryTo } from '@te/recorder-utils'
 
+import type { RecordingDraftStore } from './createRecordingDraftStore.ts'
 import { createWorkspaceRecordingArtifactStore } from './createWorkspaceRecordingArtifactStore.ts'
 
 export { createRecordingEditorProvider, recordingEditorViewType }
@@ -21,7 +22,7 @@ function resolveRecordingEditor(args: ResolveRecordingEditorArgs): void {
   let disposed = false
 
   const host = createRecordingEditorHost({
-    isPending: () => args.isPending(args.document.uri),
+    isPending: () => args.drafts.isDraft(args.document.uri),
     readRecording,
     readSnapshot: async actionIndex => renderRecordingSnapshot(await createWorkspaceRecordingArtifactStore(Uri.joinPath(args.document.uri, '..')).loadSnapshot(actionIndex)),
   })
@@ -39,7 +40,7 @@ function resolveRecordingEditor(args: ResolveRecordingEditorArgs): void {
   args.panel.onDidDispose(() => {
     disposed = true
     disposables.forEach(disposable => disposable.dispose())
-    if (decisionInProgress || !args.isPending(args.document.uri)) return
+    if (decisionInProgress || !args.drafts.isDraft(args.document.uri)) return
     void handleClosedDraft()
   })
 
@@ -51,7 +52,7 @@ function resolveRecordingEditor(args: ResolveRecordingEditorArgs): void {
       discard: async () => {
         if (decisionInProgress) return
         decisionInProgress = true
-        if (await args.onDiscard(args.document.uri)) args.panel.dispose()
+        if (await args.drafts.discard(args.document.uri)) args.panel.dispose()
         decisionInProgress = false
       },
       openJson: async () => {
@@ -66,7 +67,7 @@ function resolveRecordingEditor(args: ResolveRecordingEditorArgs): void {
         decisionInProgress = true
         let savedDocumentUri: Uri | undefined
         await withErrorMessage(async () => {
-          savedDocumentUri = await args.onSave(args.document.uri)
+          savedDocumentUri = await saveDraft(args.document.uri)
         })
         decisionInProgress = false
         if (savedDocumentUri) {
@@ -103,7 +104,7 @@ function resolveRecordingEditor(args: ResolveRecordingEditorArgs): void {
     await tryTo(
       async () => {
         if (action === 'Save Recording') {
-          const savedDocumentUri = await args.onSave(args.document.uri)
+          const savedDocumentUri = await saveDraft(args.document.uri)
           if (savedDocumentUri) await commands.executeCommand('vscode.openWith', savedDocumentUri, recordingEditorViewType)
           return
         }
@@ -116,6 +117,34 @@ function resolveRecordingEditor(args: ResolveRecordingEditorArgs): void {
 
   function readRecording(): Recording {
     return parseRecording(JSON.parse(args.document.getText()))
+  }
+
+  async function saveDraft(documentUri: Uri): Promise<Uri | undefined> {
+    const recording = await args.drafts.load(documentUri)
+    const destination = await window.showSaveDialog({ defaultUri: defaultRecordingUri(recording, documentUri), saveLabel: 'Save Recording' })
+    if (!destination) return undefined
+
+    const recordingDirectory = destination.path.endsWith('.recording') ? destination : destination.with({ path: `${destination.path}.recording` })
+    return await tryTo(
+      async () => {
+        const savedDocumentUri = await args.drafts.commit(documentUri, recordingDirectory)
+        await window.showInformationMessage(`Saved recording to ${recordingDirectory.fsPath}.`)
+        return savedDocumentUri
+      },
+      async error => ((await window.showErrorMessage(`Could not save recording: ${getErrorMessage(error)}`, 'Choose Another Location', 'Cancel')) === 'Choose Another Location' ? saveDraft(documentUri) : undefined),
+    )
+  }
+
+  function defaultRecordingUri(recording: Recording, documentUri: Uri): Uri | undefined {
+    const workspaceFolder = workspace.getWorkspaceFolder(documentUri) ?? workspace.workspaceFolders?.[0]
+    if (!workspaceFolder) return undefined
+
+    const name = recording.title
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, '-')
+      .replace(/^-|-$/g, '')
+
+    return Uri.joinPath(workspaceFolder.uri, `${name || 'recording'}.recording`)
   }
 
   async function withErrorMessage(operation: () => Promise<void>): Promise<void> {
@@ -146,10 +175,8 @@ function getErrorMessage(error: unknown): string {
 
 interface CreateRecordingEditorProviderArgs {
   context: ExtensionContext
-  isPending: (documentUri: Uri) => boolean
-  onDiscard: (documentUri: Uri) => Promise<boolean>
+  drafts: RecordingDraftStore
   onPlay: (recording?: Recording) => Promise<void>
-  onSave: (documentUri: Uri) => Promise<Uri | undefined>
 }
 
 interface ResolveRecordingEditorArgs extends CreateRecordingEditorProviderArgs {

@@ -1,23 +1,26 @@
 import { createRecorderView } from '#vscode-extension/createRecorderView.ts'
-import { createRecorderController } from '#vscode-extension/recording/createRecorderController.ts'
-import { createRecordingEditorProvider } from '#vscode-extension/recording/createRecordingEditorProvider.ts'
-import { commands, window, type ExtensionContext } from 'vscode'
+import { createRecordingDraftStore } from '#vscode-extension/recording/createRecordingDraftStore.ts'
+import { createRecordingEditorProvider, recordingEditorViewType } from '#vscode-extension/recording/createRecordingEditorProvider.ts'
+import { commands, window, workspace, type ExtensionContext, type Uri } from 'vscode'
 
+import { parseRecording, RECORDING_DOCUMENT_PATH, type Recording } from '@te/recorder-core'
+import { createRecorder } from '@te/recorder-runtime'
 import { tryTo } from '@te/recorder-utils'
 
 export { activateExtension }
 export type { ActiveExtension }
 
 function activateExtension(args: ActivateExtensionArgs): ActiveExtension {
-  const controller = createRecorderController({ context: args.context, onStopRequested: stopRecording })
+  const drafts = createRecordingDraftStore({ context: args.context })
+  const recorder = createRecorder()
   let recorderState: RecorderState = 'idle'
   const recorderStateReady = updateRecorderContext()
   const disposables = [
     createRecorderView(),
-    createRecordingEditorProvider({ context: args.context, isPending: controller.isPending, onDiscard: controller.discardPending, onPlay: controller.play, onSave: controller.savePending }),
+    createRecordingEditorProvider({ context: args.context, drafts, onPlay: playRecording }),
     commands.registerCommand('thousandeyesRecorder.startRecording', startRecording),
     commands.registerCommand('thousandeyesRecorder.stopRecording', stopRecording),
-    commands.registerCommand('thousandeyesRecorder.playRecording', controller.play),
+    commands.registerCommand('thousandeyesRecorder.playRecording', playRecording),
   ]
 
   args.context.subscriptions.push(...disposables)
@@ -45,7 +48,7 @@ function activateExtension(args: ActivateExtensionArgs): ActiveExtension {
 
     await tryTo(
       async () => {
-        await controller.start(startUrl.trim())
+        await recorder.start({ onStopRequested: stopRecording, startUrl: startUrl.trim() })
         await setRecorderState('recording')
       },
       async error => {
@@ -61,11 +64,37 @@ function activateExtension(args: ActivateExtensionArgs): ActiveExtension {
     }
 
     await setRecorderState('stopping')
-    await tryTo(controller.stop, undefined, () => setRecorderState('idle'))
+    await tryTo(
+      async () => {
+        const artifact = await recorder.stop()
+        if (!artifact) return
+        await commands.executeCommand('vscode.openWith', await drafts.stage(artifact, getActiveWorkspaceUri()), recordingEditorViewType)
+      },
+      undefined,
+      () => setRecorderState('idle'),
+    )
+  }
+
+  async function playRecording(recording?: Recording): Promise<void> {
+    if (!recording) {
+      const editor = window.activeTextEditor
+      if (!editor || editor.document.uri.path.split('/').at(-1) !== RECORDING_DOCUMENT_PATH) {
+        throw new Error('Open a recording.json file before starting playback.')
+      }
+
+      recording = parseRecording(JSON.parse(editor.document.getText()))
+    }
+
+    await recorder.play({ recording })
+    await window.showInformationMessage(`Played ${recording.actions.length} recorded actions.`)
+  }
+
+  function getActiveWorkspaceUri(): Uri | undefined {
+    return ((window.activeTextEditor ? workspace.getWorkspaceFolder(window.activeTextEditor.document.uri) : undefined) ?? workspace.workspaceFolders?.[0])?.uri
   }
 
   async function dispose(): Promise<void> {
-    await controller.dispose()
+    await recorder.dispose()
     disposables.forEach(disposable => disposable.dispose())
   }
 
