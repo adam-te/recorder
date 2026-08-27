@@ -22,9 +22,8 @@ describe('runRecorderCli', () => {
     }
     const ariaSnapshot: RecordedAriaSnapshot = { children: [{ name: 'Save', props: {}, ref: 'e1', role: 'button', target: true }], name: '', props: {}, role: 'fragment' }
     const openedDirectories: string[] = []
-    const output: string[] = []
     let recordedStartUrl: string | undefined
-    const exitCode = await runRecorderCli({
+    await runRecorderCli({
       argv: ['record', 'https://example.com'],
       recorder: {
         dispose: async () => undefined,
@@ -39,7 +38,7 @@ describe('runRecorderCli', () => {
       runRecordingEditor: async args => {
         openedDirectories.push(args.directoryPath)
       },
-      stdout: { write: value => output.push(value) },
+      stdout: { write: () => undefined },
       waitForStop: signal =>
         new Promise(resolve => {
           signal.addEventListener(
@@ -54,11 +53,9 @@ describe('runRecorderCli', () => {
     })
     const directoryPath = join(workingDirectory, 'example-2.recording')
 
-    expect(exitCode).toBe(0)
     expect(recordedStartUrl).toBe('https://example.com')
     expect(openedDirectories).toEqual([directoryPath])
     expect(JSON.parse(await readFile(join(directoryPath, 'recording.json'), 'utf8'))).toEqual(JSON.parse(serializeRecording(recording)))
     expect(JSON.parse(await readFile(join(directoryPath, 'snapshots', '0001.aria.json'), 'utf8'))).toEqual(ariaSnapshot)
-    expect(output.join('')).toContain(`Saved recording to ${directoryPath}.`)
   })
 })

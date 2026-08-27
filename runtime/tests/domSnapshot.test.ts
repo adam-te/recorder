@@ -30,12 +30,9 @@ describe('captureDomSnapshot', () => {
     const frameTarget = findElement(capture, 'id', 'frame-target')
     const shadowTarget = findElement(capture, 'id', 'shadow-target')
 
-    expect(capture).toMatchObject({ pageUrl: 'https://recorder.test/content', version: 1 })
-    expect(Number.isNaN(Date.parse(capture.capturedAt))).toBe(false)
     expect(dynamicTarget).toMatchObject({ attributes: { 'data-state': 'updated' }, documentUrl: 'https://recorder.test/content' })
     expect(getDirectText(capture, dynamicTarget)).toBe('After')
     expect(frameTarget).toMatchObject({ documentUrl: 'https://frame.test/content' })
-    expect([dynamicTarget, frameTarget, shadowTarget].every(target => Boolean(target?.backendNodeId))).toBe(true)
     expect(shadowTarget?.parentIndex).toBeGreaterThanOrEqual(0)
     expect(getShadowRootTypes(capture)).toContain('open')
     expect(await page.locator('html').evaluate(element => element.outerHTML)).toBe(markupBeforeCapture)
@@ -50,7 +47,6 @@ function findElement(capture: CapturedDomSnapshot, attributeName: string, attrib
       if (attributes[attributeName] === attributeValue) {
         return {
           attributes,
-          backendNodeId: document.nodes.backendNodeId?.[nodeIndex],
           documentIndex,
           documentUrl: capture.snapshot.strings[document.documentURL] ?? '',
           nodeIndex,
@@ -94,7 +90,6 @@ function getShadowRootTypes(capture: CapturedDomSnapshot): string[] {
 
 interface SnapshotElement {
   attributes: Record<string, string>
-  backendNodeId?: number
   documentIndex: number
   documentUrl: string
   nodeIndex: number

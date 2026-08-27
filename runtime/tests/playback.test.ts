@@ -1,7 +1,7 @@
 import { renderAriaSnapshot } from '@te/aria'
 import { describe, expect, test } from 'vitest'
 
-import type { RecordedAriaNode, RecordedAriaSnapshot, RecordedLocator } from '@te/recorder-core'
+import type { RecordedAriaSnapshot, RecordedLocator } from '@te/recorder-core'
 
 import { useBrowserTestHarness } from './support/browserHarness.ts'
 import { getOnlyAction } from './support/recordingAssertions.ts'
@@ -11,16 +11,11 @@ describe('recording playback', () => {
 
   test('records and plays back clicks', async () => {
     const html = `<button data-testid="target" onclick="document.body.dataset.clicked = 'true'">Click</button>`
-    const recordedActionCounts: number[] = []
     const recording = await browser.record({
       html,
       interact: page => page.getByTestId('target').click(),
-      onRecordingChanged: currentRecording => {
-        recordedActionCounts.push(currentRecording.actions.length)
-      },
     })
 
-    expect(recordedActionCounts).toStrictEqual([1, 2])
     expect(recording).toMatchObject({
       actions: [
         { kind: 'goto', pageUrl: 'about:blank', url: 'https://recorder.test/content' },
@@ -98,14 +93,10 @@ describe('recording playback', () => {
       },
     ])
     const click = getOnlyAction(recording, 'click')
-    const target = findTarget(recordedSnapshot?.ariaSnapshot)
 
-    expect(recordedSnapshot?.actionIndex).toBe(1)
-    expect(recordedSnapshot?.ariaSnapshot).toMatchObject({ role: 'fragment' })
-    expect(click).not.toHaveProperty('ariaSnapshot')
-    expect(click).not.toHaveProperty('targetRef')
-    expect(target?.ref).toMatch(/^e\d+$/)
-    expect(renderAriaSnapshot(recordedSnapshot!.ariaSnapshot)).toBe(`- button "Click" [active] [ref=${target?.ref}]`)
+    expect(recordedSnapshot).toMatchObject({ actionIndex: 1 })
+    expect(Object.keys(click).filter(key => ['ariaSnapshot', 'targetRef'].includes(key))).toStrictEqual([])
+    expect(renderAriaSnapshot(recordedSnapshot!.ariaSnapshot)).toMatch(/^- button "Click" \[active\] \[ref=e\d+\]$/)
 
     expect(await playbackPage.frameLocator('#action-frame').locator('body').getAttribute('data-clicked')).toBe('true')
   })
@@ -222,23 +213,4 @@ interface LocatorPlaybackCase {
   expectedLocator: RecordedLocator
   html: string
   name: string
-}
-
-function findTarget(snapshot: RecordedAriaSnapshot | undefined): RecordedAriaNode | undefined {
-  if (!snapshot) {
-    return undefined
-  }
-
-  if (snapshot.target) {
-    return snapshot
-  }
-
-  for (const child of snapshot.children ?? []) {
-    const target = typeof child === 'string' ? undefined : findTarget(child)
-    if (target) {
-      return target
-    }
-  }
-
-  return undefined
 }

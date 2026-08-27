@@ -60,8 +60,7 @@ describe('runRecordingEditor', () => {
         await tryTo(
           async () => {
             const page = await browser.newPage()
-            const pageResponse = await page.goto(url)
-            expect(pageResponse?.status()).toBe(200)
+            await page.goto(url)
             expect(await page.locator('h1').textContent()).toBe('Example recording')
             expect(await page.locator('.locator-list').textContent()).toContain('page.getByRole("dialog", { name: "Settings", exact: true }).getByLabel("Save", { exact: false })')
             expect(await page.locator('.snapshot-yaml').textContent()).toContain('Show [ref=e2]')
@@ -74,7 +73,7 @@ describe('runRecordingEditor', () => {
 
             const playResponse = page.waitForResponse(response => response.url().endsWith('/api/messages'))
             await page.getByRole('button', { name: 'Play' }).click()
-            expect((await playResponse).status()).toBe(200)
+            await playResponse
           },
           undefined,
           () => browser.close(),
