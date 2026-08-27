@@ -4,9 +4,9 @@ import { svelteEsbuildPlugin } from '../../scripts/svelteEsbuildPlugin.mjs'
 
 await build({
   bundle: true,
-  entryPoints: ['standalone/recordingEditor.ts'],
+  entryPoints: ['ui/browser/recordingEditor.ts'],
   format: 'esm',
-  outfile: 'dist/standalone/recordingEditor.js',
+  outfile: 'dist/ui/recordingEditor.js',
   platform: 'browser',
   plugins: [svelteEsbuildPlugin],
 })

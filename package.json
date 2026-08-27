@@ -14,7 +14,7 @@
   ],
   "type": "module",
   "scripts": {
-    "build": "npm run build --workspace @te/recorder-ui && npm run build --workspace recorder-extension",
+    "build": "npm run build --workspace @te/recorder-cli && npm run build --workspace recorder-extension",
     "check": "npm run format:check && npm run lint && npm run typecheck && npm run build && npm run smoke",
     "format:check": "oxfmt --check .",
     "generate:aria": "npm run generate:aria --workspace @te/aria && npm run generate:injected-runtime --workspace @te/recorder-runtime",

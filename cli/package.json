@@ -13,6 +13,7 @@
     ".": "./index.ts"
   },
   "scripts": {
+    "build": "node scripts/build.mjs",
     "start": "node bin.ts"
   },
   "dependencies": {
@@ -23,6 +24,7 @@
     "playwright": "1.62.1"
   },
   "devDependencies": {
-    "@types/node": "^25.6.0"
+    "@types/node": "^25.6.0",
+    "esbuild": "^0.27.0"
   }
 }

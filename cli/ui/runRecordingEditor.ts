@@ -15,7 +15,7 @@ import { createFileRecordingArtifactStore } from '../recording/createFileRecordi
 export { runRecordingEditor }
 export type { RunRecordingEditorArgs }
 
-const assetDirectory = fileURLToPath(new URL('../../ui/dist/standalone/', import.meta.url))
+const assetDirectory = fileURLToPath(new URL('../dist/ui/', import.meta.url))
 
 async function runRecordingEditor(args: RunRecordingEditorArgs): Promise<void> {
   const store = createFileRecordingArtifactStore(args.directoryPath)

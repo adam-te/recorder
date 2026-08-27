@@ -11,16 +11,10 @@
     "./recording-editor/host": "./recordingEditor/host.ts",
     "./recording-editor.css": "./recordingEditor/recordingEditor.css"
   },
-  "scripts": {
-    "build": "node scripts/build.mjs"
-  },
   "dependencies": {
     "@te/aria": "*",
     "@te/recorder-core": "*",
     "@te/recorder-utils": "*",
     "svelte": "5.56.10"
-  },
-  "devDependencies": {
-    "esbuild": "^0.27.0"
   }
 }

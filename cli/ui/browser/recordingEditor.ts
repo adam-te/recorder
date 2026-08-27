@@ -1,8 +1,8 @@
 import { RECORDING_DOCUMENT_PATH } from '@te/recorder-core'
+import { createRecordingEditor, type RecordingEditorHostMessage, type RecordingEditorUiMessage } from '@te/recorder-ui/recording-editor'
 import { tryTo } from '@te/recorder-utils'
 
-import { createRecordingEditor, type RecordingEditorHostMessage, type RecordingEditorUiMessage } from '../recordingEditor/index.ts'
-import './recordingEditor.css'
+import './recordingEditorTheme.css'
 
 const root = document.querySelector<HTMLElement>('#app')
 if (!root) throw new Error('Recording editor root was not found.')
