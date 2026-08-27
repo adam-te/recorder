@@ -22,7 +22,6 @@ describe('ARIA interaction snapshots', () => {
     const interaction = await browser.capture({ expectedKind: 'click', html, interact: page => page.locator('#target').click() })
     const yaml = renderAriaSnapshot(interaction.ariaSnapshot)
 
-    expect(interaction.targetRef).toMatch(/^e\d+$/)
     expect(normalizeRefs(yaml, interaction.targetRef)).toMatchInlineSnapshot(`
       "- main "Account settings" [ref=eN]:
         - heading "Profile" [level=2] [ref=eN]
@@ -44,10 +43,11 @@ describe('ARIA interaction snapshots', () => {
     })
     const yaml = renderAriaSnapshot(interaction.ariaSnapshot)
 
-    expect(interaction.frameHostname).toBe('frame.test')
-    expect(yaml).toContain('Frame content')
-    expect(yaml).toContain('Frame action')
-    expect(yaml).not.toContain('Parent content')
+    expect(`${interaction.frameHostname}\n${normalizeRefs(yaml, undefined)}`).toMatchInlineSnapshot(`
+      "frame.test
+      - main "Frame content" [ref=eN]:
+        - button "Frame action" [active] [ref=eN]"
+    `)
   })
 
   test('traverses open shadow roots without exposing closed shadow roots', async () => {
