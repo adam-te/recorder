@@ -1,5 +1,6 @@
 import type { AriaLocatorStep, AriaSnapshot } from '@te/aria'
 
+// Shared by the Playwright host and the runtime executing inside recorded pages.
 export { DISPOSE_OVERLAY_FUNCTION_NAME, INTERACTION_BINDING_NAME, OVERLAY_CONFIG_NAME, RECORDER_UI_ATTRIBUTE, SELECTOR_GENERATOR_NAME, STOP_BINDING_NAME }
 export type { CapturedAriaSelector, CapturedAriaSelectorStep, CapturedCssSelector, CapturedInteractionEvent, CapturedSelector, CapturedTestIdSelector, SerializedInteraction }
 

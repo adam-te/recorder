@@ -1,15 +1,15 @@
-import { recordingRuntimeSource } from '#runtime/injected/generated/recordingRuntimeSource.generated.ts'
-import { DISPOSE_OVERLAY_FUNCTION_NAME, INTERACTION_BINDING_NAME, OVERLAY_CONFIG_NAME, STOP_BINDING_NAME } from '#runtime/injected/protocol.ts'
-import type { SerializedInteraction } from '#runtime/injected/protocol.ts'
 import type { CapturedInteraction } from '#runtime/recording/capture/types.ts'
+import { recordingRuntimeSource } from '#runtime/recording/injection/generated/recordingRuntimeSource.generated.ts'
+import { DISPOSE_OVERLAY_FUNCTION_NAME, INTERACTION_BINDING_NAME, OVERLAY_CONFIG_NAME, STOP_BINDING_NAME } from '#runtime/recording/injection/protocol.ts'
+import type { SerializedInteraction } from '#runtime/recording/injection/protocol.ts'
 import type { BrowserContext, Frame, Page } from 'playwright'
 
 import { tryTo } from '@te/recorder-utils'
 
-export { installInjectedRecorder }
-export type { InjectedRecorder, InstallInjectedRecorderArgs }
+export { attachRecordingPageRuntime }
+export type { AttachRecordingPageRuntimeArgs, RecordingPageRuntime }
 
-async function installInjectedRecorder(args: InstallInjectedRecorderArgs): Promise<InjectedRecorder> {
+async function attachRecordingPageRuntime(args: AttachRecordingPageRuntimeArgs): Promise<RecordingPageRuntime> {
   const pendingInteractions = new Set<Promise<void>>()
   const interactionBinding = await args.context.exposeBinding(INTERACTION_BINDING_NAME, receiveInteraction)
   const stopBinding = await tryTo(
@@ -19,7 +19,7 @@ async function installInjectedRecorder(args: InstallInjectedRecorderArgs): Promi
       throw error
     },
   )
-  const source = createInjectedRecorderSource(Boolean(stopBinding))
+  const source = createRecordingPageRuntimeSource(Boolean(stopBinding))
   const initScript = await tryTo(
     () => args.context.addInitScript({ content: source }),
     async error => {
@@ -50,19 +50,19 @@ async function installInjectedRecorder(args: InstallInjectedRecorderArgs): Promi
   }
 }
 
-function createInjectedRecorderSource(showsControls: boolean): string {
+function createRecordingPageRuntimeSource(showsControls: boolean): string {
   const configSource = `globalThis[${JSON.stringify(OVERLAY_CONFIG_NAME)}]=${JSON.stringify({ showsControls })}`
 
   return `${configSource};${recordingRuntimeSource}`
 }
 
-interface InstallInjectedRecorderArgs {
+interface AttachRecordingPageRuntimeArgs {
   context: BrowserContext
   onInteraction: (interaction: CapturedInteraction) => Promise<void> | void
   onStopRequested?: () => Promise<void> | void
   page: Page
 }
 
-interface InjectedRecorder {
+interface RecordingPageRuntime {
   dispose: () => Promise<void>
 }

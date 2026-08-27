@@ -7,7 +7,8 @@ import { compile } from 'svelte/compiler'
 const SCRIPT_DIRECTORY = dirname(fileURLToPath(import.meta.url))
 const RUNTIME_DIRECTORY = join(SCRIPT_DIRECTORY, '..')
 const ROOT_DIRECTORY = join(RUNTIME_DIRECTORY, '..')
-const GENERATED_DIRECTORY = join(RUNTIME_DIRECTORY, 'injected', 'generated')
+const RECORDING_INJECTION_DIRECTORY = join(RUNTIME_DIRECTORY, 'recording', 'injection')
+const GENERATED_DIRECTORY = join(RECORDING_INJECTION_DIRECTORY, 'generated')
 const sveltePlugin = {
   name: 'svelte',
   setup(buildContext) {
@@ -40,7 +41,7 @@ async function generate() {
 
   await writeGeneratedSource(
     'recordingRuntimeSource',
-    await bundle(join(RUNTIME_DIRECTORY, 'injected', 'entry.ts'), {
+    await bundle(join(RECORDING_INJECTION_DIRECTORY, 'page', 'entry.ts'), {
       banner: `/*! Playwright v${playwrightVersion} | Apache-2.0 | Copyright Microsoft Corporation */`,
       globalName: 'ariaRuntime',
     }),

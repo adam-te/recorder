@@ -1,6 +1,6 @@
-import { generateLocatorCandidates } from '#runtime/injected/locators/generateLocatorCandidates.ts'
-import { generateSelectorCandidates } from '#runtime/injected/locators/generateSelectorCandidates.ts'
-import type { CapturedCssSelector, CapturedInteractionEvent, SerializedInteraction } from '#runtime/injected/protocol.ts'
+import { generateLocatorCandidates } from '#runtime/recording/injection/page/locators/generateLocatorCandidates.ts'
+import { generateSelectorCandidates } from '#runtime/recording/injection/page/locators/generateSelectorCandidates.ts'
+import type { CapturedCssSelector, CapturedInteractionEvent, SerializedInteraction } from '#runtime/recording/injection/protocol.ts'
 import type { AriaRuntime } from '@te/aria/browser'
 
 export { recordPageInteractions }

@@ -1,6 +1,6 @@
-import { SELECTOR_GENERATOR_NAME } from '#runtime/injected/protocol.ts'
-import type { CapturedCssSelector } from '#runtime/injected/protocol.ts'
 import type { CapturedInteraction } from '#runtime/recording/capture/types.ts'
+import { SELECTOR_GENERATOR_NAME } from '#runtime/recording/injection/protocol.ts'
+import type { CapturedCssSelector } from '#runtime/recording/injection/protocol.ts'
 import type { Frame } from 'playwright'
 
 import type { RecordedLocator } from '@te/recorder-core'
