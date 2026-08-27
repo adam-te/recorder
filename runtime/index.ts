@@ -1,6 +1,6 @@
 export { createBrowserSession } from './browser/createBrowserSession.ts'
 export type { BrowserSession } from './browser/createBrowserSession.ts'
 export { playRecording } from './playback/playRecording.ts'
-export type { PlayRecordingArgs } from './playback/playRecording.ts'
+export type { PlaybackObserver, PlaybackResult, PlayRecordingArgs } from './playback/playRecording.ts'
 export { createRecorder } from './recording/createRecorder.ts'
 export type { CreateRecorderArgs, Recorder } from './recording/createRecorder.ts'

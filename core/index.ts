@@ -11,5 +11,4 @@ export { getRecordingSnapshotFileName, parseRecordingSnapshot, serializeRecordin
 export type { RecordedAction, RecordedAriaNode, RecordedAriaSnapshot, RecordedLocator, RecordedValue, Recording } from './recording/recordingSchema.ts'
 export { createRecordingSession } from './recording/createRecordingSession.ts'
 export type { RecordingSession } from './recording/createRecordingSession.ts'
-export type { PlaybackObserver, PlaybackResult } from './playback/types.ts'
 export type { ThousandEyesTransactionConverter, ThousandEyesTransactionScript } from './formats/thousandeyes/types.ts'
