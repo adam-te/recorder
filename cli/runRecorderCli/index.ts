@@ -1,13 +1,14 @@
 import { randomUUID } from 'node:crypto'
-import { access, mkdir, readFile, rename, rm, writeFile } from 'node:fs/promises'
+import { access, rename, rm } from 'node:fs/promises'
 import { isIP } from 'node:net'
 import { basename, dirname, join, resolve } from 'node:path'
 import { createInterface } from 'node:readline/promises'
 
-import { getRecordingSnapshotFileName, parseRecording, parseRecordingSnapshot, serializeRecording, serializeRecordingSnapshot, type RecordedAriaSnapshot, type Recording } from '@te/recorder-core'
+import type { RecordedAriaSnapshot, Recording } from '@te/recorder-core'
 import { createRecorder, type Recorder } from '@te/recorder-runtime'
 import { matchBy, tryTo } from '@te/recorder-utils'
 
+import { createFileRecordingArtifactStore } from '../recording/createFileRecordingArtifactStore.ts'
 import { runRecordingEditor, type RunRecordingEditorArgs } from '../ui/runRecordingEditor.ts'
 import { parseRecorderCliCommand, type RecorderCliCommand } from './parseRecorderCliCommand.ts'
 
@@ -50,7 +51,7 @@ async function executeCommand(args: ExecuteCommandArgs): Promise<void> {
       await args.stdout.write(HELP)
     },
     play: async command => {
-      const recording = parseRecording(JSON.parse(await readFile(join(command.directoryPath, 'recording.json'), 'utf8')))
+      const recording = await createFileRecordingArtifactStore(command.directoryPath).load()
 
       await args.recorder.play({ recording })
       await args.stdout.write(`Played ${recording.actions.length} recorded actions.\n`)
@@ -180,31 +181,14 @@ async function writeRecordingDirectory(args: { directoryPath: string; recording:
 
   await tryTo(
     async () => {
-      const snapshotsDirectory = join(pendingDirectory, 'snapshots')
-      await mkdir(snapshotsDirectory, { recursive: true })
-      await writeFile(join(pendingDirectory, 'recording.json'), serializeRecording(args.recording), 'utf8')
-
-      for (const [actionIndex, action] of args.recording.actions.entries()) {
-        if (!('locatorCandidates' in action)) {
-          continue
-        }
-
-        const snapshot = args.snapshots.get(actionIndex)
-        if (!snapshot) {
-          throw new Error(`Missing ARIA snapshot for action ${actionIndex}.`)
-        }
-
-        await writeFile(join(snapshotsDirectory, getRecordingSnapshotFileName(actionIndex)), serializeRecordingSnapshot(snapshot), 'utf8')
-      }
-
-      parseRecording(JSON.parse(await readFile(join(pendingDirectory, 'recording.json'), 'utf8')))
-      for (const [actionIndex, action] of args.recording.actions.entries()) {
-        if (!('locatorCandidates' in action)) {
-          continue
-        }
-
-        parseRecordingSnapshot(JSON.parse(await readFile(join(snapshotsDirectory, getRecordingSnapshotFileName(actionIndex)), 'utf8')))
-      }
+      await createFileRecordingArtifactStore(pendingDirectory).save({
+        recording: args.recording,
+        readSnapshot: actionIndex => {
+          const snapshot = args.snapshots.get(actionIndex)
+          if (!snapshot) throw new Error(`Missing ARIA snapshot for action ${actionIndex}.`)
+          return snapshot
+        },
+      })
 
       await rename(pendingDirectory, args.directoryPath)
     },

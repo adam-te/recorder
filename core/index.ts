@@ -1,4 +1,6 @@
 export { createRecording } from './recording/createRecording.ts'
+export { createRecordingArtifactStore, RECORDING_DOCUMENT_PATH } from './recording/createRecordingArtifactStore.ts'
+export type { RecordingArtifactStore } from './recording/createRecordingArtifactStore.ts'
 export { formatPlaywrightLocator } from './formats/playwright/formatPlaywrightLocator.ts'
 export type { FormatPlaywrightLocatorOptions } from './formats/playwright/formatPlaywrightLocator.ts'
 export { generatePlaywrightScript } from './formats/playwright/generatePlaywrightScript.ts'

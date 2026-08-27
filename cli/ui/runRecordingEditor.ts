@@ -6,9 +6,11 @@ import { join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { chromium } from 'playwright'
 
-import { getRecordingSnapshotFileName, parseRecording, parseRecordingSnapshot, type Recording } from '@te/recorder-core'
+import { RECORDING_DOCUMENT_PATH, serializeRecording, type Recording, type RecordingArtifactStore } from '@te/recorder-core'
 import { createRecordingEditorHost, renderRecordingSnapshot, type RecordingEditorHostMessage, type RecordingEditorUiMessage } from '@te/recorder-ui/recording-editor/host'
 import { tryTo } from '@te/recorder-utils'
+
+import { createFileRecordingArtifactStore } from '../recording/createFileRecordingArtifactStore.ts'
 
 export { runRecordingEditor }
 export type { RunRecordingEditorArgs }
@@ -16,20 +18,16 @@ export type { RunRecordingEditorArgs }
 const assetDirectory = fileURLToPath(new URL('../../ui/dist/standalone/', import.meta.url))
 
 async function runRecordingEditor(args: RunRecordingEditorArgs): Promise<void> {
-  const recordingPath = join(args.directoryPath, 'recording.json')
-  const readRecording = async (): Promise<Recording> => parseRecording(JSON.parse(await readFile(recordingPath, 'utf8')))
-  await readRecording()
+  const store = createFileRecordingArtifactStore(args.directoryPath)
+  await store.load()
 
   const host = createRecordingEditorHost({
     isPending: () => false,
-    readRecording,
-    readSnapshot: async actionIndex => {
-      const contents = await readFile(join(args.directoryPath, 'snapshots', getRecordingSnapshotFileName(actionIndex)), 'utf8')
-      return renderRecordingSnapshot(parseRecordingSnapshot(JSON.parse(contents)))
-    },
+    readRecording: store.load,
+    readSnapshot: async actionIndex => renderRecordingSnapshot(await store.loadSnapshot(actionIndex)),
   })
   const routeToken = randomUUID()
-  const server = createServer((request, response) => void handleRequest({ args, host, recordingPath, request, response, routeToken }))
+  const server = createServer((request, response) => void handleRequest({ args, host, request, response, routeToken, store }))
 
   await tryTo(
     async () => {
@@ -55,7 +53,7 @@ async function handleRequest(context: RequestContext): Promise<void> {
       if (request.method === 'GET' && route === root) return send(response, 200, html(root), 'text/html; charset=utf-8')
       if (request.method === 'GET' && route === `${root}recordingEditor.js`) return send(response, 200, await readFile(join(assetDirectory, 'recordingEditor.js')), 'text/javascript; charset=utf-8')
       if (request.method === 'GET' && route === `${root}recordingEditor.css`) return send(response, 200, await readFile(join(assetDirectory, 'recordingEditor.css')), 'text/css; charset=utf-8')
-      if (request.method === 'GET' && route === `${root}recording.json`) return send(response, 200, await readFile(context.recordingPath), 'application/json; charset=utf-8')
+      if (request.method === 'GET' && route === `${root}${RECORDING_DOCUMENT_PATH}`) return send(response, 200, serializeRecording(await context.store.load()), 'application/json; charset=utf-8')
 
       if (request.method === 'POST' && route === `${root}api/messages`) {
         const message = parseMessage(JSON.parse(await readBody(request)))
@@ -65,7 +63,7 @@ async function handleRequest(context: RequestContext): Promise<void> {
         if (message.type === 'play') {
           return await tryTo(
             async () => {
-              await context.args.onPlay(parseRecording(JSON.parse(await readFile(context.recordingPath, 'utf8'))))
+              await context.args.onPlay(await context.store.load())
               sendJson(response, 200, {})
             },
             error => sendJson(response, 200, { error: getErrorMessage(error) }),
@@ -177,10 +175,10 @@ interface RunRecordingEditorArgs {
 interface RequestContext {
   args: RunRecordingEditorArgs
   host: { handleMessage: (message: RecordingEditorUiMessage) => Promise<RecordingEditorHostMessage[] | undefined> }
-  recordingPath: string
   request: IncomingMessage
   response: ServerResponse
   routeToken: string
+  store: RecordingArtifactStore
 }
 
 interface MessageResponse {

@@ -2,15 +2,14 @@ import { recordingEditorViewType } from '#vscode-extension/recording/createRecor
 import { randomUUID } from 'node:crypto'
 import { commands, Uri, window, workspace, type ExtensionContext } from 'vscode'
 
-import { getRecordingSnapshotFileName, parseRecording, parseRecordingSnapshot, serializeRecording, serializeRecordingSnapshot, type RecordedAriaSnapshot, type Recording } from '@te/recorder-core'
+import { parseRecording, RECORDING_DOCUMENT_PATH, type RecordedAriaSnapshot, type Recording } from '@te/recorder-core'
 import { createRecorder } from '@te/recorder-runtime'
 import { tryTo } from '@te/recorder-utils'
 
+import { createWorkspaceRecordingArtifactStore, getRecordingDocumentUri } from './createWorkspaceRecordingArtifactStore.ts'
+
 export { createRecorderController }
 export type { RecorderController }
-
-const encoder = new TextEncoder()
-const decoder = new TextDecoder()
 
 function createRecorderController(args: CreateRecorderControllerArgs): RecorderController {
   const recorder = createRecorder()
@@ -24,7 +23,7 @@ function createRecorderController(args: CreateRecorderControllerArgs): RecorderC
     }
 
     stagingDirectory = Uri.joinPath(getDraftRoot(), getDraftDirectoryName())
-    await workspace.fs.createDirectory(Uri.joinPath(stagingDirectory, 'snapshots'))
+    await workspace.fs.createDirectory(stagingDirectory)
 
     await tryTo(
       () => recorder.start({ onSnapshotCaptured: stageSnapshot, onStopRequested: args.onStopRequested, startUrl }),
@@ -49,7 +48,7 @@ function createRecorderController(args: CreateRecorderControllerArgs): RecorderC
   async function play(recording?: Recording): Promise<void> {
     if (!recording) {
       const editor = window.activeTextEditor
-      if (!editor || editor.document.uri.path.split('/').at(-1) !== 'recording.json') {
+      if (!editor || editor.document.uri.path.split('/').at(-1) !== RECORDING_DOCUMENT_PATH) {
         throw new Error('Open a recording.json file before starting playback.')
       }
 
@@ -74,7 +73,7 @@ function createRecorderController(args: CreateRecorderControllerArgs): RecorderC
       throw new Error('This recording preview is no longer available.')
     }
 
-    return promptToSave({ draftDirectory: Uri.joinPath(documentUri, '..'), recording: parseRecording(JSON.parse(decoder.decode(await workspace.fs.readFile(documentUri)))) })
+    return promptToSave({ draftDirectory: Uri.joinPath(documentUri, '..'), recording: await createWorkspaceRecordingArtifactStore(Uri.joinPath(documentUri, '..')).load() })
   }
 
   async function discardPending(documentUri: Uri): Promise<boolean> {
@@ -91,11 +90,7 @@ function createRecorderController(args: CreateRecorderControllerArgs): RecorderC
       throw new Error('Cannot stage a snapshot without an active recording.')
     }
 
-    const destination = Uri.joinPath(stagingDirectory, 'snapshots', getRecordingSnapshotFileName(args.actionIndex))
-    const temporary = destination.with({ path: `${destination.path}.pending` })
-
-    await workspace.fs.writeFile(temporary, encoder.encode(serializeRecordingSnapshot(args.ariaSnapshot)))
-    await workspace.fs.rename(temporary, destination, { overwrite: true })
+    await createWorkspaceRecordingArtifactStore(stagingDirectory).saveSnapshot({ actionIndex: args.actionIndex, snapshot: args.ariaSnapshot })
   }
 
   async function openPreview(recording: Recording): Promise<void> {
@@ -103,16 +98,14 @@ function createRecorderController(args: CreateRecorderControllerArgs): RecorderC
       throw new Error('Cannot preview a recording without staged files.')
     }
 
-    const destination = Uri.joinPath(stagingDirectory, 'recording.json')
-    const temporary = destination.with({ path: `${destination.path}.pending` })
-    await workspace.fs.writeFile(temporary, encoder.encode(serializeRecording(recording)))
-    await workspace.fs.rename(temporary, destination, { overwrite: true })
+    await createWorkspaceRecordingArtifactStore(stagingDirectory).saveRecording(recording)
+    const destination = getRecordingDocumentUri(stagingDirectory)
     stagingDirectory = undefined
     await commands.executeCommand('vscode.openWith', destination, recordingEditorViewType)
   }
 
   async function promptToSave(args: { draftDirectory: Uri; recording: Recording }): Promise<Uri | undefined> {
-    if (!isPending(Uri.joinPath(args.draftDirectory, 'recording.json'))) return undefined
+    if (!isPending(getRecordingDocumentUri(args.draftDirectory))) return undefined
 
     const destination = await window.showSaveDialog({ defaultUri: defaultRecordingUri(args.recording, args.draftDirectory), saveLabel: 'Save Recording' })
     if (!destination) return undefined
@@ -124,7 +117,7 @@ function createRecorderController(args: CreateRecorderControllerArgs): RecorderC
         await workspace.fs.delete(args.draftDirectory, { recursive: true, useTrash: false })
 
         await window.showInformationMessage(`Saved recording to ${recordingDirectory.fsPath}.`)
-        return Uri.joinPath(recordingDirectory, 'recording.json')
+        return getRecordingDocumentUri(recordingDirectory)
       },
       async error => ((await window.showErrorMessage(`Could not save recording: ${error.message}`, 'Choose Another Location', 'Cancel')) === 'Choose Another Location' ? promptToSave(args) : undefined),
     )
@@ -190,23 +183,10 @@ async function commitRecording(args: { destination: Uri; recording: Recording; s
 
   await tryTo(
     async () => {
-      const pendingSnapshotsDirectory = Uri.joinPath(pendingDirectory, 'snapshots')
-      await workspace.fs.createDirectory(pendingSnapshotsDirectory)
-      await workspace.fs.writeFile(Uri.joinPath(pendingDirectory, 'recording.json'), encoder.encode(serializeRecording(args.recording)))
-
-      const stagedSnapshotsDirectory = Uri.joinPath(args.stagingDirectory, 'snapshots')
-      for (const [actionIndex, action] of args.recording.actions.entries()) {
-        if (!('locatorCandidates' in action)) {
-          continue
-        }
-
-        const name = getRecordingSnapshotFileName(actionIndex)
-        const contents = await workspace.fs.readFile(Uri.joinPath(stagedSnapshotsDirectory, name))
-        parseRecordingSnapshot(JSON.parse(decoder.decode(contents)))
-        await workspace.fs.writeFile(Uri.joinPath(pendingSnapshotsDirectory, name), contents)
-      }
-
-      parseRecording(JSON.parse(decoder.decode(await workspace.fs.readFile(Uri.joinPath(pendingDirectory, 'recording.json')))))
+      await createWorkspaceRecordingArtifactStore(pendingDirectory).save({
+        recording: args.recording,
+        readSnapshot: createWorkspaceRecordingArtifactStore(args.stagingDirectory).loadSnapshot,
+      })
       await workspace.fs.rename(pendingDirectory, args.destination, { overwrite: false })
     },
     async error => {

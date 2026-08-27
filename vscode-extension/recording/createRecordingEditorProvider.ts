@@ -1,15 +1,15 @@
 import { randomUUID } from 'node:crypto'
 import { commands, env, Uri, ViewColumn, window, workspace, type Disposable, type ExtensionContext, type TextDocument, type WebviewPanel } from 'vscode'
 
-import { getRecordingSnapshotFileName, parseRecording, parseRecordingSnapshot, type Recording } from '@te/recorder-core'
+import { parseRecording, type Recording } from '@te/recorder-core'
 import { createRecordingEditorHost, renderRecordingSnapshot, type RecordingEditorHostMessage, type RecordingEditorUiMessage } from '@te/recorder-ui/recording-editor/host'
 import { matchBy, tryTo } from '@te/recorder-utils'
+
+import { createWorkspaceRecordingArtifactStore } from './createWorkspaceRecordingArtifactStore.ts'
 
 export { createRecordingEditorProvider, recordingEditorViewType }
 
 const recordingEditorViewType = 'thousandeyesRecorder.recording'
-const decoder = new TextDecoder()
-
 function createRecordingEditorProvider(args: CreateRecordingEditorProviderArgs): Disposable {
   return window.registerCustomEditorProvider(recordingEditorViewType, { resolveCustomTextEditor: (document, panel) => resolveRecordingEditor({ ...args, document, panel }) }, { supportsMultipleEditorsPerDocument: false, webviewOptions: { retainContextWhenHidden: true } })
 }
@@ -23,7 +23,7 @@ function resolveRecordingEditor(args: ResolveRecordingEditorArgs): void {
   const host = createRecordingEditorHost({
     isPending: () => args.isPending(args.document.uri),
     readRecording,
-    readSnapshot: async actionIndex => renderRecordingSnapshot(parseRecordingSnapshot(JSON.parse(decoder.decode(await workspace.fs.readFile(Uri.joinPath(args.document.uri, '..', 'snapshots', getRecordingSnapshotFileName(actionIndex))))))),
+    readSnapshot: async actionIndex => renderRecordingSnapshot(await createWorkspaceRecordingArtifactStore(Uri.joinPath(args.document.uri, '..')).loadSnapshot(actionIndex)),
   })
 
   args.panel.webview.options = { enableScripts: true, localResourceRoots: [webviewDirectory] }
