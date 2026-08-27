@@ -1,0 +1,5 @@
+export { createRecordingEditorHost } from './createRecordingEditorHost.ts'
+export type { RecordingEditorHost } from './createRecordingEditorHost.ts'
+export { renderRecordingSnapshot } from './renderRecordingSnapshot.ts'
+export type { RenderedRecordingSnapshot } from './renderRecordingSnapshot.ts'
+export type { RecordingEditorHostMessage, RecordingEditorUiMessage } from './types.ts'

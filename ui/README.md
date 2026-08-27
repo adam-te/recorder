@@ -6,7 +6,6 @@ Hosts communicate with the UI through typed messages and callbacks while retaini
 
 ## APIs
 
-- `@te/recorder-ui/recording-editor` mounts the transaction editor and exposes its typed protocol.
-- `@te/recorder-ui/recording-editor-host` coordinates recording selection and snapshots.
+- `@te/recorder-ui/recording-editor` mounts the browser editor and exposes its typed protocol.
+- `@te/recorder-ui/recording-editor/host` provides host coordination and snapshot presentation without browser dependencies.
 - `@te/recorder-ui/recording-overlay` mounts the browser recording controls and element highlight.
-- `@te/recorder-ui/render-recording-snapshot` prepares ARIA snapshots for presentation.

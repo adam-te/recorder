@@ -7,9 +7,7 @@ import { fileURLToPath } from 'node:url'
 import { chromium } from 'playwright'
 
 import { getRecordingSnapshotFileName, parseRecording, parseRecordingSnapshot, type Recording } from '@te/recorder-core'
-import type { RecordingEditorHostMessage, RecordingEditorUiMessage } from '@te/recorder-ui/recording-editor'
-import { createRecordingEditorHost } from '@te/recorder-ui/recording-editor-host'
-import { renderRecordingSnapshot } from '@te/recorder-ui/render-recording-snapshot'
+import { createRecordingEditorHost, renderRecordingSnapshot, type RecordingEditorHostMessage, type RecordingEditorUiMessage } from '@te/recorder-ui/recording-editor/host'
 import { tryTo } from '@te/recorder-utils'
 
 export { runRecordingEditor }

@@ -9,9 +9,8 @@
   "exports": {
     "./recording-overlay": "./recordingOverlay/index.ts",
     "./recording-editor": "./recordingEditor/index.ts",
-    "./recording-editor-host": "./recordingEditor/createRecordingEditorHost.ts",
-    "./recording-editor.css": "./recordingEditor/recordingEditor.css",
-    "./render-recording-snapshot": "./renderRecordingSnapshot.ts"
+    "./recording-editor/host": "./recordingEditor/host.ts",
+    "./recording-editor.css": "./recordingEditor/recordingEditor.css"
   },
   "scripts": {
     "build": "node scripts/build.mjs"
