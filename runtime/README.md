@@ -2,7 +2,7 @@
 
 Provides the reusable browser-backed recording and playback layer for recorder hosts.
 
-It manages Playwright browser sessions, captures transactions into core recording documents, and replays completed recordings. The CLI and VS Code extension remain responsible for persistence and host-specific user experience.
+It manages Playwright browser sessions, injects the recording controls and element highlight, captures transactions into core recording documents, and replays completed recordings. The CLI and VS Code extension remain responsible for persistence and host-specific user experience.
 
 ## APIs
 

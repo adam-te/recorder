@@ -4,9 +4,9 @@ Record, inspect, and replay ThousandEyes browser transaction tests from Visual S
 
 ```text
 VS Code extension ─┐
-                   ├──> UI (editor + recording overlay)
+                   ├──> UI (recording editor)
 CLI ───────────────┤
-                   └──> Runtime (record + play) ──> Playwright
+                   └──> Runtime (record + play + injected overlay) ──> Playwright
                               │
                               v
                    Core (recording + formats)
@@ -17,7 +17,7 @@ CLI ───────────────┤
              ARIA and utilities support shared packages
 ```
 
-The VS Code extension and CLI host the shared UI and runtime. The UI provides the host-neutral editor and browser overlay, the runtime coordinates recording and playback with Playwright, and core owns the recording, serialization, and format support.
+The VS Code extension and CLI host the shared UI and runtime. The UI provides the host-neutral editor, the runtime coordinates recording, playback, and the injected browser overlay with Playwright, and core owns the recording, serialization, and format support.
 
 ## Development
 

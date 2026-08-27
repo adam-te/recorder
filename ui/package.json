@@ -7,7 +7,6 @@
     "#ui/*": "./*"
   },
   "exports": {
-    "./recording-overlay": "./recordingOverlay/index.ts",
     "./recording-editor": "./recordingEditor/index.ts",
     "./recording-editor/host": "./recordingEditor/host.ts",
     "./recording-editor.css": "./recordingEditor/recordingEditor.css"
