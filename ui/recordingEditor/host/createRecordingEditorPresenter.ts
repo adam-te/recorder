@@ -1,8 +1,8 @@
-import type { Recording } from '@te/recorder-core'
+import type { RecordedAriaSnapshot, Recording } from '@te/recorder-core'
 import { tryTo } from '@te/recorder-utils'
 
 import type { RecordingEditorPresenterMessage } from '../protocol.ts'
-import type { RenderedRecordingSnapshot } from './renderRecordingSnapshot.ts'
+import { renderRecordingSnapshot } from './renderRecordingSnapshot.ts'
 
 export { createRecordingEditorPresenter }
 export type { RecordingEditorPresenter }
@@ -35,7 +35,7 @@ function createRecordingEditorPresenter(args: CreateRecordingEditorPresenterArgs
       async () => {
         const currentRecording = recording ?? (await args.readRecording())
         const action = currentRecording.actions[selectedActionIndex]
-        const snapshot = action && 'locatorCandidates' in action ? await args.readSnapshot(selectedActionIndex) : undefined
+        const snapshot = action && 'locatorCandidates' in action ? renderRecordingSnapshot(await args.readSnapshot(selectedActionIndex)) : undefined
 
         return { type: 'snapshot' as const, actionIndex: selectedActionIndex, ...snapshot }
       },
@@ -51,7 +51,7 @@ function getErrorMessage(error: unknown): string {
 interface CreateRecordingEditorPresenterArgs {
   isPending: () => boolean
   readRecording: () => Promise<Recording> | Recording
-  readSnapshot: (actionIndex: number) => Promise<RenderedRecordingSnapshot>
+  readSnapshot: (actionIndex: number) => Promise<RecordedAriaSnapshot>
 }
 
 interface RecordingEditorPresenter {

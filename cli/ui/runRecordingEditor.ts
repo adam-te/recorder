@@ -1,7 +1,7 @@
 import { chromium } from 'playwright'
 
 import { serializeRecording, type Recording } from '@te/recorder-core'
-import { createRecordingEditorPresenter, renderRecordingSnapshot } from '@te/recorder-ui/recording-editor/host'
+import { createRecordingEditorPresenter } from '@te/recorder-ui/recording-editor/host'
 import { matchBy, tryTo } from '@te/recorder-utils'
 
 import { createFileRecordingArtifactStore } from '../recording/createFileRecordingArtifactStore.ts'
@@ -17,7 +17,7 @@ async function runRecordingEditor(args: RunRecordingEditorArgs): Promise<void> {
   const presenter = createRecordingEditorPresenter({
     isPending: () => false,
     readRecording: store.load,
-    readSnapshot: async actionIndex => renderRecordingSnapshot(await store.loadSnapshot(actionIndex)),
+    readSnapshot: store.loadSnapshot,
   })
   const server = await createRecordingEditorServer({
     handleMessage: message =>

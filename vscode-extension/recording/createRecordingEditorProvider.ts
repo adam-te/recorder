@@ -2,7 +2,7 @@ import { randomUUID } from 'node:crypto'
 import { commands, env, Uri, ViewColumn, window, workspace, type Disposable, type ExtensionContext, type TextDocument, type WebviewPanel } from 'vscode'
 
 import { parseRecording, type Recording } from '@te/recorder-core'
-import { createRecordingEditorPresenter, renderRecordingSnapshot, type RecordingEditorPresenterEvent, type RecordingEditorPresenterMessage, type RecordingEditorUiMessage } from '@te/recorder-ui/recording-editor/host'
+import { createRecordingEditorPresenter, type RecordingEditorPresenterEvent, type RecordingEditorPresenterMessage, type RecordingEditorUiMessage } from '@te/recorder-ui/recording-editor/host'
 import { matchBy, tryTo } from '@te/recorder-utils'
 
 import type { RecordingDraftStore } from './createRecordingDraftStore.ts'
@@ -24,7 +24,7 @@ function resolveRecordingEditor(args: ResolveRecordingEditorArgs): void {
   const presenter = createRecordingEditorPresenter({
     isPending: () => args.drafts.isDraft(args.document.uri),
     readRecording,
-    readSnapshot: async actionIndex => renderRecordingSnapshot(await createWorkspaceRecordingArtifactStore(Uri.joinPath(args.document.uri, '..')).loadSnapshot(actionIndex)),
+    readSnapshot: createWorkspaceRecordingArtifactStore(Uri.joinPath(args.document.uri, '..')).loadSnapshot,
   })
 
   args.panel.webview.options = { enableScripts: true, localResourceRoots: [webviewDirectory] }
