@@ -1,28 +1,23 @@
 import type { Recording } from '@te/recorder-core'
 import { tryTo } from '@te/recorder-utils'
 
-import type { RecordingEditorHostMessage, RecordingEditorUiMessage, SnapshotState } from './types.ts'
+import type { RecordingEditorPresenterMessage, SnapshotState } from './types.ts'
 
-export { createRecordingEditorHost }
-export type { RecordingEditorHost }
+export { createRecordingEditorPresenter }
+export type { RecordingEditorPresenter }
 
-function createRecordingEditorHost(args: CreateRecordingEditorHostArgs): RecordingEditorHost {
+function createRecordingEditorPresenter(args: CreateRecordingEditorPresenterArgs): RecordingEditorPresenter {
   let selectedActionIndex = 0
 
-  return { handleMessage, publishRecording, publishSnapshot }
+  return { publishRecording, publishSnapshot, ready: publishRecording, selectAction }
 
-  async function handleMessage(message: RecordingEditorUiMessage): Promise<RecordingEditorHostMessage[] | undefined> {
-    if (message.type === 'ready') return publishRecording()
+  async function selectAction(actionIndex: number): Promise<RecordingEditorPresenterMessage[]> {
+    selectedActionIndex = actionIndex
 
-    if (message.type === 'selectAction') {
-      selectedActionIndex = message.actionIndex
-      return [await publishSnapshot()]
-    }
-
-    return undefined
+    return [await publishSnapshot()]
   }
 
-  async function publishRecording(): Promise<RecordingEditorHostMessage[]> {
+  async function publishRecording(): Promise<RecordingEditorPresenterMessage[]> {
     return await tryTo(
       async () => {
         const recording = await args.readRecording()
@@ -34,7 +29,7 @@ function createRecordingEditorHost(args: CreateRecordingEditorHostArgs): Recordi
     )
   }
 
-  async function publishSnapshot(recording?: Recording): Promise<RecordingEditorHostMessage> {
+  async function publishSnapshot(recording?: Recording): Promise<RecordingEditorPresenterMessage> {
     return await tryTo(
       async () => {
         const currentRecording = recording ?? (await args.readRecording())
@@ -52,14 +47,15 @@ function getErrorMessage(error: unknown): string {
   return error instanceof Error ? error.message : String(error)
 }
 
-interface CreateRecordingEditorHostArgs {
+interface CreateRecordingEditorPresenterArgs {
   isPending: () => boolean
   readRecording: () => Promise<Recording> | Recording
   readSnapshot: (actionIndex: number) => Promise<SnapshotState>
 }
 
-interface RecordingEditorHost {
-  handleMessage: (message: RecordingEditorUiMessage) => Promise<RecordingEditorHostMessage[] | undefined>
-  publishRecording: () => Promise<RecordingEditorHostMessage[]>
-  publishSnapshot: (recording?: Recording) => Promise<RecordingEditorHostMessage>
+interface RecordingEditorPresenter {
+  publishRecording: () => Promise<RecordingEditorPresenterMessage[]>
+  publishSnapshot: (recording?: Recording) => Promise<RecordingEditorPresenterMessage>
+  ready: () => Promise<RecordingEditorPresenterMessage[]>
+  selectAction: (actionIndex: number) => Promise<RecordingEditorPresenterMessage[]>
 }

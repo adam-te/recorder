@@ -6,13 +6,9 @@
   import EmptyState from './components/EmptyState.svelte'
   import { formatDate } from './presentation.ts'
 
-  import type { RecordingEditorHostMessage, RecordingEditorUiMessage, SnapshotState } from './types.ts'
+  import type { RecordingEditorCallbacks, RecordingEditorHostMessage, SnapshotState } from './types.ts'
 
-  interface Props {
-    sendMessage: (message: RecordingEditorUiMessage) => void
-  }
-
-  let { sendMessage }: Props = $props()
+  let { onCopy, onDiscard, onOpenJson, onPlay, onReady, onSave, onSelectAction }: RecordingEditorCallbacks = $props()
   let recording = $state<Recording>()
   let pending = $state(false)
   let selectedActionIndex = $state(0)
@@ -21,7 +17,7 @@
   let fatalError = $state<string>()
 
   export function ready(): void {
-    sendMessage({ type: 'ready' })
+    onReady()
   }
 
   export function receive(message: RecordingEditorHostMessage): void {
@@ -43,12 +39,12 @@
   function selectAction(actionIndex: number): void {
     selectedActionIndex = actionIndex
     snapshotState = { loading: true }
-    sendMessage({ type: 'selectAction', actionIndex })
+    onSelectAction(actionIndex)
   }
 
-  function decidePreview(type: 'discard' | 'save'): void {
+  function decidePreview(decide: () => void): void {
     decisionBusy = true
-    sendMessage({ type })
+    decide()
   }
 </script>
 
@@ -67,18 +63,18 @@
 
     <div class="header-actions">
       {#if pending}
-        <button class="button" type="button" disabled={decisionBusy} onclick={() => decidePreview('discard')}>Discard</button>
-        <button class="button primary" type="button" disabled={decisionBusy} onclick={() => decidePreview('save')}>
+        <button class="button" type="button" disabled={decisionBusy} onclick={() => decidePreview(onDiscard)}>Discard</button>
+        <button class="button primary" type="button" disabled={decisionBusy} onclick={() => decidePreview(onSave)}>
           {decisionBusy ? 'Working…' : 'Save Recording'}
         </button>
       {/if}
-      <button class:primary={!pending} class="button" type="button" onclick={() => sendMessage({ type: 'play' })}>Play</button>
-      <button class="button" type="button" onclick={() => sendMessage({ type: 'openJson' })}>Open JSON</button>
+      <button class:primary={!pending} class="button" type="button" onclick={onPlay}>Play</button>
+      <button class="button" type="button" onclick={onOpenJson}>Open JSON</button>
     </div>
   </header>
 
   <div class="editor-body">
     <ActionList {recording} {selectedActionIndex} onSelect={selectAction} />
-    <DetailsPanel {recording} {selectedActionIndex} {snapshotState} onCopy={text => sendMessage({ type: 'copy', text })} />
+    <DetailsPanel {recording} {selectedActionIndex} {snapshotState} {onCopy} />
   </div>
 {/if}

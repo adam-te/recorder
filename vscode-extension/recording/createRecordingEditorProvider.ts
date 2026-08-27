@@ -2,7 +2,7 @@ import { randomUUID } from 'node:crypto'
 import { commands, env, Uri, ViewColumn, window, workspace, type Disposable, type ExtensionContext, type TextDocument, type WebviewPanel } from 'vscode'
 
 import { parseRecording, type Recording } from '@te/recorder-core'
-import { createRecordingEditorHost, renderRecordingSnapshot, type RecordingEditorHostMessage, type RecordingEditorUiMessage } from '@te/recorder-ui/recording-editor/host'
+import { createRecordingEditorPresenter, renderRecordingSnapshot, type RecordingEditorPresenterEvent, type RecordingEditorPresenterMessage, type RecordingEditorUiMessage } from '@te/recorder-ui/recording-editor/presenter'
 import { matchBy, tryTo } from '@te/recorder-utils'
 
 import type { RecordingDraftStore } from './createRecordingDraftStore.ts'
@@ -21,7 +21,7 @@ function resolveRecordingEditor(args: ResolveRecordingEditorArgs): void {
   let decisionInProgress = false
   let disposed = false
 
-  const host = createRecordingEditorHost({
+  const presenter = createRecordingEditorPresenter({
     isPending: () => args.drafts.isDraft(args.document.uri),
     readRecording,
     readSnapshot: async actionIndex => renderRecordingSnapshot(await createWorkspaceRecordingArtifactStore(Uri.joinPath(args.document.uri, '..')).loadSnapshot(actionIndex)),
@@ -61,7 +61,7 @@ function resolveRecordingEditor(args: ResolveRecordingEditorArgs): void {
       play: async () => {
         await withErrorMessage(async () => args.onPlay(readRecording()))
       },
-      ready: handleHostMessage,
+      ready: handlePresenterEvent,
       save: async () => {
         if (decisionInProgress) return
         decisionInProgress = true
@@ -81,20 +81,19 @@ function resolveRecordingEditor(args: ResolveRecordingEditorArgs): void {
         }
         await handleClosedDraft()
       },
-      selectAction: handleHostMessage,
+      selectAction: handlePresenterEvent,
     })
   }
 
-  async function handleHostMessage(message: Extract<RecordingEditorUiMessage, { type: 'ready' | 'selectAction' }>): Promise<void> {
-    const hostMessages = await host.handleMessage(message)
-    if (hostMessages) await postMessages(hostMessages)
+  async function handlePresenterEvent(message: RecordingEditorPresenterEvent): Promise<void> {
+    await postMessages(message.type === 'ready' ? await presenter.ready() : await presenter.selectAction(message.actionIndex))
   }
 
   async function publishRecording(): Promise<void> {
-    await postMessages(await host.publishRecording())
+    await postMessages(await presenter.publishRecording())
   }
 
-  async function postMessages(messages: RecordingEditorHostMessage[]): Promise<void> {
+  async function postMessages(messages: RecordingEditorPresenterMessage[]): Promise<void> {
     for (const message of messages) await args.panel.webview.postMessage(message)
   }
 

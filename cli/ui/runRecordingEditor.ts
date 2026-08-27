@@ -7,7 +7,7 @@ import { fileURLToPath } from 'node:url'
 import { chromium } from 'playwright'
 
 import { RECORDING_DOCUMENT_PATH, serializeRecording, type Recording, type RecordingArtifactStore } from '@te/recorder-core'
-import { createRecordingEditorHost, renderRecordingSnapshot, type RecordingEditorHostMessage, type RecordingEditorUiMessage } from '@te/recorder-ui/recording-editor/host'
+import { createRecordingEditorPresenter, renderRecordingSnapshot, type RecordingEditorPresenter, type RecordingEditorPresenterMessage, type RecordingEditorUiMessage } from '@te/recorder-ui/recording-editor/presenter'
 import { tryTo } from '@te/recorder-utils'
 
 import { createFileRecordingArtifactStore } from '../recording/createFileRecordingArtifactStore.ts'
@@ -21,13 +21,13 @@ async function runRecordingEditor(args: RunRecordingEditorArgs): Promise<void> {
   const store = createFileRecordingArtifactStore(args.directoryPath)
   await store.load()
 
-  const host = createRecordingEditorHost({
+  const presenter = createRecordingEditorPresenter({
     isPending: () => false,
     readRecording: store.load,
     readSnapshot: async actionIndex => renderRecordingSnapshot(await store.loadSnapshot(actionIndex)),
   })
   const routeToken = randomUUID()
-  const server = createServer((request, response) => void handleRequest({ args, host, request, response, routeToken, store }))
+  const server = createServer((request, response) => void handleRequest({ args, presenter, request, response, routeToken, store }))
 
   await tryTo(
     async () => {
@@ -57,8 +57,8 @@ async function handleRequest(context: RequestContext): Promise<void> {
 
       if (request.method === 'POST' && route === `${root}api/messages`) {
         const message = parseMessage(JSON.parse(await readBody(request)))
-        const messages = await context.host.handleMessage(message)
-        if (messages) return sendJson(response, 200, { messages })
+        if (message.type === 'ready') return sendJson(response, 200, { messages: await context.presenter.ready() })
+        if (message.type === 'selectAction') return sendJson(response, 200, { messages: await context.presenter.selectAction(message.actionIndex) })
 
         if (message.type === 'play') {
           return await tryTo(
@@ -174,7 +174,7 @@ interface RunRecordingEditorArgs {
 
 interface RequestContext {
   args: RunRecordingEditorArgs
-  host: { handleMessage: (message: RecordingEditorUiMessage) => Promise<RecordingEditorHostMessage[] | undefined> }
+  presenter: RecordingEditorPresenter
   request: IncomingMessage
   response: ServerResponse
   routeToken: string
@@ -183,5 +183,5 @@ interface RequestContext {
 
 interface MessageResponse {
   error?: string
-  messages?: RecordingEditorHostMessage[]
+  messages?: RecordingEditorPresenterMessage[]
 }

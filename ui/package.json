@@ -8,7 +8,7 @@
   },
   "exports": {
     "./recording-editor": "./recordingEditor/index.ts",
-    "./recording-editor/host": "./recordingEditor/host.ts",
+    "./recording-editor/presenter": "./recordingEditor/presenter.ts",
     "./recording-editor.css": "./recordingEditor/recordingEditor.css"
   },
   "dependencies": {
