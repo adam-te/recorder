@@ -6,7 +6,8 @@
   import EmptyState from './components/EmptyState.svelte'
   import { formatDate } from './presentation.ts'
 
-  import type { RecordingEditorCallbacks, RecordingEditorHostMessage, SnapshotState } from './types.ts'
+  import type { RecordingEditorHostMessage } from '../protocol.ts'
+  import type { RecordingEditorCallbacks, SnapshotState } from './types.ts'
 
   let { onCopy, onDiscard, onOpenJson, onPlay, onReady, onSave, onSelectAction }: RecordingEditorCallbacks = $props()
   let recording = $state<Recording>()

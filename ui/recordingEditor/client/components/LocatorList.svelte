@@ -1,4 +1,5 @@
 <script lang="ts">
+
   import type { RecordedLocator } from '@te/recorder-core'
   import { formatPlaywrightLocator } from '@te/recorder-core/playwright/locator'
 

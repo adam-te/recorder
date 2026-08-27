@@ -8,8 +8,8 @@
   },
   "exports": {
     "./recording-editor": "./recordingEditor/index.ts",
-    "./recording-editor/presenter": "./recordingEditor/presenter.ts",
-    "./recording-editor.css": "./recordingEditor/recordingEditor.css"
+    "./recording-editor/host": "./recordingEditor/host/index.ts",
+    "./recording-editor.css": "./recordingEditor/client/recordingEditor.css"
   },
   "dependencies": {
     "@te/aria": "*",

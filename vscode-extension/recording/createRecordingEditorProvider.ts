@@ -2,7 +2,7 @@ import { randomUUID } from 'node:crypto'
 import { commands, env, Uri, ViewColumn, window, workspace, type Disposable, type ExtensionContext, type TextDocument, type WebviewPanel } from 'vscode'
 
 import { parseRecording, type Recording } from '@te/recorder-core'
-import { createRecordingEditorPresenter, renderRecordingSnapshot, type RecordingEditorPresenterEvent, type RecordingEditorPresenterMessage, type RecordingEditorUiMessage } from '@te/recorder-ui/recording-editor/presenter'
+import { createRecordingEditorPresenter, renderRecordingSnapshot, type RecordingEditorPresenterEvent, type RecordingEditorPresenterMessage, type RecordingEditorUiMessage } from '@te/recorder-ui/recording-editor/host'
 import { matchBy, tryTo } from '@te/recorder-utils'
 
 import type { RecordingDraftStore } from './createRecordingDraftStore.ts'

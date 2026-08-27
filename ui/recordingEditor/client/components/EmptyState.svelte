@@ -1,4 +1,5 @@
 <script lang="ts">
+
   interface Props {
     detail?: string
     title: string

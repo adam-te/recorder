@@ -1,4 +1,5 @@
 <script lang="ts">
+
   import type { Recording } from '@te/recorder-core'
 
   import { actionProperties, summarizeAction } from '../presentation.ts'

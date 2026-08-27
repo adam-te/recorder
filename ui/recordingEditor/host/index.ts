@@ -2,4 +2,4 @@ export { createRecordingEditorPresenter } from './createRecordingEditorPresenter
 export type { RecordingEditorPresenter } from './createRecordingEditorPresenter.ts'
 export { renderRecordingSnapshot } from './renderRecordingSnapshot.ts'
 export type { RenderedRecordingSnapshot } from './renderRecordingSnapshot.ts'
-export type { RecordingEditorPresenterEvent, RecordingEditorPresenterMessage, RecordingEditorUiMessage } from './types.ts'
+export type { RecordingEditorPresenterEvent, RecordingEditorPresenterMessage, RecordingEditorUiMessage } from '../protocol.ts'

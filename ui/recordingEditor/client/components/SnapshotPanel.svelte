@@ -1,4 +1,5 @@
 <script lang="ts">
+
   import EmptyState from './EmptyState.svelte'
 
   import type { SnapshotState } from '../types.ts'

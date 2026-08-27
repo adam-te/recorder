@@ -1,7 +1,8 @@
 import type { Recording } from '@te/recorder-core'
 import { tryTo } from '@te/recorder-utils'
 
-import type { RecordingEditorPresenterMessage, SnapshotState } from './types.ts'
+import type { RecordingEditorPresenterMessage } from '../protocol.ts'
+import type { RenderedRecordingSnapshot } from './renderRecordingSnapshot.ts'
 
 export { createRecordingEditorPresenter }
 export type { RecordingEditorPresenter }
@@ -50,7 +51,7 @@ function getErrorMessage(error: unknown): string {
 interface CreateRecordingEditorPresenterArgs {
   isPending: () => boolean
   readRecording: () => Promise<Recording> | Recording
-  readSnapshot: (actionIndex: number) => Promise<SnapshotState>
+  readSnapshot: (actionIndex: number) => Promise<RenderedRecordingSnapshot>
 }
 
 interface RecordingEditorPresenter {

@@ -7,7 +7,7 @@ import { fileURLToPath } from 'node:url'
 import { chromium } from 'playwright'
 
 import { RECORDING_DOCUMENT_PATH, serializeRecording, type Recording, type RecordingArtifactStore } from '@te/recorder-core'
-import { createRecordingEditorPresenter, renderRecordingSnapshot, type RecordingEditorPresenter, type RecordingEditorPresenterMessage, type RecordingEditorUiMessage } from '@te/recorder-ui/recording-editor/presenter'
+import { createRecordingEditorPresenter, renderRecordingSnapshot, type RecordingEditorPresenter, type RecordingEditorPresenterMessage, type RecordingEditorUiMessage } from '@te/recorder-ui/recording-editor/host'
 import { tryTo } from '@te/recorder-utils'
 
 import { createFileRecordingArtifactStore } from '../recording/createFileRecordingArtifactStore.ts'
