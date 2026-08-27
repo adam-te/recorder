@@ -7,8 +7,7 @@
     "#runtime/*": "./*"
   },
   "exports": {
-    ".": "./index.ts",
-    "./capture": "./capture.ts"
+    ".": "./index.ts"
   },
   "scripts": {
     "generate:injected-runtime": "node scripts/generateInjectedRuntime.mjs"

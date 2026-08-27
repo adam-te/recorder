@@ -1,7 +1,6 @@
+import { createRecordingCapture, type RecordingCapture } from '#runtime/recording/capture/createRecordingCapture.ts'
+import type { CapturedInteractionEvent } from '#runtime/recording/capture/types.ts'
 import { describe, expect, test } from 'vitest'
-
-import { createRecordingSession } from '@te/recorder-core'
-import { installRecordingCapture, type CapturedInteractionEvent, type RecordingCapture } from '@te/recorder-runtime/capture'
 
 import { useBrowserTestHarness } from './support/browserHarness.ts'
 
@@ -35,8 +34,9 @@ describe('interaction capture', () => {
 
   test('updates the locator tooltip for the highlighted element', async () => {
     const page = await browser.page({ html: '<button id="target">Click</button>' })
-    const recordingSession = createRecordingSession({ startUrl: 'https://recorder.test/content', title: 'Smoke test' })
-    const capture = await installRecordingCapture({ context: browser.context, onInteraction: () => undefined, page, recordingSession, startUrl: 'https://recorder.test/content' })
+    const capture = await createRecordingCapture({ context: browser.context, page, startUrl: 'https://recorder.test/content' })
+
+    await capture.start()
 
     await page.locator('#target').hover()
     const cdpSession = await browser.context.newCDPSession(page)
@@ -54,8 +54,9 @@ describe('interaction capture', () => {
 
   test('does not change page markup or click targeting while highlighting', async () => {
     const page = await browser.page({ html: '<button id="target">Click</button><script>window.clicks = 0; document.querySelector("#target").addEventListener("click", () => window.clicks += 1)</script>' })
-    const recordingSession = createRecordingSession({ startUrl: 'https://recorder.test/content', title: 'Smoke test' })
-    const capture = await installRecordingCapture({ context: browser.context, onInteraction: () => undefined, page, recordingSession, startUrl: 'https://recorder.test/content' })
+    const capture = await createRecordingCapture({ context: browser.context, page, startUrl: 'https://recorder.test/content' })
+
+    await capture.start()
     const initialMarkup = await page.locator('html').evaluate(element => element.outerHTML)
 
     await page.locator('#target').hover()
@@ -88,11 +89,10 @@ describe('interaction capture', () => {
 
   test('stops from the recording panel without capturing its click', async () => {
     const page = await browser.page({ html: '<button>Page button</button>' })
-    const recordingSession = createRecordingSession({ startUrl: 'https://recorder.test/content', title: 'Smoke test' })
     const captureReady = Promise.withResolvers<RecordingCapture>()
     const stopped = Promise.withResolvers<void>()
     const interactions: CapturedInteractionEvent[] = []
-    const capture = await installRecordingCapture({
+    const capture = await createRecordingCapture({
       context: browser.context,
       onInteraction: interaction => {
         interactions.push(interaction.event)
@@ -102,10 +102,10 @@ describe('interaction capture', () => {
         stopped.resolve()
       },
       page,
-      recordingSession,
       startUrl: 'https://recorder.test/content',
     })
     captureReady.resolve(capture)
+    await capture.start()
     const panel = await page.locator('[data-thousandeyes-recorder-ui]').boundingBox()
 
     if (!panel) {
@@ -122,9 +122,9 @@ describe('interaction capture', () => {
 async function captureNestedFrameOverlay(browser: ReturnType<typeof useBrowserTestHarness>): Promise<DomSnapshot> {
   const documents = { 'https://frame.test/content': '<button id="target">Frame action</button>' }
   const page = await browser.page({ documents, html: '<iframe src="https://frame.test/content"></iframe>' })
-  const recordingSession = createRecordingSession({ startUrl: 'https://recorder.test/content', title: 'Smoke test' })
-  const capture = await installRecordingCapture({ context: browser.context, onInteraction: () => undefined, onStopRequested: () => undefined, page, recordingSession, startUrl: 'https://recorder.test/content' })
+  const capture = await createRecordingCapture({ context: browser.context, onStopRequested: () => undefined, page, startUrl: 'https://recorder.test/content' })
 
+  await capture.start()
   await page.frameLocator('iframe').locator('#target').hover()
   const cdpSession = await browser.context.newCDPSession(page)
   const overlaySnapshot = await cdpSession.send('DOMSnapshot.captureSnapshot', { computedStyles: [], includeDOMRects: false, includePaintOrder: false })

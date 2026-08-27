@@ -1,8 +1,5 @@
 import { describe, expect, test } from 'vitest'
 
-import { createRecordingSession } from '@te/recorder-core'
-import { appendCapturedInteraction, installRecordingCapture } from '@te/recorder-runtime/capture'
-
 import { useBrowserTestHarness } from './support/browserHarness.ts'
 import { getOnlyAction } from './support/recordingAssertions.ts'
 
@@ -11,24 +8,7 @@ describe('navigation recording', () => {
 
   test('records click-triggered navigation without inspecting the departing document', async () => {
     const documents = { 'https://recorder.test/after': '<p>After</p>', 'https://recorder.test/content': '<a id="target" href="/after">Continue</a>' }
-    const recordingSession = createRecordingSession({ startUrl: 'https://recorder.test/content', title: 'Smoke test' })
-    const recorded = Promise.withResolvers<void>()
-    const page = await browser.page({ documents })
-
-    await installRecordingCapture({
-      context: browser.context,
-      onInteraction: interaction => {
-        const recording = appendCapturedInteraction({ interaction, recordingSession })
-        recording.then(() => recorded.resolve(), recorded.reject)
-      },
-      page,
-      recordingSession,
-      startUrl: 'https://recorder.test/content',
-    })
-    await page.locator('#target').click()
-    await recorded.promise
-
-    const click = getOnlyAction(recordingSession.snapshot(), 'click')
+    const click = getOnlyAction(await browser.record({ documents, interact: page => page.locator('#target').click() }), 'click')
 
     expect(click.locatorCandidates[0]).toStrictEqual({ kind: 'aria', steps: [{ method: 'role', name: 'Continue', role: 'link' }] })
     expect(click.locatorCandidates).toContainEqual({ kind: 'css', value: '#target' })

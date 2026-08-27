@@ -1,11 +1,12 @@
+import { createRecordingCapture } from '#runtime/recording/capture/createRecordingCapture.ts'
+import type { CapturedInteractionEvent } from '#runtime/recording/capture/types.ts'
 import type { AriaSnapshot } from '@te/aria'
 import type { Browser, BrowserContext, Page } from 'playwright'
 import { chromium } from 'playwright'
 import { afterAll, afterEach, beforeAll, beforeEach } from 'vitest'
 
-import { createRecordingSession, type RecordedAriaSnapshot, type Recording } from '@te/recorder-core'
+import type { RecordedAriaSnapshot, Recording } from '@te/recorder-core'
 import { createRecorder, playRecording, type Recorder } from '@te/recorder-runtime'
-import { installRecordingCapture, type CapturedInteractionEvent } from '@te/recorder-runtime/capture'
 import { tryTo } from '@te/recorder-utils'
 
 export { useBrowserTestHarness }
@@ -15,18 +16,16 @@ const defaultStartUrl = 'https://recorder.test/content'
 async function captureInteraction(args: CaptureInteractionArgs): Promise<InteractionSummary> {
   const captured = Promise.withResolvers<InteractionSummary>()
   const page = await createPage({ context: args.fixture.context, documents: args.documents, headers: args.headers, html: args.html })
-  const recordingSession = createRecordingSession({ startUrl: defaultStartUrl, title: 'Smoke test' })
-
-  const recordingCapture = await installRecordingCapture({
+  const recordingCapture = await createRecordingCapture({
     context: args.fixture.context,
     onInteraction: async interaction => {
       if (interaction.event.kind !== args.expectedKind) return
       captured.resolve({ ariaSnapshot: interaction.ariaSnapshot, frameHostname: new URL(interaction.frame.url()).hostname, kind: interaction.event.kind, selectors: interaction.selectors.filter(selector => selector.kind === 'css').map(selector => selector.value), targetRef: interaction.targetRef })
     },
     page,
-    recordingSession,
     startUrl: defaultStartUrl,
   })
+  await recordingCapture.start()
   return await tryTo(
     async () => {
       await args.interact(page)

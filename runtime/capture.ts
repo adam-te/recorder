@@ -1,6 +1,0 @@
-export { appendCapturedInteraction } from './recording/actions/appendCapturedInteraction.ts'
-export { installRecordingCapture } from './recording/capture/installRecordingCapture.ts'
-export type { InstallRecordingCaptureArgs, RecordingCapture } from './recording/capture/installRecordingCapture.ts'
-export type { CapturedInteraction, CapturedInteractionEvent, CapturedSelector } from './recording/capture/types.ts'
-export { captureDomSnapshot } from './snapshots/captureDomSnapshot.ts'
-export type { CapturedDomSnapshot } from './snapshots/captureDomSnapshot.ts'

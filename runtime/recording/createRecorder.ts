@@ -1,9 +1,8 @@
 import { createBrowserSession, type BrowserSession } from '#runtime/browser/createBrowserSession.ts'
 import { playRecording } from '#runtime/playback/playRecording.ts'
-import { appendCapturedInteraction } from '#runtime/recording/actions/appendCapturedInteraction.ts'
-import { installRecordingInstruments } from '#runtime/recording/capture/installRecordingInstruments.ts'
+import { createRecordingCapture, type RecordingCapture } from '#runtime/recording/capture/createRecordingCapture.ts'
 
-import { createRecordingSession, type RecordedAriaSnapshot, type Recording, type RecordingSession } from '@te/recorder-core'
+import type { RecordedAriaSnapshot, Recording } from '@te/recorder-core'
 import { tryTo } from '@te/recorder-utils'
 
 export { createRecorder }
@@ -20,54 +19,36 @@ function createRecorder(args: CreateRecorderArgs = {}): Recorder {
       throw new Error('A recorder browser session is already active.')
     }
 
-    const startUrl = new URL(args.startUrl)
-    const currentRecordingSession = createRecordingSession({ startUrl: args.startUrl, title: startUrl.hostname || args.startUrl })
-    let pendingRecordingChange = Promise.resolve()
     const currentBrowserSession = await createSession()
-    const currentRecording: ActiveRecording = { browserSession: currentBrowserSession, recordingSession: currentRecordingSession }
+    const currentRecording: ActiveRecording = { browserSession: currentBrowserSession }
 
     activeRecording = currentRecording
     await tryTo(
       async () => {
-        const instruments = await installRecordingInstruments({
+        currentRecording.capture = await createRecordingCapture({
           context: currentBrowserSession.context,
-          onInteraction: async interaction => {
-            const appendedInteraction = await appendCapturedInteraction({ interaction, recordingSession: currentRecordingSession })
-
-            if (appendedInteraction) {
-              await args.onSnapshotCaptured?.({ actionIndex: appendedInteraction.actionIndex, ariaSnapshot: appendedInteraction.ariaSnapshot })
-              await notifyRecordingChanged(appendedInteraction.recording)
-            }
-          },
-          onNavigation: navigation => notifyRecordingChanged(currentRecordingSession.append({ kind: 'goto', ...navigation })),
+          onRecordingChanged: args.onRecordingChanged,
+          onSnapshotCaptured: args.onSnapshotCaptured,
           onStopRequested: args.onStopRequested ?? stopFromOverlay,
           page: currentBrowserSession.page,
+          startUrl: args.startUrl,
         })
-
-        currentRecording.capture = instruments
-        await currentBrowserSession.page.goto(args.startUrl)
-        await instruments.flush()
+        await currentRecording.capture.start()
       },
       async error => {
         await closeRecording()
         throw error
       },
     )
-
-    function notifyRecordingChanged(recording: Recording): Promise<void> {
-      pendingRecordingChange = pendingRecordingChange.then(() => args.onRecordingChanged?.(recording))
-
-      return pendingRecordingChange
-    }
   }
 
   async function stop(): Promise<Recording | undefined> {
-    const currentRecordingSession = activeRecording?.recordingSession
+    const currentCapture = activeRecording?.capture
 
     return await tryTo(
       async () => {
         await disposeCaptures()
-        return currentRecordingSession?.snapshot()
+        return currentCapture?.snapshot()
       },
       undefined,
       closeBrowserSession,
@@ -112,12 +93,7 @@ function createRecorder(args: CreateRecorderArgs = {}): Recorder {
 
 interface ActiveRecording {
   browserSession: BrowserSession
-  capture?: ActiveRecordingCapture
-  recordingSession: RecordingSession
-}
-
-interface ActiveRecordingCapture {
-  dispose: () => Promise<void>
+  capture?: RecordingCapture
 }
 
 interface PlayArgs {

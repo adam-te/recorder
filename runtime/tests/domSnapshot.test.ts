@@ -1,7 +1,5 @@
+import { captureDomSnapshot, type CapturedDomSnapshot } from '#runtime/snapshots/captureDomSnapshot.ts'
 import { describe, expect, test } from 'vitest'
-
-import type { CapturedDomSnapshot } from '@te/recorder-runtime/capture'
-import { captureDomSnapshot } from '@te/recorder-runtime/capture'
 
 import { useBrowserTestHarness } from './support/browserHarness.ts'
 

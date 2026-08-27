@@ -6,4 +6,4 @@ It manages Playwright browser sessions, captures transactions into core recordin
 
 ## APIs
 
-The package root exposes the standard recorder, playback, and browser-session APIs. Low-level integrations can use `@te/recorder-runtime/capture`.
+The package root exposes the recorder, playback, and browser-session APIs.
