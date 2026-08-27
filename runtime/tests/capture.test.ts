@@ -33,11 +33,10 @@ describe('interaction capture', () => {
     })
   })
 
-  test('does not change page markup or click targeting while highlighting', async () => {
-    const page = await browser.page({ html: '<button id="target">Click</button><script>window.clicks = 0; document.querySelector("#target").addEventListener("click", () => window.clicks += 1)</script>' })
+  test('updates the locator tooltip for the highlighted element', async () => {
+    const page = await browser.page({ html: '<button id="target">Click</button>' })
     const recordingSession = createRecordingSession({ startUrl: 'https://recorder.test/content', title: 'Smoke test' })
     const capture = await installRecordingCapture({ context: browser.context, onInteraction: () => undefined, page, recordingSession, startUrl: 'https://recorder.test/content' })
-    const initialMarkup = await page.locator('html').evaluate(element => element.outerHTML)
 
     await page.locator('#target').hover()
     const cdpSession = await browser.context.newCDPSession(page)
@@ -50,30 +49,41 @@ describe('interaction capture', () => {
 
     expect(fallbackSnapshot.strings).toContain('locator("body")')
     await cdpSession.detach()
-    await page.locator('#target').click()
-
-    expect(await page.locator('html').evaluate(element => element.outerHTML)).toBe(initialMarkup)
-    expect(await page.evaluate(() => (window as unknown as { clicks: number }).clicks)).toBe(1)
     await capture.dispose()
   })
 
-  test('highlights nested-frame elements but shows controls only in the top frame', async () => {
-    const documents = { 'https://frame.test/content': '<button id="target">Frame action</button>' }
-    const page = await browser.page({ documents, html: '<iframe src="https://frame.test/content"></iframe>' })
+  test('does not change page markup or click targeting while highlighting', async () => {
+    const page = await browser.page({ html: '<button id="target">Click</button><script>window.clicks = 0; document.querySelector("#target").addEventListener("click", () => window.clicks += 1)</script>' })
     const recordingSession = createRecordingSession({ startUrl: 'https://recorder.test/content', title: 'Smoke test' })
-    const capture = await installRecordingCapture({ context: browser.context, onInteraction: () => undefined, onStopRequested: () => undefined, page, recordingSession, startUrl: 'https://recorder.test/content' })
+    const capture = await installRecordingCapture({ context: browser.context, onInteraction: () => undefined, page, recordingSession, startUrl: 'https://recorder.test/content' })
+    const initialMarkup = await page.locator('html').evaluate(element => element.outerHTML)
 
-    await page.frameLocator('iframe').locator('#target').hover()
-    const cdpSession = await browser.context.newCDPSession(page)
-    const overlaySnapshot = await cdpSession.send('DOMSnapshot.captureSnapshot', { computedStyles: [], includeDOMRects: false, includePaintOrder: false })
+    await page.locator('#target').hover()
+    await page.locator('#target').click()
+
+    expect({ clicks: await page.evaluate(() => (window as unknown as { clicks: number }).clicks), markup: await page.locator('html').evaluate(element => element.outerHTML) }).toStrictEqual({
+      clicks: 1,
+      markup: initialMarkup,
+    })
+    await capture.dispose()
+  })
+
+  test('highlights nested-frame elements in their document', async () => {
+    const overlaySnapshot = await captureNestedFrameOverlay(browser)
+
+    expect(findDocumentsContainingText(overlaySnapshot, 'getByRole("button", { name: "Frame action" })')).toHaveLength(1)
+  })
+
+  test('shows recording controls only in the top frame', async () => {
+    const overlaySnapshot = await captureNestedFrameOverlay(browser)
     const stopDocuments = findDocumentsContainingText(overlaySnapshot, 'Stop recording')
     const frameTooltipDocuments = findDocumentsContainingText(overlaySnapshot, 'getByRole("button", { name: "Frame action" })')
 
-    expect(stopDocuments).toHaveLength(1)
-    expect(frameTooltipDocuments).toHaveLength(1)
-    expect(frameTooltipDocuments[0]).not.toBe(stopDocuments[0])
-    await cdpSession.detach()
-    await capture.dispose()
+    expect({ controls: stopDocuments.length, shareDocument: frameTooltipDocuments[0] === stopDocuments[0], tooltips: frameTooltipDocuments.length }).toStrictEqual({
+      controls: 1,
+      shareDocument: false,
+      tooltips: 1,
+    })
   })
 
   test('stops from the recording panel without capturing its click', async () => {
@@ -108,6 +118,21 @@ describe('interaction capture', () => {
     expect(interactions).toStrictEqual([])
   })
 })
+
+async function captureNestedFrameOverlay(browser: ReturnType<typeof useBrowserTestHarness>): Promise<DomSnapshot> {
+  const documents = { 'https://frame.test/content': '<button id="target">Frame action</button>' }
+  const page = await browser.page({ documents, html: '<iframe src="https://frame.test/content"></iframe>' })
+  const recordingSession = createRecordingSession({ startUrl: 'https://recorder.test/content', title: 'Smoke test' })
+  const capture = await installRecordingCapture({ context: browser.context, onInteraction: () => undefined, onStopRequested: () => undefined, page, recordingSession, startUrl: 'https://recorder.test/content' })
+
+  await page.frameLocator('iframe').locator('#target').hover()
+  const cdpSession = await browser.context.newCDPSession(page)
+  const overlaySnapshot = await cdpSession.send('DOMSnapshot.captureSnapshot', { computedStyles: [], includeDOMRects: false, includePaintOrder: false })
+  await cdpSession.detach()
+  await capture.dispose()
+
+  return overlaySnapshot
+}
 
 function findDocumentsContainingText(snapshot: DomSnapshot, text: string): number[] {
   const stringIndex = snapshot.strings.indexOf(text)

@@ -1,7 +1,7 @@
 import { renderAriaSnapshot } from '@te/aria'
 import { describe, expect, test } from 'vitest'
 
-import type { RecordedAriaSnapshot, RecordedLocator } from '@te/recorder-core'
+import { createRecording, type RecordedAriaSnapshot, type RecordedLocator } from '@te/recorder-core'
 
 import { useBrowserTestHarness } from './support/browserHarness.ts'
 import { getOnlyAction } from './support/recordingAssertions.ts'
@@ -9,7 +9,7 @@ import { getOnlyAction } from './support/recordingAssertions.ts'
 describe('recording playback', () => {
   const browser = useBrowserTestHarness()
 
-  test('records and plays back clicks', async () => {
+  test('records clicks', async () => {
     const html = `<button data-testid="target" onclick="document.body.dataset.clicked = 'true'">Click</button>`
     const recording = await browser.record({
       html,
@@ -31,19 +31,30 @@ describe('recording playback', () => {
       ],
       startUrl: 'https://recorder.test/content',
     })
+  })
+
+  test('plays clicks from recorded navigation instead of start URL metadata', async () => {
+    const html = `<button data-testid="target" onclick="document.body.dataset.clicked = 'true'">Click</button>`
+    const recording = await browser.record({ html, interact: page => page.getByTestId('target').click() })
     const playbackPage = await browser.play({ recording: { ...recording, startUrl: 'https://metadata.test/not-used' }, html })
 
     expect(await playbackPage.locator('body').getAttribute('data-clicked')).toBe('true')
   })
 
-  test('records and plays back key presses', async () => {
+  test('records key presses', async () => {
     const html = `<input id="search" onkeydown="document.body.dataset.key = event.key">`
-    const { playbackPage, recording } = await browser.recordAndPlay({ html, interact: page => page.locator('#search').press('Enter') })
+    const recording = await browser.record({ html, interact: page => page.locator('#search').press('Enter') })
 
     expect(recording.actions).toMatchObject([
       { kind: 'goto', url: 'https://recorder.test/content' },
       { key: 'Enter', kind: 'press', pageUrl: 'https://recorder.test/content' },
     ])
+  })
+
+  test('plays back key presses', async () => {
+    const html = `<input id="search" onkeydown="document.body.dataset.key = event.key">`
+    const { playbackPage } = await browser.recordAndPlay({ html, interact: page => page.locator('#search').press('Enter') })
+
     expect(await playbackPage.locator('body').getAttribute('data-key')).toBe('Enter')
   })
 
@@ -66,21 +77,15 @@ describe('recording playback', () => {
     ])
   })
 
-  test('records and plays back interactions inside frames', async () => {
-    const documents = {
-      'https://frame.test/content': `<button id="target" onclick="document.body.dataset.clicked = 'true'">Click</button>`,
-      'https://recorder.test/content': '<iframe id="action-frame" src="https://frame.test/content"></iframe>',
-    }
-    let recordedSnapshot: { actionIndex: number; ariaSnapshot: RecordedAriaSnapshot } | undefined
-    const { playbackPage, recording } = await browser.recordAndPlay({
-      documents,
-      interact: page => page.frameLocator('#action-frame').locator('#target').click(),
-      onSnapshotCaptured: snapshot => {
-        recordedSnapshot = snapshot
-      },
-    })
-
-    expect(recording.actions).toMatchObject([
+  test('records frame paths on locator candidates', async () => {
+    expect(
+      (
+        await browser.record({
+          documents: frameDocuments,
+          interact: page => page.frameLocator('#action-frame').locator('#target').click(),
+        })
+      ).actions,
+    ).toMatchObject([
       { kind: 'goto', pageUrl: 'about:blank', url: 'https://recorder.test/content' },
       {
         kind: 'click',
@@ -92,20 +97,54 @@ describe('recording playback', () => {
         pageUrl: 'https://recorder.test/content',
       },
     ])
+  })
+
+  test('emits frame snapshots outside recorded actions', async () => {
+    let recordedSnapshot: { actionIndex: number; ariaSnapshot: RecordedAriaSnapshot } | undefined
+    const recording = await browser.record({
+      documents: frameDocuments,
+      interact: page => page.frameLocator('#action-frame').locator('#target').click(),
+      onSnapshotCaptured: snapshot => {
+        recordedSnapshot = snapshot
+      },
+    })
     const click = getOnlyAction(recording, 'click')
 
-    expect(recordedSnapshot).toMatchObject({ actionIndex: 1 })
-    expect(Object.keys(click).filter(key => ['ariaSnapshot', 'targetRef'].includes(key))).toStrictEqual([])
-    expect(renderAriaSnapshot(recordedSnapshot!.ariaSnapshot)).toMatch(/^- button "Click" \[active\] \[ref=e\d+\]$/)
+    expect({
+      actionSnapshotKeys: Object.keys(click).filter(key => ['ariaSnapshot', 'targetRef'].includes(key)),
+      renderedSnapshot: renderAriaSnapshot(recordedSnapshot!.ariaSnapshot),
+      snapshotActionIndex: recordedSnapshot?.actionIndex,
+    }).toMatchObject({ actionSnapshotKeys: [], renderedSnapshot: expect.stringMatching(/^- button "Click" \[active\] \[ref=e\d+\]$/), snapshotActionIndex: 1 })
+  })
+
+  test('plays back interactions inside frames', async () => {
+    const { playbackPage } = await browser.recordAndPlay({
+      documents: frameDocuments,
+      interact: page => page.frameLocator('#action-frame').locator('#target').click(),
+    })
 
     expect(await playbackPage.frameLocator('#action-frame').locator('body').getAttribute('data-clicked')).toBe('true')
   })
 
   test.each(locatorPlaybackCases)('$name', async ({ expectedLocator, html }) => {
-    const { playbackPage, recording } = await browser.recordAndPlay({ html, interact: page => page.locator('#target').click() })
+    const recording = await browser.record({ html, interact: page => page.locator('#target').click() })
     const click = getOnlyAction(recording, 'click')
 
     expect(click.locatorCandidates[0]).toStrictEqual(expectedLocator)
+  })
+
+  test.each(locatorPlaybackCases)('plays back locator case: $name', async ({ expectedLocator, html }) => {
+    const playbackPage = await browser.play({
+      html,
+      recording: {
+        ...createRecording({ startUrl: 'https://recorder.test/content', title: 'Locator playback' }),
+        actions: [
+          { kind: 'goto', pageUrl: 'about:blank', url: 'https://recorder.test/content' },
+          { kind: 'click', locatorCandidates: [expectedLocator], pageUrl: 'https://recorder.test/content' },
+        ],
+      },
+    })
+
     expect(await playbackPage.locator('body').getAttribute('data-clicked')).toBe('true')
   })
 
@@ -118,31 +157,36 @@ describe('recording playback', () => {
   })
 })
 
+const frameDocuments = {
+  'https://frame.test/content': `<button id="target" onclick="document.body.dataset.clicked = 'true'">Click</button>`,
+  'https://recorder.test/content': '<iframe id="action-frame" src="https://frame.test/content"></iframe>',
+}
+
 const locatorPlaybackCases: LocatorPlaybackCase[] = [
   {
     expectedLocator: { kind: 'aria', steps: [{ method: 'alt', text: 'Target' }] },
     html: `<div id="target" alt="Target" style="height: 10px; width: 10px" onclick="document.body.dataset.clicked = 'true'"></div>`,
-    name: 'selects and plays back alt-text locators',
+    name: 'uses alt-text locators',
   },
   {
     expectedLocator: { kind: 'aria', steps: [{ method: 'label', text: 'Password' }] },
     html: `<div id="target" aria-label="Password" onclick="document.body.dataset.clicked = 'true'">Password field</div>`,
-    name: 'selects and plays back label locators',
+    name: 'uses label locators',
   },
   {
     expectedLocator: { kind: 'aria', steps: [{ method: 'placeholder', text: 'Search' }] },
     html: `<div id="target" placeholder="Search" style="height: 10px; width: 10px" onclick="document.body.dataset.clicked = 'true'"></div>`,
-    name: 'selects and plays back placeholder locators',
+    name: 'uses placeholder locators',
   },
   {
     expectedLocator: { kind: 'aria', steps: [{ method: 'text', text: 'Target text' }] },
     html: `<div id="target" onclick="document.body.dataset.clicked = 'true'">Target text</div>`,
-    name: 'selects and plays back text locators',
+    name: 'uses text locators',
   },
   {
     expectedLocator: { kind: 'aria', steps: [{ method: 'title', text: 'Target title' }] },
     html: `<div id="target" title="Target title" style="height: 10px; width: 10px" onclick="document.body.dataset.clicked = 'true'"></div>`,
-    name: 'selects and plays back title locators',
+    name: 'uses title locators',
   },
   {
     expectedLocator: {

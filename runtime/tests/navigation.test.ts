@@ -54,11 +54,7 @@ describe('navigation recording', () => {
   })
 
   test('uses the requested start URL when it redirects', async () => {
-    const documents = {
-      'https://recorder.test/after': `<button id="target" onclick="document.body.dataset.clicked = 'true'">Continue</button>`,
-      'https://recorder.test/start': `<script>location.replace('https://recorder.test/after')</script>`,
-    }
-    const { playbackPage, recording } = await browser.recordAndPlay({ documents, interact: page => page.locator('#target').click(), startUrl: 'https://recorder.test/start' })
+    const recording = await browser.record({ documents: redirectingStartDocuments, interact: page => page.locator('#target').click(), startUrl: 'https://recorder.test/start' })
 
     expect(recording).toMatchObject({
       actions: [
@@ -67,14 +63,31 @@ describe('navigation recording', () => {
       ],
       startUrl: 'https://recorder.test/start',
     })
+  })
+
+  test('plays back recordings whose requested start URL redirects', async () => {
+    const { playbackPage } = await browser.recordAndPlay({ documents: redirectingStartDocuments, interact: page => page.locator('#target').click(), startUrl: 'https://recorder.test/start' })
 
     expect(await playbackPage.locator('body').getAttribute('data-clicked')).toBe('true')
   })
 
-  test('records subsequent browser address entry and ignores Back, Forward, and Reload', async () => {
-    const documents = { 'https://recorder.test/after': '<p>After</p>', 'https://recorder.test/content': '<p>Before</p>' }
-    const { playbackPage, recording } = await browser.recordAndPlay({
-      documents,
+  test('records subsequent browser address entry', async () => {
+    expect(
+      (
+        await browser.record({
+          documents: navigationDocuments,
+          interact: page => page.goto('https://recorder.test/after'),
+        })
+      ).actions,
+    ).toStrictEqual([
+      { kind: 'goto', pageUrl: 'about:blank', url: 'https://recorder.test/content' },
+      { kind: 'goto', pageUrl: 'https://recorder.test/content', url: 'https://recorder.test/after' },
+    ])
+  })
+
+  test('ignores Back, Forward, and Reload', async () => {
+    const recording = await browser.record({
+      documents: navigationDocuments,
       interact: async page => {
         await page.goto('https://recorder.test/after')
         await page.goBack()
@@ -87,8 +100,20 @@ describe('navigation recording', () => {
       { kind: 'goto', pageUrl: 'about:blank', url: 'https://recorder.test/content' },
       { kind: 'goto', pageUrl: 'https://recorder.test/content', url: 'https://recorder.test/after' },
     ])
-    expect(recording.startUrl).toBe('https://recorder.test/content')
+  })
+
+  test('plays back subsequent browser address entry', async () => {
+    const { playbackPage } = await browser.recordAndPlay({
+      documents: navigationDocuments,
+      interact: page => page.goto('https://recorder.test/after'),
+    })
 
     expect(playbackPage.url()).toBe('https://recorder.test/after')
   })
 })
+
+const navigationDocuments = { 'https://recorder.test/after': '<p>After</p>', 'https://recorder.test/content': '<p>Before</p>' }
+const redirectingStartDocuments = {
+  'https://recorder.test/after': `<button id="target" onclick="document.body.dataset.clicked = 'true'">Continue</button>`,
+  'https://recorder.test/start': `<script>location.replace('https://recorder.test/after')</script>`,
+}

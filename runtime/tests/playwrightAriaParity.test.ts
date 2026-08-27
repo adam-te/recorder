@@ -10,8 +10,25 @@ describe('Playwright ARIA snapshot parity', () => {
   const browser = useBrowserTestHarness()
 
   test('matches Playwright AI mode', async () => {
-    const page = await browser.page({
-      html: `
+    const { actual, expected } = await generateSnapshots(browser)
+
+    expect(normalizeRefs(renderAriaSnapshot(actual))).toBe(normalizeRefs(expected))
+  })
+
+  test('marks the requested target in the snapshot', async () => {
+    const { actual, targetRef } = await generateSnapshots(browser)
+
+    expect({ role: actual.role, target: findNodeByRef(actual, targetRef) }).toMatchObject({ role: 'fragment', target: { cursor: 'pointer', ref: targetRef } })
+  })
+
+  test('returns snapshots in the compact recorded shape', async () => {
+    expect(allNodesHaveCompactShape((await generateSnapshots(browser)).actual)).toBe(true)
+  })
+})
+
+async function generateSnapshots(browser: ReturnType<typeof useBrowserTestHarness>): Promise<GeneratedSnapshots> {
+  const page = await browser.page({
+    html: `
         <main aria-label="Account settings">
           <h2>Profile</h2>
           <input aria-label="Email" placeholder="name@example.com" value="ada@example.com">
@@ -21,25 +38,18 @@ describe('Playwright ARIA snapshot parity', () => {
           <p hidden>Secret content</p>
         </main>
       `,
-    })
-
-    await page.goto('https://recorder.test/content')
-    await page.addScriptTag({ content: recordingRuntimeSource })
-    await page.evaluate(name => (globalThis as unknown as Record<string, (() => Promise<void> | void) | undefined>)[name]?.(), DISPOSE_OVERLAY_FUNCTION_NAME)
-    const generated = await page.evaluate(() => {
-      const runtime = (globalThis as unknown as { ariaRuntime: AriaRuntime }).ariaRuntime
-
-      return runtime.generateAriaSnapshot({ target: document.querySelector('#target')! })
-    })
-    const actual = generated.snapshot
-    const expected = await page.ariaSnapshot({ mode: 'ai' })
-    const rendered = renderAriaSnapshot(actual)
-
-    expect(normalizeRefs(rendered)).toBe(normalizeRefs(expected))
-    expect({ role: actual.role, target: findNodeByRef(actual, generated.targetRef) }).toMatchObject({ role: 'fragment', target: { cursor: 'pointer', ref: generated.targetRef } })
-    expect(allNodesHaveCompactShape(actual)).toBe(true)
   })
-})
+
+  await page.goto('https://recorder.test/content')
+  await page.addScriptTag({ content: recordingRuntimeSource })
+  await page.evaluate(name => (globalThis as unknown as Record<string, (() => Promise<void> | void) | undefined>)[name]?.(), DISPOSE_OVERLAY_FUNCTION_NAME)
+  const generated = await page.evaluate(() => {
+    const runtime = (globalThis as unknown as { ariaRuntime: AriaRuntime }).ariaRuntime
+
+    return runtime.generateAriaSnapshot({ target: document.querySelector('#target')! })
+  })
+  return { actual: generated.snapshot, expected: await page.ariaSnapshot({ mode: 'ai' }), targetRef: generated.targetRef }
+}
 
 function normalizeRefs(snapshot: string): string {
   return snapshot.replace(/ref=e\d+/g, 'ref=eN')
@@ -58,4 +68,10 @@ function findNodeByRef(node: AriaSnapshot, ref: string | undefined): AriaSnapsho
   }
 
   return (node.children ?? []).flatMap(child => (typeof child === 'string' ? [] : [findNodeByRef(child, ref)])).find(child => child)
+}
+
+interface GeneratedSnapshots {
+  actual: AriaSnapshot
+  expected: string
+  targetRef: string | undefined
 }

@@ -7,7 +7,7 @@ import { useBrowserTestHarness } from './support/browserHarness.ts'
 describe('ARIA interaction snapshots', () => {
   const browser = useBrowserTestHarness()
 
-  test('captures current-frame semantics and the target ref before click handlers change the page', async () => {
+  test('captures ARIA state before click handlers change it', async () => {
     const html = `
       <main aria-label="Account settings">
         <h2>Profile</h2>
@@ -31,6 +31,11 @@ describe('ARIA interaction snapshots', () => {
         - button "Unavailable" [disabled] [ref=eN]
         - button [ref=eN]: Accessibility hidden"
     `)
+  })
+
+  test('omits transient capture properties from recorded snapshots', async () => {
+    const interaction = await browser.capture({ expectedKind: 'click', html: '<button id="target">Save</button>', interact: page => page.locator('#target').click() })
+
     expect(findNodes(interaction.ariaSnapshot).every(node => !('ariaVisible' in node) && !('box' in node) && !('receivesPointerEvents' in node))).toBe(true)
   })
 

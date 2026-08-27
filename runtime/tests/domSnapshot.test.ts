@@ -8,36 +8,54 @@ import { useBrowserTestHarness } from './support/browserHarness.ts'
 describe('captureDomSnapshot', () => {
   const browser = useBrowserTestHarness()
 
-  test('captures current DOM content across frames and open shadow roots', async () => {
-    const page = await browser.page({
-      documents: { 'https://frame.test/content': '<button id="frame-target">Frame target</button>' },
-      html: '<main id="dynamic-target" data-state="initial">Before</main><div id="shadow-host"></div><iframe src="https://frame.test/content"></iframe>',
-    })
-
-    await page.goto('https://recorder.test/content')
-    await page.locator('#dynamic-target').evaluate(element => {
-      element.setAttribute('data-state', 'updated')
-      element.textContent = 'After'
-    })
-    await page.locator('#shadow-host').evaluate(element => {
-      element.attachShadow({ mode: 'open' }).innerHTML = '<button id="shadow-target">Shadow target</button>'
-    })
-    const markupBeforeCapture = await page.locator('html').evaluate(element => element.outerHTML)
-
-    const capture = await captureDomSnapshot(page)
-
+  test('captures current DOM content', async () => {
+    const { capture } = await captureFixture(browser)
     const dynamicTarget = findElement(capture, 'id', 'dynamic-target')
-    const frameTarget = findElement(capture, 'id', 'frame-target')
-    const shadowTarget = findElement(capture, 'id', 'shadow-target')
 
-    expect(dynamicTarget).toMatchObject({ attributes: { 'data-state': 'updated' }, documentUrl: 'https://recorder.test/content' })
-    expect(getDirectText(capture, dynamicTarget)).toBe('After')
-    expect(frameTarget).toMatchObject({ documentUrl: 'https://frame.test/content' })
-    expect(shadowTarget?.parentIndex).toBeGreaterThanOrEqual(0)
-    expect(getShadowRootTypes(capture)).toContain('open')
+    expect({ dynamicTarget, text: getDirectText(capture, dynamicTarget) }).toMatchObject({
+      dynamicTarget: { attributes: { 'data-state': 'updated' }, documentUrl: 'https://recorder.test/content' },
+      text: 'After',
+    })
+  })
+
+  test('captures content inside frames', async () => {
+    expect(findElement((await captureFixture(browser)).capture, 'id', 'frame-target')).toMatchObject({ documentUrl: 'https://frame.test/content' })
+  })
+
+  test('captures content inside open shadow roots', async () => {
+    const { capture } = await captureFixture(browser)
+
+    expect({ rootTypes: getShadowRootTypes(capture), target: findElement(capture, 'id', 'shadow-target') }).toMatchObject({
+      rootTypes: expect.arrayContaining(['open']),
+      target: { parentIndex: expect.toSatisfy((value: number) => value >= 0) },
+    })
+  })
+
+  test('does not change page markup', async () => {
+    const { markupBeforeCapture, page } = await captureFixture(browser)
+
     expect(await page.locator('html').evaluate(element => element.outerHTML)).toBe(markupBeforeCapture)
   })
 })
+
+async function captureFixture(browser: ReturnType<typeof useBrowserTestHarness>): Promise<DomCaptureFixture> {
+  const page = await browser.page({
+    documents: { 'https://frame.test/content': '<button id="frame-target">Frame target</button>' },
+    html: '<main id="dynamic-target" data-state="initial">Before</main><div id="shadow-host"></div><iframe src="https://frame.test/content"></iframe>',
+  })
+
+  await page.goto('https://recorder.test/content')
+  await page.locator('#dynamic-target').evaluate(element => {
+    element.setAttribute('data-state', 'updated')
+    element.textContent = 'After'
+  })
+  await page.locator('#shadow-host').evaluate(element => {
+    element.attachShadow({ mode: 'open' }).innerHTML = '<button id="shadow-target">Shadow target</button>'
+  })
+  const markupBeforeCapture = await page.locator('html').evaluate(element => element.outerHTML)
+
+  return { capture: await captureDomSnapshot(page), markupBeforeCapture, page }
+}
 
 function findElement(capture: CapturedDomSnapshot, attributeName: string, attributeValue: string): SnapshotElement | undefined {
   for (const [documentIndex, document] of capture.snapshot.documents.entries()) {
@@ -94,4 +112,10 @@ interface SnapshotElement {
   documentUrl: string
   nodeIndex: number
   parentIndex?: number
+}
+
+interface DomCaptureFixture {
+  capture: CapturedDomSnapshot
+  markupBeforeCapture: string
+  page: Awaited<ReturnType<ReturnType<typeof useBrowserTestHarness>['page']>>
 }
