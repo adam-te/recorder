@@ -1,0 +1,21 @@
+import { readFile } from 'node:fs/promises'
+import { dirname } from 'node:path'
+import { compile } from 'svelte/compiler'
+
+export { svelteEsbuildPlugin }
+
+const svelteEsbuildPlugin = {
+  name: 'svelte',
+  setup(buildContext) {
+    buildContext.onLoad({ filter: /\.svelte$/ }, async args => {
+      const { js, warnings } = compile(await readFile(args.path, 'utf8'), { filename: args.path, generate: 'client', modernAst: true, runes: true })
+
+      return {
+        contents: js.code,
+        loader: 'js',
+        resolveDir: dirname(args.path),
+        warnings: warnings.map(warning => ({ text: warning.message })),
+      }
+    })
+  },
+}

@@ -2,28 +2,14 @@ import { build } from 'esbuild'
 import { readFile, writeFile } from 'node:fs/promises'
 import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
-import { compile } from 'svelte/compiler'
+
+import { svelteEsbuildPlugin } from '../../scripts/svelteEsbuildPlugin.mjs'
 
 const SCRIPT_DIRECTORY = dirname(fileURLToPath(import.meta.url))
 const RUNTIME_DIRECTORY = join(SCRIPT_DIRECTORY, '..')
 const ROOT_DIRECTORY = join(RUNTIME_DIRECTORY, '..')
 const RECORDING_INJECTION_DIRECTORY = join(RUNTIME_DIRECTORY, 'recording', 'injection')
 const GENERATED_DIRECTORY = join(RECORDING_INJECTION_DIRECTORY, 'generated')
-const sveltePlugin = {
-  name: 'svelte',
-  setup(buildContext) {
-    buildContext.onLoad({ filter: /\.svelte$/ }, async args => {
-      const { js, warnings } = compile(await readFile(args.path, 'utf8'), { filename: args.path, generate: 'client', modernAst: true, runes: true })
-
-      return {
-        contents: js.code,
-        loader: 'js',
-        resolveDir: dirname(args.path),
-        warnings: warnings.map(warning => ({ text: warning.message })),
-      }
-    })
-  },
-}
 
 await generate()
 
@@ -60,7 +46,7 @@ async function bundle(entryPoint, options = {}) {
       legalComments: 'none',
       minify: true,
       platform: 'browser',
-      plugins: [sveltePlugin],
+      plugins: [svelteEsbuildPlugin],
       write: false,
     })
   ).outputFiles[0].text

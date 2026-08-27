@@ -1,31 +1,11 @@
 import { build, context } from 'esbuild'
 import { readFile, writeFile } from 'node:fs/promises'
-import { dirname } from 'node:path'
 import { format } from 'oxfmt'
-import { compile } from 'svelte/compiler'
+
+import { svelteEsbuildPlugin } from '../../scripts/svelteEsbuildPlugin.mjs'
 
 const watch = process.argv.includes('--watch')
 const sourcemap = process.argv.includes('--sourcemap')
-const sveltePlugin = {
-  name: 'svelte',
-  setup(buildContext) {
-    buildContext.onLoad({ filter: /\.svelte$/ }, async args => {
-      const { js, warnings } = compile(await readFile(args.path, 'utf8'), {
-        filename: args.path,
-        generate: 'client',
-        modernAst: true,
-        runes: true,
-      })
-
-      return {
-        contents: js.code,
-        loader: 'js',
-        resolveDir: dirname(args.path),
-        warnings: warnings.map(warning => ({ text: warning.message })),
-      }
-    })
-  },
-}
 const formatWebviewAssetsPlugin = {
   name: 'format-webview-assets',
   setup(buildContext) {
@@ -53,7 +33,7 @@ const configurations = [
     format: 'esm',
     outfile: 'dist/webview/recordingEditor.js',
     platform: 'browser',
-    plugins: [sveltePlugin, formatWebviewAssetsPlugin],
+    plugins: [svelteEsbuildPlugin, formatWebviewAssetsPlugin],
     sourcemap,
   },
 ]
