@@ -1,0 +1,17 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "Recorder Extension",
+      "type": "extensionHost",
+      "request": "launch",
+      "runtimeExecutable": "${execPath}",
+      "args": ["--extensionDevelopmentPath=${workspaceFolder}/apps/vscode-extension", "--extensionDevelopmentPath=${workspaceFolder}/apps/vscode-extension/devReloader"],
+      "env": {
+        "RECORDER_EXTENSION_BUNDLE": "${workspaceFolder}/apps/vscode-extension/dist/extension.cjs"
+      },
+      "outFiles": ["${workspaceFolder}/apps/vscode-extension/dist/**/*.cjs"],
+      "preLaunchTask": "watch: recorder extension"
+    }
+  ]
+}

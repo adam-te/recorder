@@ -1,0 +1,19 @@
+{
+  "name": "@te/recorder-execution",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "imports": {
+    "#execution/*": "./*"
+  },
+  "exports": {
+    ".": "./index.ts"
+  },
+  "dependencies": {
+    "@te/recorder-recording": "*",
+    "@te/recorder-utils": "*"
+  },
+  "peerDependencies": {
+    "playwright": "1.62.1"
+  }
+}

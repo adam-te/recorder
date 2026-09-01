@@ -1,0 +1,91 @@
+import type { AriaSnapshotOptions, GeneratedAriaSnapshot } from '#aria/src/types/browser.ts'
+import type { AriaNode } from '#aria/src/types/snapshot.ts'
+import { generateAriaTree } from '#aria/vendor/playwright/injected/ariaSnapshot.ts'
+import { beginAriaCaches, endAriaCaches, isElementHiddenForAria } from '#aria/vendor/playwright/injected/roleUtils.ts'
+import type { AriaNode as PlaywrightAriaNode } from '#aria/vendor/playwright/isomorphic/ariaSnapshot.ts'
+
+import { tryTo } from '@te/recorder-utils'
+
+export { generateAriaSnapshot }
+
+function generateAriaSnapshot(options: AriaSnapshotOptions): GeneratedAriaSnapshot {
+  const root = options.target.ownerDocument.body ?? options.target.ownerDocument.documentElement
+
+  if (!root) {
+    throw new Error('Unable to capture an ARIA snapshot without a document root.')
+  }
+
+  const tree = generateAriaTree(root, { mode: 'ai' })
+  const { nodesByRef, root: snapshot } = compactAriaTree(tree.root)
+  const targetRef = findTargetRef(nodesByRef, tree.refs, options.targetPath ?? elementAncestry(options.target))
+
+  return {
+    snapshot,
+    ...(targetRef ? { targetRef } : {}),
+  }
+}
+
+function compactAriaTree(root: PlaywrightAriaNode): { nodesByRef: Map<string, AriaNode>; root: AriaNode } {
+  const nodesByRef = new Map<string, AriaNode>()
+
+  return { nodesByRef, root: visit(root) }
+
+  function visit(node: PlaywrightAriaNode): AriaNode {
+    const children = node.children.map(child => (typeof child === 'string' ? child : visit(child)))
+    const result: AriaNode = {
+      name: node.name,
+      props: { ...node.props },
+      role: node.role,
+      ...(node.active ? { active: true } : {}),
+      ...(node.checked ? { checked: node.checked } : {}),
+      ...(children.length ? { children } : {}),
+      ...(node.box.cursor === 'pointer' ? { cursor: 'pointer' as const } : {}),
+      ...(node.disabled ? { disabled: true } : {}),
+      ...(node.expanded ? { expanded: true } : {}),
+      ...(node.invalid ? { invalid: node.invalid } : {}),
+      ...(node.level !== undefined ? { level: node.level } : {}),
+      ...(node.pressed ? { pressed: node.pressed } : {}),
+      ...(node.ref ? { ref: node.ref } : {}),
+      ...(node.selected ? { selected: true } : {}),
+    }
+
+    if (result.ref) {
+      nodesByRef.set(result.ref, result)
+    }
+
+    return result
+  }
+}
+
+function elementAncestry(target: Element): Element[] {
+  const result: Element[] = []
+  let current: Element | undefined = target
+
+  while (current) {
+    result.push(current)
+    const root = current.getRootNode()
+
+    current = current.parentElement ?? (root instanceof ShadowRoot ? root.host : undefined)
+  }
+  return result
+}
+
+function findTargetRef(nodesByRef: Map<string, AriaNode>, refs: Map<Element, string>, targetPath: Element[]): string | undefined {
+  beginAriaCaches()
+  return tryTo(
+    () => {
+      for (const element of targetPath) {
+        const ref = refs.get(element)
+        const node = ref ? nodesByRef.get(ref) : undefined
+
+        if (node && node.role !== 'generic' && !isElementHiddenForAria(element)) {
+          return ref
+        }
+      }
+
+      return undefined
+    },
+    undefined,
+    endAriaCaches,
+  )
+}

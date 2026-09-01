@@ -1,0 +1,31 @@
+{
+  "name": "@te/recorder-cli",
+  "version": "1.0.0",
+  "private": true,
+  "bin": {
+    "te": "./bin.ts"
+  },
+  "type": "module",
+  "imports": {
+    "#cli/*": "./*"
+  },
+  "exports": {
+    ".": "./index.ts"
+  },
+  "scripts": {
+    "build": "node scripts/build.mjs",
+    "start": "node bin.ts"
+  },
+  "dependencies": {
+    "@te/recorder-capture": "*",
+    "@te/recorder-execution": "*",
+    "@te/recorder-recording": "*",
+    "@te/recorder-ui": "*",
+    "@te/recorder-utils": "*",
+    "playwright": "1.62.1"
+  },
+  "devDependencies": {
+    "@types/node": "^25.6.0",
+    "esbuild": "^0.27.0"
+  }
+}

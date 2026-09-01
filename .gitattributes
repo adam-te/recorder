@@ -1,0 +1,2 @@
+packages/aria/vendor/** -diff linguist-vendored
+**/*.generated.ts -diff linguist-generated

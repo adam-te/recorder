@@ -1,0 +1,17 @@
+{
+  "name": "@te/recorder-recording",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "imports": {
+    "#recording/*": "./*"
+  },
+  "exports": {
+    ".": "./index.ts",
+    "./playwright/locator": "./formats/playwright/formatPlaywrightLocator.ts"
+  },
+  "dependencies": {
+    "@te/recorder-utils": "*",
+    "zod": "^4.4.3"
+  }
+}

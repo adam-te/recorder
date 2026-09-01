@@ -1,0 +1,20 @@
+{
+  "name": "@te/recorder-ui",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "imports": {
+    "#ui/*": "./*"
+  },
+  "exports": {
+    "./recording-editor": "./recordingEditor/index.ts",
+    "./recording-editor/host": "./recordingEditor/host/index.ts",
+    "./recording-editor.css": "./recordingEditor/client/recordingEditor.css"
+  },
+  "dependencies": {
+    "@te/aria": "*",
+    "@te/recorder-recording": "*",
+    "@te/recorder-utils": "*",
+    "svelte": "5.56.10"
+  }
+}

@@ -1,0 +1,23 @@
+{
+  "name": "@te/aria",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "imports": {
+    "#aria/*": "./*"
+  },
+  "exports": {
+    ".": "./src/index.ts",
+    "./browser": "./src/browser.ts"
+  },
+  "scripts": {
+    "generate:aria": "node scripts/generate.mjs"
+  },
+  "dependencies": {
+    "@te/recorder-utils": "*"
+  },
+  "devDependencies": {
+    "playwright": "1.62.1",
+    "yaml": "2.8.3"
+  }
+}

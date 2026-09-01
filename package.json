@@ -1,0 +1,35 @@
+{
+  "name": "recorder",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Record and replay ThousandEyes browser transactions.",
+  "workspaces": [
+    "apps/cli",
+    "apps/vscode-extension",
+    "packages/aria",
+    "packages/capture",
+    "packages/execution",
+    "packages/recording",
+    "packages/ui",
+    "packages/utils"
+  ],
+  "type": "module",
+  "scripts": {
+    "build": "npm run build --workspace @te/recorder-cli && npm run build --workspace recorder-extension",
+    "check": "npm run format:check && npm run lint && npm run typecheck && npm run build && npm run smoke",
+    "format:check": "oxfmt --check .",
+    "generate:aria": "npm run generate:aria --workspace @te/aria && npm run generate:injected-runtime --workspace @te/recorder-capture",
+    "lint": "oxlint --deny-warnings .",
+    "smoke": "vitest run",
+    "typecheck": "tsc --noEmit && svelte-check --tsconfig ./tsconfig.json"
+  },
+  "devDependencies": {
+    "@types/node": "^25.6.0",
+    "oxfmt": "^0.47.0",
+    "oxlint": "^1.62.0",
+    "svelte": "5.56.10",
+    "svelte-check": "4.7.6",
+    "typescript": "^6.0.3",
+    "vitest": "^4.1.10"
+  }
+}

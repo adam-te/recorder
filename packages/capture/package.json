@@ -1,0 +1,28 @@
+{
+  "name": "@te/recorder-capture",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "imports": {
+    "#capture/*": "./*"
+  },
+  "exports": {
+    ".": "./index.ts"
+  },
+  "scripts": {
+    "generate:injected-runtime": "node scripts/generateInjectedRuntime.mjs"
+  },
+  "dependencies": {
+    "@te/aria": "*",
+    "@te/recorder-recording": "*",
+    "@te/recorder-utils": "*",
+    "devtools-protocol": "^0.0.1627472"
+  },
+  "devDependencies": {
+    "esbuild": "0.27.7",
+    "svelte": "5.56.10"
+  },
+  "peerDependencies": {
+    "playwright": "1.62.1"
+  }
+}

@@ -1,0 +1,55 @@
+:root {
+  --recorder-background: #ffffff;
+  --recorder-badge-background: #e2e8f0;
+  --recorder-badge-foreground: #1e293b;
+  --recorder-border: #cbd5e1;
+  --recorder-button-background: #e2e8f0;
+  --recorder-button-border: transparent;
+  --recorder-button-foreground: #1e293b;
+  --recorder-button-hover-background: #cbd5e1;
+  --recorder-code-background: #f1f5f9;
+  --recorder-code-foreground: #0f172a;
+  --recorder-description-foreground: #64748b;
+  --recorder-focus-border: #2563eb;
+  --recorder-foreground: #0f172a;
+  --recorder-highlight-background: #fef08a;
+  --recorder-list-active-background: #2563eb;
+  --recorder-list-active-foreground: #ffffff;
+  --recorder-list-hover-background: #e2e8f0;
+  --recorder-primary-background: #2563eb;
+  --recorder-primary-foreground: #ffffff;
+  --recorder-primary-hover-background: #1d4ed8;
+  --recorder-sidebar-background: #f8fafc;
+  --recorder-sidebar-foreground: #0f172a;
+  --recorder-sidebar-heading-foreground: #475569;
+  --recorder-text-block-background: #f8fafc;
+  --recorder-text-preformatted-foreground: #0f172a;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --recorder-background: #1e1e1e;
+    --recorder-badge-background: #3c3c3c;
+    --recorder-badge-foreground: #f1f5f9;
+    --recorder-border: #454545;
+    --recorder-button-background: #3a3d41;
+    --recorder-button-foreground: #ffffff;
+    --recorder-button-hover-background: #45494e;
+    --recorder-code-background: #181818;
+    --recorder-code-foreground: #d4d4d4;
+    --recorder-description-foreground: #a7a7a7;
+    --recorder-focus-border: #007fd4;
+    --recorder-foreground: #cccccc;
+    --recorder-highlight-background: #515c1b;
+    --recorder-list-active-background: #04395e;
+    --recorder-list-active-foreground: #ffffff;
+    --recorder-list-hover-background: #2a2d2e;
+    --recorder-primary-background: #0e639c;
+    --recorder-primary-hover-background: #1177bb;
+    --recorder-sidebar-background: #181818;
+    --recorder-sidebar-foreground: #cccccc;
+    --recorder-sidebar-heading-foreground: #bbbbbb;
+    --recorder-text-block-background: #252526;
+    --recorder-text-preformatted-foreground: #d4d4d4;
+  }
+}

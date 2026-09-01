@@ -1,0 +1,110 @@
+{
+  "name": "recorder-extension",
+  "displayName": "ThousandEyes Transaction Recorder",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Author, record, and play back ThousandEyes Transaction tests.",
+  "publisher": "thousandeyes",
+  "type": "module",
+  "main": "./dist/extension.cjs",
+  "imports": {
+    "#vscode-extension/*": "./*"
+  },
+  "scripts": {
+    "build": "node scripts/build.mjs",
+    "watch": "node scripts/build.mjs --watch --sourcemap"
+  },
+  "dependencies": {
+    "@te/aria": "*",
+    "@te/recorder-capture": "*",
+    "@te/recorder-execution": "*",
+    "@te/recorder-recording": "*",
+    "@te/recorder-ui": "*",
+    "@te/recorder-utils": "*",
+    "playwright": "1.62.1"
+  },
+  "devDependencies": {
+    "@types/vscode": "1.96.0",
+    "esbuild": "^0.27.0",
+    "oxfmt": "^0.47.0"
+  },
+  "contributes": {
+    "customEditors": [
+      {
+        "viewType": "thousandeyesRecorder.recording",
+        "displayName": "Transaction Recording",
+        "selector": [
+          {
+            "filenamePattern": "**/*.recording/recording.json"
+          }
+        ],
+        "priority": "default"
+      }
+    ],
+    "viewsContainers": {
+      "activitybar": [
+        {
+          "id": "thousandeyesRecorder",
+          "icon": "media/thousandeyes.svg",
+          "title": "ThousandEyes Recorder"
+        }
+      ]
+    },
+    "views": {
+      "thousandeyesRecorder": [
+        {
+          "id": "thousandeyesRecorder.controls",
+          "name": "Recorder"
+        }
+      ]
+    },
+    "viewsWelcome": [
+      {
+        "view": "thousandeyesRecorder.controls",
+        "contents": "Record browser interactions as a ThousandEyes transaction.\n[Record new transaction](command:thousandeyesRecorder.startRecording)",
+        "when": "thousandeyesRecorder.state == idle"
+      },
+      {
+        "view": "thousandeyesRecorder.controls",
+        "contents": "$(loading~spin) Opening recorder browser…",
+        "when": "thousandeyesRecorder.state == starting"
+      },
+      {
+        "view": "thousandeyesRecorder.controls",
+        "contents": "A transaction recording is in progress.\n[Stop recording](command:thousandeyesRecorder.stopRecording)",
+        "when": "thousandeyesRecorder.state == recording"
+      },
+      {
+        "view": "thousandeyesRecorder.controls",
+        "contents": "$(loading~spin) Stopping recording…",
+        "when": "thousandeyesRecorder.state == stopping"
+      }
+    ],
+    "commands": [
+      {
+        "command": "thousandeyesRecorder.startRecording",
+        "icon": "$(record)",
+        "title": "ThousandEyes Recorder: Start Recording"
+      },
+      {
+        "command": "thousandeyesRecorder.stopRecording",
+        "icon": "$(debug-stop)",
+        "title": "ThousandEyes Recorder: Stop Recording"
+      },
+      {
+        "command": "thousandeyesRecorder.playRecording",
+        "title": "ThousandEyes Recorder: Play Recording"
+      }
+    ]
+  },
+  "activationEvents": [
+    "onCommand:thousandeyesRecorder.playRecording",
+    "onCommand:thousandeyesRecorder.startRecording",
+    "onCommand:thousandeyesRecorder.stopRecording",
+    "onCustomEditor:thousandeyesRecorder.recording",
+    "onView:thousandeyesRecorder.controls"
+  ],
+  "engines": {
+    "vscode": "^1.96.0"
+  }
+}

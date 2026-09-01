@@ -1,0 +1,25 @@
+{
+  "name": "@te/recorder-utils",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "imports": {
+    "#utils/*": "./*"
+  },
+  "exports": {
+    ".": "./index.ts",
+    "./build/svelte-esbuild-plugin": "./build/svelteEsbuildPlugin.mjs",
+    "./playwright": "./playwright/createBrowserSession.ts"
+  },
+  "dependencies": {
+    "svelte": "5.56.10"
+  },
+  "peerDependencies": {
+    "playwright": "1.62.1"
+  },
+  "peerDependenciesMeta": {
+    "playwright": {
+      "optional": true
+    }
+  }
+}
