@@ -1,7 +1,7 @@
 import { randomUUID } from 'node:crypto'
-import { commands, env, Uri, ViewColumn, window, workspace, type Disposable, type ExtensionContext, type TextDocument, type WebviewPanel } from 'vscode'
+import { commands, env, Range, Uri, ViewColumn, window, workspace, WorkspaceEdit, type Disposable, type ExtensionContext, type TextDocument, type WebviewPanel } from 'vscode'
 
-import { parseRecording, type Recording } from '@te/recorder-recording'
+import { getRecordingScreenshotFileName, parseRecording, serializeRecording, type Recording } from '@te/recorder-recording'
 import { createRecordingEditorPresenter, type RecordingEditorPresenterEvent, type RecordingEditorPresenterMessage, type RecordingEditorUiMessage } from '@te/recorder-ui/recording-editor/host'
 import { matchBy, tryTo } from '@te/recorder-utils'
 
@@ -17,6 +17,7 @@ function createRecordingEditorProvider(args: CreateRecordingEditorProviderArgs):
 
 function resolveRecordingEditor(args: ResolveRecordingEditorArgs): void {
   const webviewDirectory = Uri.joinPath(args.context.extensionUri, 'dist', 'webview')
+  const recordingDirectory = Uri.joinPath(args.document.uri, '..')
   const nonce = randomUUID()
   let decisionInProgress = false
   let disposed = false
@@ -24,10 +25,11 @@ function resolveRecordingEditor(args: ResolveRecordingEditorArgs): void {
   const presenter = createRecordingEditorPresenter({
     isPending: () => args.drafts.isDraft(args.document.uri),
     readRecording,
-    readSnapshot: createWorkspaceRecordingArtifactStore(Uri.joinPath(args.document.uri, '..')).loadSnapshot,
+    readSnapshot: createWorkspaceRecordingArtifactStore(recordingDirectory).loadSnapshot,
+    resolveScreenshotUrl: actionIndex => args.panel.webview.asWebviewUri(Uri.joinPath(recordingDirectory, 'snapshots', getRecordingScreenshotFileName(actionIndex))).toString(),
   })
 
-  args.panel.webview.options = { enableScripts: true, localResourceRoots: [webviewDirectory] }
+  args.panel.webview.options = { enableScripts: true, localResourceRoots: [webviewDirectory, recordingDirectory] }
   args.panel.webview.html = getEditorHtml({ nonce, scriptUri: args.panel.webview.asWebviewUri(Uri.joinPath(webviewDirectory, 'recordingEditor.js')), styleUri: args.panel.webview.asWebviewUri(Uri.joinPath(webviewDirectory, 'recordingEditor.css')), webviewSource: args.panel.webview.cspSource })
 
   const disposables = [
@@ -81,7 +83,23 @@ function resolveRecordingEditor(args: ResolveRecordingEditorArgs): void {
         }
         await handleClosedDraft()
       },
+      saveThousandEyes: async current => {
+        const destination = await window.showSaveDialog({ defaultUri: defaultScriptUri(current.suggestedFileName), filters: { JavaScript: ['js'] }, saveLabel: 'Save ThousandEyes JS' })
+        if (!destination) return
+
+        await withErrorMessage(async () => {
+          await workspace.fs.writeFile(destination, new TextEncoder().encode(current.source))
+          await window.showInformationMessage(`Saved ThousandEyes JS to ${destination.fsPath}.`)
+        })
+      },
       selectAction: handlePresenterEvent,
+      updateThousandEyes: async current => {
+        await withErrorMessage(async () => {
+          const edit = new WorkspaceEdit()
+          edit.replace(args.document.uri, new Range(args.document.positionAt(0), args.document.positionAt(args.document.getText().length)), serializeRecording(parseRecording({ ...readRecording(), thousandEyes: current.thousandEyes })))
+          if (!(await workspace.applyEdit(edit))) throw new Error('Could not update the recording.')
+        })
+      },
     })
   }
 
@@ -119,6 +137,8 @@ function resolveRecordingEditor(args: ResolveRecordingEditorArgs): void {
   }
 
   async function saveDraft(documentUri: Uri): Promise<Uri | undefined> {
+    if (!(await args.document.save())) throw new Error('Could not save recording changes.')
+
     const recording = await args.drafts.load(documentUri)
     const destination = await window.showSaveDialog({ defaultUri: defaultRecordingUri(recording, documentUri), saveLabel: 'Save Recording' })
     if (!destination) return undefined
@@ -146,6 +166,13 @@ function resolveRecordingEditor(args: ResolveRecordingEditorArgs): void {
     return Uri.joinPath(workspaceFolder.uri, `${name || 'recording'}.recording`)
   }
 
+  function defaultScriptUri(fileName: string): Uri | undefined {
+    if (!args.drafts.isDraft(args.document.uri)) return Uri.joinPath(recordingDirectory, fileName)
+
+    const workspaceUri = (workspace.getWorkspaceFolder(args.document.uri) ?? workspace.workspaceFolders?.[0])?.uri
+    return workspaceUri ? Uri.joinPath(workspaceUri, fileName) : undefined
+  }
+
   async function withErrorMessage(operation: () => Promise<void>): Promise<void> {
     await tryTo(operation, error => window.showErrorMessage(getErrorMessage(error)))
   }
@@ -157,7 +184,7 @@ function getEditorHtml(args: { nonce: string; scriptUri: Uri; styleUri: Uri; web
   <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src ${args.webviewSource}; script-src 'nonce-${args.nonce}';">
+    <meta http-equiv="Content-Security-Policy" content="default-src 'none'; img-src ${args.webviewSource}; style-src ${args.webviewSource}; script-src 'nonce-${args.nonce}';">
     <link rel="stylesheet" href="${args.styleUri}">
     <title>Transaction Recording</title>
   </head>

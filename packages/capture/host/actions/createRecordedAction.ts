@@ -6,11 +6,9 @@ import { matchBy } from '@te/recorder-utils'
 
 export { createRecordedAction }
 
-async function createRecordedAction(interaction: CapturedInteraction): Promise<RecordedInteraction | undefined> {
+async function createRecordedAction(interaction: CapturedInteraction): Promise<RecordedInteraction> {
   return await matchBy(interaction.event, 'kind', {
-    change: () => undefined,
     click: event => createClickAction({ ...interaction, event }),
-    input: () => undefined,
     keydown: event => createPressAction({ ...interaction, event }),
   })
 

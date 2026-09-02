@@ -12,17 +12,19 @@ export type { CreateRecordingCaptureArgs, RecordingCapture }
 async function createRecordingCapture(args: CreateRecordingCaptureArgs): Promise<RecordingCapture> {
   const startUrl = new URL(args.startUrl)
   const recordingSession = createRecordingSession({ startUrl: args.startUrl, title: startUrl.hostname || args.startUrl })
+  const screenshots = new Map<number, Uint8Array>()
   const snapshots = new Map<number, RecordedAriaSnapshot>()
   let disposed = false
   let pendingRecordingChange = Promise.resolve()
   const instruments = await installRecordingInstruments({
     context: args.context,
     onInteraction: async interaction => {
+      const screenshot = interaction.page.screenshot({ animations: 'disabled', caret: 'hide' })
       await args.onInteraction?.(interaction)
 
       const appendedInteraction = await appendCapturedInteraction({ interaction, recordingSession })
 
-      if (!appendedInteraction) return
+      screenshots.set(appendedInteraction.actionIndex, await screenshot)
       snapshots.set(appendedInteraction.actionIndex, appendedInteraction.ariaSnapshot)
       await notifyRecordingChanged(appendedInteraction.recording)
     },
@@ -59,7 +61,14 @@ async function createRecordingCapture(args: CreateRecordingCaptureArgs): Promise
   }
 
   function snapshot(): RecordingArtifact {
-    return { readSnapshot, recording: recordingSession.snapshot() }
+    return { readScreenshot, readSnapshot, recording: recordingSession.snapshot() }
+  }
+
+  function readScreenshot(actionIndex: number): Uint8Array {
+    const screenshot = screenshots.get(actionIndex)
+
+    if (!screenshot) throw new Error(`Missing screenshot for action ${actionIndex}.`)
+    return screenshot
   }
 
   function readSnapshot(actionIndex: number): RecordedAriaSnapshot {

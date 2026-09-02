@@ -25,6 +25,11 @@ async function sendMessage(message: RecordingEditorUiMessage): Promise<void> {
         return
       }
 
+      if (message.type === 'saveThousandEyes') {
+        download(message.source, message.suggestedFileName)
+        return
+      }
+
       const response = await fetch('./api/messages', {
         body: JSON.stringify(message),
         headers: { 'content-type': 'application/json' },
@@ -40,6 +45,16 @@ async function sendMessage(message: RecordingEditorUiMessage): Promise<void> {
 }
 
 editor.ready()
+
+function download(source: string, fileName: string): void {
+  const url = URL.createObjectURL(new Blob([source], { type: 'text/javascript' }))
+  const link = document.createElement('a')
+
+  link.download = fileName
+  link.href = url
+  link.click()
+  setTimeout(() => URL.revokeObjectURL(url))
+}
 
 interface MessageResponse {
   error?: string

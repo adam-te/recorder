@@ -30,7 +30,7 @@ async function attachInjectedRecorder(args: AttachInjectedRecorderArgs): Promise
   return { dispose }
 
   function receiveInteraction(source: { frame: Frame; page: Page }, value: SerializedInteraction): Promise<void> {
-    const interaction = Promise.resolve(args.onInteraction({ ...value, frame: source.frame, pageUrl: source.page.url() }))
+    const interaction = Promise.resolve(args.onInteraction({ ...value, frame: source.frame, page: source.page, pageUrl: source.page.url() }))
     const trackedInteraction = interaction.finally(() => pendingInteractions.delete(trackedInteraction))
 
     pendingInteractions.add(trackedInteraction)

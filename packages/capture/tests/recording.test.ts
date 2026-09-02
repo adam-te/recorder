@@ -95,6 +95,7 @@ describe('interaction recording', () => {
       actionSnapshotKeys: Object.keys(click).filter(key => ['ariaSnapshot', 'targetRef'].includes(key)),
       renderedSnapshot: renderAriaSnapshot(await artifact.readSnapshot(1)),
     }).toMatchObject({ actionSnapshotKeys: [], renderedSnapshot: expect.stringMatching(/^- button "Click" \[active\] \[ref=e\d+\]$/) })
+    expect(Array.from((await artifact.readScreenshot(1)).slice(0, 8))).toEqual([137, 80, 78, 71, 13, 10, 26, 10])
   })
 
   test.each(locatorRecordingCases)('$name', async ({ expectedLocator, html }) => {

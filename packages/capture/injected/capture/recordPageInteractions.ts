@@ -9,9 +9,7 @@ function recordPageInteractions(args: RecordPageInteractionsArgs, ariaRuntime: A
   const reportInteraction = (globalThis as unknown as Record<string, (value: SerializedInteraction) => Promise<void>>)[args.bindingName]
   const capturedEvents = new WeakSet<Event>()
   const eventSerializers: EventSerializers = {
-    change: () => ({ kind: 'change' }),
     click: () => ({ kind: 'click' }),
-    input: event => ({ inputType: event.inputType, kind: 'input' }),
     keydown: event => ({ code: event.code, key: event.key, kind: 'keydown', repeat: event.repeat }),
   }
   const attachShadow = Element.prototype.attachShadow
@@ -57,9 +55,7 @@ function recordPageInteractions(args: RecordPageInteractionsArgs, ariaRuntime: A
 }
 
 interface EventSerializers {
-  change: (event: Event) => Extract<CapturedInteractionEvent, { kind: 'change' }>
   click: (event: MouseEvent) => Extract<CapturedInteractionEvent, { kind: 'click' }>
-  input: (event: InputEvent) => Extract<CapturedInteractionEvent, { kind: 'input' }>
   keydown: (event: KeyboardEvent) => Extract<CapturedInteractionEvent, { kind: 'keydown' }>
 }
 

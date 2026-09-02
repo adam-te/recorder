@@ -5,13 +5,8 @@ import type { RecordedAriaSnapshot, Recording, RecordingSession } from '@te/reco
 
 export { appendCapturedInteraction }
 
-async function appendCapturedInteraction(args: AppendCapturedInteractionArgs): Promise<AppendedInteraction | undefined> {
+async function appendCapturedInteraction(args: AppendCapturedInteractionArgs): Promise<AppendedInteraction> {
   const interaction = await createRecordedAction(args.interaction)
-
-  if (!interaction) {
-    return undefined
-  }
-
   const recording = args.recordingSession.append(interaction.action)
 
   return { actionIndex: recording.actions.length - 1, ariaSnapshot: interaction.ariaSnapshot, recording }

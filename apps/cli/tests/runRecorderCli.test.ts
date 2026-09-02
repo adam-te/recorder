@@ -30,6 +30,7 @@ describe('runRecorderCli', () => {
     const result = await runCliRecording(await temporaryDirectories.create())
 
     expect(JSON.parse(await readFile(join(result.directoryPath, 'snapshots', '0001.aria.json'), 'utf8'))).toEqual(result.ariaSnapshot)
+    expect(Array.from(await readFile(join(result.directoryPath, 'snapshots', '0001.png')))).toEqual(Array.from(result.screenshot))
   })
 
   test('opens the saved recording in the editor', async () => {
@@ -49,6 +50,7 @@ async function runCliRecording(workingDirectory: string): Promise<CliRecordingRe
     ],
   }
   const ariaSnapshot: RecordedAriaSnapshot = { children: [{ name: 'Save', props: {}, ref: 'e1', role: 'button', target: true }], name: '', props: {}, role: 'fragment' }
+  const screenshot = Uint8Array.from([137, 80, 78, 71])
   const openedDirectories: string[] = []
   let recordedStartUrl: string | undefined
 
@@ -60,7 +62,7 @@ async function runCliRecording(workingDirectory: string): Promise<CliRecordingRe
         recordedStartUrl = args.startUrl
         await args.onStopRequested?.()
       },
-      stop: async () => ({ readSnapshot: () => ariaSnapshot, recording }),
+      stop: async () => ({ readScreenshot: () => screenshot, readSnapshot: () => ariaSnapshot, recording }),
     },
     runRecordingEditor: async args => {
       openedDirectories.push(args.directoryPath)
@@ -73,7 +75,7 @@ async function runCliRecording(workingDirectory: string): Promise<CliRecordingRe
     workingDirectory,
   })
 
-  return { ariaSnapshot, directoryPath: join(workingDirectory, 'example-2.recording'), openedDirectories, recordedStartUrl, recording, workingDirectory }
+  return { ariaSnapshot, directoryPath: join(workingDirectory, 'example-2.recording'), openedDirectories, recordedStartUrl, recording, screenshot, workingDirectory }
 }
 
 interface CliRecordingResult {
@@ -82,5 +84,6 @@ interface CliRecordingResult {
   openedDirectories: string[]
   recordedStartUrl: string | undefined
   recording: Recording
+  screenshot: Uint8Array
   workingDirectory: string
 }

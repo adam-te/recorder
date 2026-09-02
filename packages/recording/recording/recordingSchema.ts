@@ -1,7 +1,7 @@
 import { z } from 'zod'
 
 export { recordedActionSchema, recordedAriaSnapshotSchema, recordedLocatorSchema, recordedValueSchema, recordingSchema }
-export type { RecordedAction, RecordedAriaNode, RecordedAriaSnapshot, RecordedLocator, RecordedValue, Recording }
+export type { RecordedAction, RecordedAriaNode, RecordedAriaSnapshot, RecordedLocator, RecordedMarker, RecordedScreenshot, RecordedValue, Recording }
 
 const recordedLocatorContextSchema = { framePath: z.array(z.string().min(1)).optional() }
 const recordedTextLocatorStepSchema = <Method extends 'alt' | 'label' | 'placeholder' | 'text' | 'title'>(method: Method) => z.object({ exact: z.boolean().optional(), method: z.literal(method), text: z.string().min(1) })
@@ -73,16 +73,42 @@ const recordedActionSchema = z.discriminatedUnion('kind', [
   z.object({ ...recordedActionContextSchema, ...recordedActionLocatorContextSchema, kind: z.literal('assert-visible') }),
 ])
 
-const recordingSchema = z.object({
-  title: z.string().min(1),
-  startUrl: z.url(),
-  createdAt: z.iso.datetime(),
-  actions: z.array(recordedActionSchema),
-})
+const recordedMarkerSchema = z.object({ end: z.number().int().positive(), name: z.string().min(1), start: z.number().int().nonnegative() })
+const recordedScreenshotSchema = z.object({ at: z.number().int().nonnegative() })
+
+const recordingSchema = z
+  .object({
+    title: z.string().min(1),
+    startUrl: z.url(),
+    createdAt: z.iso.datetime(),
+    actions: z.array(recordedActionSchema),
+    thousandEyes: z.object({ markers: z.array(recordedMarkerSchema).max(200), screenshots: z.array(recordedScreenshotSchema) }),
+  })
+  .superRefine((recording, context) => {
+    const markerNames = new Set<string>()
+    const screenshotPositions = new Set<number>()
+
+    recording.thousandEyes.markers.forEach((marker, markerIndex) => {
+      if (marker.start >= marker.end) context.addIssue({ code: 'custom', message: 'Marker start must be before marker end.', path: ['thousandEyes', 'markers', markerIndex] })
+      if (marker.end > recording.actions.length) context.addIssue({ code: 'custom', message: 'Marker positions must be within the action boundaries.', path: ['thousandEyes', 'markers', markerIndex] })
+      if (markerNames.has(marker.name)) context.addIssue({ code: 'custom', message: 'Marker names must be unique.', path: ['thousandEyes', 'markers', markerIndex, 'name'] })
+
+      markerNames.add(marker.name)
+    })
+
+    recording.thousandEyes.screenshots.forEach((screenshot, screenshotIndex) => {
+      if (screenshot.at > recording.actions.length) context.addIssue({ code: 'custom', message: 'Screenshot positions must be within the action boundaries.', path: ['thousandEyes', 'screenshots', screenshotIndex, 'at'] })
+      if (screenshotPositions.has(screenshot.at)) context.addIssue({ code: 'custom', message: 'Only one screenshot can be taken at an action boundary.', path: ['thousandEyes', 'screenshots', screenshotIndex, 'at'] })
+
+      screenshotPositions.add(screenshot.at)
+    })
+  })
 
 type RecordedAction = z.infer<typeof recordedActionSchema>
 type RecordedAriaNode = z.infer<typeof recordedAriaNodeSchema>
 type RecordedAriaSnapshot = z.infer<typeof recordedAriaSnapshotSchema>
 type RecordedLocator = z.infer<typeof recordedLocatorSchema>
+type RecordedMarker = z.infer<typeof recordedMarkerSchema>
+type RecordedScreenshot = z.infer<typeof recordedScreenshotSchema>
 type RecordedValue = z.infer<typeof recordedValueSchema>
 type Recording = z.infer<typeof recordingSchema>

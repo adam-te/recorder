@@ -36,11 +36,16 @@ function createRecordingEditorPresenter(args: CreateRecordingEditorPresenterArgs
       async () => {
         const currentRecording = recording ?? (await args.readRecording())
         const action = currentRecording.actions[selectedActionIndex]
-        const snapshot = action && 'locatorCandidates' in action ? renderRecordingSnapshot(await args.readSnapshot(selectedActionIndex)) : undefined
+        if (!action || !('locatorCandidates' in action)) return { type: 'preview', actionIndex: selectedActionIndex }
 
-        return { type: 'snapshot' as const, actionIndex: selectedActionIndex, ...snapshot }
+        const snapshot = await tryTo(
+          async () => renderRecordingSnapshot(await args.readSnapshot(selectedActionIndex)),
+          error => ({ snapshotError: getErrorMessage(error) }),
+        )
+
+        return { type: 'preview', actionIndex: selectedActionIndex, screenshotUrl: args.resolveScreenshotUrl(selectedActionIndex), ...snapshot }
       },
-      error => ({ type: 'snapshot', actionIndex: selectedActionIndex, error: getErrorMessage(error) }),
+      error => ({ type: 'preview', actionIndex: selectedActionIndex, snapshotError: getErrorMessage(error) }),
     )
   }
 }
@@ -53,6 +58,7 @@ interface CreateRecordingEditorPresenterArgs {
   isPending: () => boolean
   readRecording: () => Promise<Recording> | Recording
   readSnapshot: (actionIndex: number) => Promise<RecordedAriaSnapshot>
+  resolveScreenshotUrl: (actionIndex: number) => string
 }
 
 interface RecordingEditorPresenter {

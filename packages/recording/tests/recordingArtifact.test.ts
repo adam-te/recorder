@@ -11,16 +11,21 @@ describe('recording artifacts', () => {
     ],
   }
   test('rejects an incomplete artifact before writing it', async () => {
-    const files = new Map<string, string>()
+    const files = new Map<string, Uint8Array | string>()
     const store = createRecordingArtifactStore({
-      read: async path => files.get(path) ?? '',
+      read: async path => String(files.get(path) ?? ''),
+      readBinary: async path => files.get(path) as Uint8Array,
       write: async (path, contents) => {
+        files.set(path, contents)
+      },
+      writeBinary: async (path, contents) => {
         files.set(path, contents)
       },
     })
 
     await expect(
       store.save({
+        readScreenshot: () => Uint8Array.from([137, 80, 78, 71]),
         readSnapshot: () => {
           throw new Error('Snapshot is unavailable.')
         },

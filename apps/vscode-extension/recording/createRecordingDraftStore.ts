@@ -51,7 +51,7 @@ function createRecordingDraftStore(args: CreateRecordingDraftStoreArgs): Recordi
     await tryTo(
       async () => {
         const draftStore = createWorkspaceRecordingArtifactStore(draftDirectory)
-        await createWorkspaceRecordingArtifactStore(pendingDirectory).save({ recording: await draftStore.load(), readSnapshot: draftStore.loadSnapshot })
+        await createWorkspaceRecordingArtifactStore(pendingDirectory).save({ recording: await draftStore.load(), readScreenshot: draftStore.loadScreenshot, readSnapshot: draftStore.loadSnapshot })
         await workspace.fs.rename(pendingDirectory, destination, { overwrite: false })
         await workspace.fs.delete(draftDirectory, { recursive: true, useTrash: false })
       },

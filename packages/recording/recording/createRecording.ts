@@ -8,6 +8,7 @@ function createRecording(args: CreateRecordingArgs): Recording {
     startUrl: args.startUrl,
     createdAt: (args.createdAt ?? new Date()).toISOString(),
     actions: [],
+    thousandEyes: { markers: [], screenshots: [] },
   })
 }
 

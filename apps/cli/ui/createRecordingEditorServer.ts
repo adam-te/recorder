@@ -38,6 +38,9 @@ async function handleRequest(context: RequestContext): Promise<void> {
       if (request.method === 'GET' && route === `${root}recordingEditor.css`) return send(response, 200, await readFile(join(assetDirectory, 'recordingEditor.css')), 'text/css; charset=utf-8')
       if (request.method === 'GET' && route === `${root}recording.json`) return send(response, 200, await context.loadRecordingDocument(), 'application/json; charset=utf-8')
 
+      const screenshotMatch = request.method === 'GET' ? route.match(new RegExp(`^${root}snapshots/(\\d{4})\\.png$`)) : undefined
+      if (screenshotMatch) return send(response, 200, Buffer.from(await context.loadScreenshot(Number(screenshotMatch[1]))), 'image/png')
+
       if (request.method === 'POST' && route === `${root}api/messages`) {
         return sendJson(response, 200, await context.handleMessage(parseMessage(JSON.parse(await readBody(request)))))
       }
@@ -54,7 +57,7 @@ function html(root: string): string {
   <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta http-equiv="Content-Security-Policy" content="default-src 'none'; connect-src 'self'; script-src 'self'; style-src 'self'">
+    <meta http-equiv="Content-Security-Policy" content="default-src 'none'; connect-src 'self'; img-src 'self'; script-src 'self'; style-src 'self'">
     <link rel="stylesheet" href="${root}recordingEditor.css">
     <title>Transaction Recording</title>
   </head>
@@ -69,6 +72,7 @@ function parseMessage(value: unknown): RecordingEditorServerMessage {
   if (!value || typeof value !== 'object' || !('type' in value)) throw new Error('A recording editor message must have a type.')
   if (value.type === 'ready' || value.type === 'play') return { type: value.type }
   if (value.type === 'selectAction' && 'actionIndex' in value && Number.isInteger(value.actionIndex) && (value.actionIndex as number) >= 0) return { type: 'selectAction', actionIndex: value.actionIndex as number }
+  if (value.type === 'updateThousandEyes' && 'thousandEyes' in value) return { type: 'updateThousandEyes', thousandEyes: value.thousandEyes as UpdateThousandEyesMessage['thousandEyes'] }
   throw new Error('Invalid recording editor message.')
 }
 
@@ -123,6 +127,7 @@ function getErrorMessage(error: unknown): string {
 interface CreateRecordingEditorServerArgs {
   handleMessage: (message: RecordingEditorServerMessage) => Promise<RecordingEditorServerResponse>
   loadRecordingDocument: () => Promise<string>
+  loadScreenshot: (actionIndex: number) => Promise<Uint8Array>
 }
 
 interface RecordingEditorServer {
@@ -130,7 +135,8 @@ interface RecordingEditorServer {
   url: string
 }
 
-type RecordingEditorServerMessage = Extract<RecordingEditorUiMessage, { type: 'ready' | 'selectAction' }> | { type: 'play' }
+type RecordingEditorServerMessage = Extract<RecordingEditorUiMessage, { type: 'ready' | 'selectAction' | 'updateThousandEyes' }> | { type: 'play' }
+type UpdateThousandEyesMessage = Extract<RecordingEditorUiMessage, { type: 'updateThousandEyes' }>
 
 interface RecordingEditorServerResponse {
   error?: string

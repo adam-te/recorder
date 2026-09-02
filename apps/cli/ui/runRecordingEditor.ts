@@ -1,7 +1,7 @@
 import { createFileRecordingArtifactStore } from '#cli/recording/createFileRecordingArtifactStore.ts'
 import { chromium } from 'playwright'
 
-import { serializeRecording, type Recording } from '@te/recorder-recording'
+import { getRecordingScreenshotFileName, recordingSchema, serializeRecording, type Recording } from '@te/recorder-recording'
 import { createRecordingEditorPresenter } from '@te/recorder-ui/recording-editor/host'
 import { matchBy, tryTo } from '@te/recorder-utils'
 
@@ -18,6 +18,7 @@ async function runRecordingEditor(args: RunRecordingEditorArgs): Promise<void> {
     isPending: () => false,
     readRecording: store.load,
     readSnapshot: store.loadSnapshot,
+    resolveScreenshotUrl: actionIndex => `./snapshots/${getRecordingScreenshotFileName(actionIndex)}`,
   })
   const server = await createRecordingEditorServer({
     handleMessage: message =>
@@ -32,8 +33,13 @@ async function runRecordingEditor(args: RunRecordingEditorArgs): Promise<void> {
           ),
         ready: async () => ({ messages: await presenter.ready() }),
         selectAction: async current => ({ messages: await presenter.selectAction(current.actionIndex) }),
+        updateThousandEyes: async current => {
+          await store.saveRecording(recordingSchema.parse({ ...(await store.load()), thousandEyes: current.thousandEyes }))
+          return { messages: await presenter.publishRecording() }
+        },
       }),
     loadRecordingDocument: async () => serializeRecording(await store.load()),
+    loadScreenshot: store.loadScreenshot,
   })
 
   await tryTo(

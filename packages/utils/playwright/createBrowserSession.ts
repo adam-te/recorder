@@ -6,8 +6,8 @@ export { createBrowserSession }
 export type { BrowserSession, CreateBrowserSessionArgs }
 
 async function createBrowserSession(args: CreateBrowserSessionArgs = {}): Promise<BrowserSession> {
-  const browser = await chromium.launch({ headless: args.headless ?? false })
-  const context = await browser.newContext()
+  const browser = await chromium.launch({ args: ['--window-size=1282,800'], headless: args.headless ?? false })
+  const context = await browser.newContext({ viewport: null })
   const page = await context.newPage()
 
   if (args.url) {

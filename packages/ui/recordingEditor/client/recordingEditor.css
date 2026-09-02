@@ -44,7 +44,8 @@ body {
 }
 
 button,
-input {
+input,
+select {
   font: inherit;
 }
 
@@ -99,6 +100,30 @@ h1 {
   gap: 8px;
 }
 
+.view-tabs {
+  display: flex;
+  padding: 0 24px;
+  border-bottom: 1px solid var(--recorder-border);
+}
+
+.view-tabs button {
+  padding: 10px 12px 8px;
+  border: 0;
+  border-bottom: 2px solid transparent;
+  color: var(--recorder-description-foreground);
+  background: transparent;
+  cursor: pointer;
+}
+
+.view-tabs button:hover,
+.view-tabs button.active {
+  color: var(--recorder-foreground);
+}
+
+.view-tabs button.active {
+  border-bottom-color: var(--recorder-focus-border);
+}
+
 .button {
   min-height: 28px;
   padding: 4px 12px;
@@ -128,16 +153,61 @@ h1 {
 }
 
 .button.small {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   align-self: center;
   min-width: 54px;
   min-height: 24px;
   padding: 2px 8px;
+  text-decoration: none;
 }
 
 .editor-body {
   display: grid;
   grid-template-columns: minmax(230px, 30%) minmax(0, 1fr);
-  min-height: calc(100vh - 92px);
+  min-height: calc(100vh - 131px);
+}
+
+.script-panel {
+  padding: 24px;
+}
+
+.script-toolbar {
+  display: flex;
+  gap: 24px;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 16px;
+}
+
+.script-toolbar h2 {
+  margin-bottom: 4px;
+  font-size: 18px;
+}
+
+.script-toolbar p {
+  color: var(--recorder-description-foreground);
+}
+
+.script-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.script-source {
+  overflow: auto;
+  min-height: calc(100vh - 230px);
+  padding: 16px;
+  margin: 0;
+  border: 1px solid var(--recorder-border);
+  border-radius: 4px;
+  color: var(--recorder-code-foreground);
+  background: var(--recorder-code-background);
+  font-family: var(--recorder-editor-font-family);
+  font-size: var(--recorder-editor-font-size);
+  line-height: 1.55;
+  white-space: pre;
 }
 
 .action-sidebar {
@@ -155,6 +225,37 @@ h1 {
   text-transform: uppercase;
 }
 
+.action-sidebar-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-right: 12px;
+}
+
+.annotation-actions {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.annotation-actions > span {
+  color: var(--recorder-description-foreground);
+  font-size: 10px;
+  white-space: nowrap;
+}
+
+.screenshot-count.over-limit {
+  color: #b91c1c;
+  font-weight: 600;
+}
+
+.annotation-notice {
+  padding: 0 12px 10px;
+  color: var(--recorder-description-foreground);
+  font-size: 11px;
+  line-height: 1.4;
+}
+
 .action-list,
 .locator-list {
   padding: 0;
@@ -162,19 +263,162 @@ h1 {
   list-style: none;
 }
 
+.action-list-stack {
+  position: relative;
+}
+
+.action-item {
+  position: relative;
+}
+
+.action-item.marker-emphasized .action-row:not(.selected) {
+  background: color-mix(in srgb, var(--marker-emphasis-color) 10%, transparent);
+}
+
+.action-item.marker-preview .action-row:not(.selected) {
+  background: color-mix(in srgb, #2563eb 9%, transparent);
+}
+
+.marker-overlay {
+  position: absolute;
+  z-index: 2;
+  inset: 0;
+  pointer-events: none;
+}
+
+.marker-rail {
+  position: absolute;
+  top: calc(var(--marker-start) * 44px);
+  left: calc(3px + var(--marker-lane) * 7px);
+  width: 7px;
+  height: calc(var(--marker-length) * 44px);
+  padding: 0;
+  border: 0;
+  color: var(--marker-color);
+  background: transparent;
+  cursor: pointer;
+  pointer-events: auto;
+}
+
+.marker-stroke {
+  position: absolute;
+  top: 22px;
+  bottom: 22px;
+  left: 2px;
+  width: 3px;
+  border-radius: 2px;
+  background: currentColor;
+  opacity: 0.82;
+  transition:
+    width 80ms ease,
+    opacity 80ms ease,
+    transform 80ms ease;
+}
+
+.marker-rail:hover .marker-stroke,
+.marker-rail:focus-visible .marker-stroke,
+.marker-rail.emphasized .marker-stroke {
+  width: 4px;
+  opacity: 1;
+  transform: translateX(-0.5px);
+}
+
+.marker-rail.marker-single .marker-stroke {
+  top: calc(50% - 7px);
+  bottom: calc(50% - 7px);
+}
+
+.marker-stroke::before,
+.marker-preview-rail::before {
+  position: absolute;
+  top: 0;
+  left: 50%;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: inherit;
+  content: '';
+  transform: translate(-50%, -50%);
+}
+
+.marker-stroke::after,
+.marker-preview-rail::after {
+  position: absolute;
+  bottom: 0;
+  left: 50%;
+  width: 7px;
+  height: 3px;
+  border-radius: 2px;
+  background: inherit;
+  content: '';
+  transform: translate(-50%, 50%);
+}
+
+.marker-tooltip {
+  position: absolute;
+  z-index: 30;
+  top: var(--marker-tooltip-offset);
+  left: 11px;
+  display: none;
+  min-width: max-content;
+  max-width: 240px;
+  padding: 5px 8px;
+  border: 1px solid var(--recorder-border);
+  border-left: 3px solid var(--marker-color);
+  border-radius: 4px;
+  color: var(--recorder-foreground);
+  background: var(--recorder-background);
+  box-shadow: 0 3px 10px rgb(15 23 42 / 16%);
+  font-size: 10px;
+  text-align: left;
+  transform: translateY(-50%);
+  pointer-events: none;
+}
+
+.marker-tooltip strong,
+.marker-tooltip small {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.marker-tooltip small {
+  margin-top: 1px;
+  color: var(--recorder-description-foreground);
+  font-size: 9px;
+}
+
+.marker-rail:hover:not([aria-expanded='true']) .marker-tooltip,
+.marker-rail:focus-visible:not([aria-expanded='true']) .marker-tooltip {
+  display: block;
+}
+
+.marker-preview-rail {
+  position: absolute;
+  top: calc(var(--marker-start) * 44px + 22px);
+  left: calc(5px + var(--marker-lane) * 7px);
+  width: 3px;
+  height: calc((var(--marker-length) - 1) * 44px);
+  border-radius: 2px;
+  background: #2563eb;
+  pointer-events: none;
+}
+
+.marker-preview-rail.marker-single {
+  top: calc(var(--marker-start) * 44px + 15px);
+  height: 14px;
+}
+
 .action-row {
   display: grid;
-  grid-template-columns: 26px minmax(68px, auto) minmax(0, 1fr);
-  gap: 8px;
+  grid-template-columns: minmax(0, 1fr) 32px 36px;
   align-items: center;
   width: 100%;
   min-height: 44px;
-  padding: 6px 12px;
-  border: 0;
+  padding-left: var(--marker-gutter-width);
   color: var(--recorder-sidebar-foreground);
   background: transparent;
-  text-align: left;
-  cursor: pointer;
 }
 
 .action-row:hover {
@@ -184,6 +428,177 @@ h1 {
 .action-row.selected {
   color: var(--recorder-list-active-foreground);
   background: var(--recorder-list-active-background);
+}
+
+.action-select {
+  display: grid;
+  grid-template-columns: 26px minmax(68px, auto) minmax(0, 1fr);
+  gap: 8px;
+  align-items: center;
+  align-self: stretch;
+  min-width: 0;
+  padding: 6px 4px;
+  border: 0;
+  color: inherit;
+  background: transparent;
+  text-align: left;
+  cursor: pointer;
+}
+
+.marker-toggle,
+.screenshot-toggle {
+  display: inline-flex;
+  width: 28px;
+  height: 28px;
+  padding: 5px;
+  border: 0;
+  border-radius: 4px;
+  opacity: 0;
+  color: var(--recorder-description-foreground);
+  background: transparent;
+  cursor: pointer;
+}
+
+.marker-toggle:hover,
+.screenshot-toggle:hover {
+  background: rgb(15 23 42 / 10%);
+}
+
+.marker-toggle:focus-visible,
+.action-row:hover .marker-toggle,
+.marker-toggle.pending,
+.screenshot-toggle:focus-visible,
+.action-row:hover .screenshot-toggle,
+.screenshot-toggle.active {
+  opacity: 1;
+}
+
+.marker-toggle.pending {
+  color: #7c3aed;
+}
+
+.screenshot-toggle.active {
+  color: var(--recorder-focus-border);
+}
+
+.marker-toggle:disabled {
+  opacity: 0;
+  cursor: default;
+}
+
+.action-row.selected .marker-toggle,
+.action-row.selected .screenshot-toggle {
+  color: currentColor;
+}
+
+.marker-toggle svg,
+.screenshot-toggle svg {
+  width: 18px;
+  height: 18px;
+  overflow: visible;
+  fill: none;
+  stroke: currentColor;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 1.75;
+}
+
+.marker-toggle.pending .marker-flag {
+  fill: currentColor;
+}
+
+.screenshot-toggle.active .camera-body {
+  fill: currentColor;
+}
+
+.screenshot-toggle.active circle {
+  fill: var(--recorder-sidebar-background);
+}
+
+.action-row.selected .screenshot-toggle.active circle {
+  fill: var(--recorder-list-active-background);
+}
+
+.marker-editor-popover {
+  position: absolute;
+  z-index: 40;
+  top: calc(var(--marker-editor-top) + 8px);
+  right: 12px;
+  left: calc(var(--marker-gutter-width) + 4px);
+  display: grid;
+  gap: 7px;
+  padding: 10px;
+  border: 1px solid var(--recorder-border);
+  border-left: 3px solid var(--marker-emphasis-color);
+  border-radius: 5px;
+  color: var(--recorder-foreground);
+  background: var(--recorder-background);
+  box-shadow: 0 4px 12px rgb(15 23 42 / 12%);
+  pointer-events: auto;
+}
+
+.marker-editor-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  color: var(--recorder-description-foreground);
+  font-size: 10px;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+.marker-editor-heading button {
+  width: 22px;
+  height: 22px;
+  padding: 0;
+  border: 0;
+  border-radius: 3px;
+  color: inherit;
+  background: transparent;
+  cursor: pointer;
+  font-size: 17px;
+  line-height: 1;
+}
+
+.marker-editor-heading button:hover {
+  background: var(--recorder-button-hover-background);
+}
+
+.marker-editor-popover label {
+  display: grid;
+  gap: 4px;
+  color: var(--recorder-description-foreground);
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+.marker-editor-popover input {
+  width: 100%;
+  min-height: 30px;
+  padding: 5px 8px;
+  border: 1px solid var(--recorder-border);
+  border-radius: 3px;
+  color: var(--recorder-foreground);
+  background: var(--recorder-background);
+  letter-spacing: normal;
+  text-transform: none;
+}
+
+.marker-editor-popover .field-error {
+  color: #b91c1c;
+  font-size: 11px;
+}
+
+.marker-editor-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.button.danger {
+  color: #b91c1c;
 }
 
 .action-number {
@@ -256,6 +671,119 @@ h1 {
   margin: 16px 0 0;
 }
 
+.step-workspace {
+  display: grid;
+  grid-template-columns: minmax(320px, 3fr) minmax(280px, 2fr);
+  gap: clamp(20px, 3vw, 40px);
+  align-items: start;
+  margin-top: 24px;
+}
+
+.step-inspector {
+  min-width: 0;
+}
+
+.step-inspector .property-list {
+  margin-top: 0;
+  padding: 12px;
+  border: 1px solid var(--recorder-border);
+  border-radius: 4px;
+  background: var(--recorder-text-block-background);
+}
+
+.inspector-tabs {
+  display: flex;
+  margin-top: 16px;
+  border-bottom: 1px solid var(--recorder-border);
+}
+
+.inspector-tabs button {
+  padding: 8px 10px;
+  border: 0;
+  border-bottom: 2px solid transparent;
+  color: var(--recorder-description-foreground);
+  background: transparent;
+  cursor: pointer;
+}
+
+.inspector-tabs button:hover {
+  color: var(--recorder-foreground);
+}
+
+.inspector-tabs button.active {
+  border-bottom-color: var(--recorder-focus-border);
+  color: var(--recorder-foreground);
+}
+
+.step-inspector [role='tabpanel'] > .detail-section {
+  margin-top: 16px;
+}
+
+.screenshot-section {
+  min-width: 0;
+}
+
+.section-title-row {
+  display: flex;
+  min-height: 28px;
+  gap: 16px;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 10px;
+}
+
+.section-title-row h3 {
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.screenshot-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.screenshot-canvas {
+  position: relative;
+  display: flex;
+  overflow: auto;
+  min-height: clamp(280px, 55vh, 680px);
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--recorder-border);
+  border-radius: 4px;
+  background-color: var(--recorder-code-background);
+  background-image:
+    linear-gradient(45deg, color-mix(in srgb, var(--recorder-border) 30%, transparent) 25%, transparent 25%), linear-gradient(-45deg, color-mix(in srgb, var(--recorder-border) 30%, transparent) 25%, transparent 25%),
+    linear-gradient(45deg, transparent 75%, color-mix(in srgb, var(--recorder-border) 30%, transparent) 75%), linear-gradient(-45deg, transparent 75%, color-mix(in srgb, var(--recorder-border) 30%, transparent) 75%);
+  background-position:
+    0 0,
+    0 8px,
+    8px -8px,
+    -8px 0;
+  background-size: 16px 16px;
+}
+
+.screenshot-canvas img {
+  display: none;
+  max-width: 100%;
+  max-height: 70vh;
+  object-fit: contain;
+}
+
+.screenshot-canvas img.loaded {
+  display: block;
+}
+
+.screenshot-canvas.actual-size {
+  align-items: flex-start;
+  justify-content: flex-start;
+}
+
+.screenshot-canvas.actual-size img {
+  max-width: none;
+  max-height: none;
+}
+
 .property-list dt {
   color: var(--recorder-description-foreground);
 }
@@ -317,6 +845,43 @@ h1 {
   font-family: var(--recorder-editor-font-family);
   font-size: var(--recorder-editor-font-size);
   line-height: 1.55;
+}
+
+@media (max-width: 1050px) {
+  .step-workspace {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .screenshot-canvas {
+    min-height: 320px;
+  }
+}
+
+@media (max-width: 700px) {
+  .recording-header {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .header-actions {
+    grid-row: auto;
+    grid-column: 1;
+    flex-wrap: wrap;
+  }
+
+  .editor-body {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .action-sidebar {
+    max-height: 240px;
+    border-right: 0;
+    border-bottom: 1px solid var(--recorder-border);
+  }
+
+  .script-toolbar {
+    align-items: flex-start;
+    flex-direction: column;
+  }
 }
 
 .yaml-line {

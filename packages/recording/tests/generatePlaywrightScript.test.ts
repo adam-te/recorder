@@ -100,7 +100,7 @@ function action(action: RecordedActionInput): RecordedAction {
 }
 
 function createRecordingFixture(actions: RecordedAction[], title = 'Every action'): Recording {
-  return { actions, createdAt: '2026-08-24T12:00:00.000Z', startUrl: 'https://metadata.example/not-used', title }
+  return { actions, createdAt: '2026-08-24T12:00:00.000Z', startUrl: 'https://metadata.example/not-used', thousandEyes: { markers: [], screenshots: [] }, title }
 }
 
 function locators(primary: RecordedLocator = { kind: 'css', value: '#target' }): [RecordedLocator, ...RecordedLocator[]] {

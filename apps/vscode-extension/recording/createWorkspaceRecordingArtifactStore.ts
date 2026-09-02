@@ -10,12 +10,21 @@ const decoder = new TextDecoder()
 function createWorkspaceRecordingArtifactStore(directory: Uri): RecordingArtifactStore {
   return createRecordingArtifactStore({
     read: async relativePath => decoder.decode(await workspace.fs.readFile(resolveArtifactUri(directory, relativePath))),
+    readBinary: async relativePath => await workspace.fs.readFile(resolveArtifactUri(directory, relativePath)),
     write: async (relativePath, contents) => {
       const destination = resolveArtifactUri(directory, relativePath)
       const temporary = destination.with({ path: `${destination.path}.pending` })
 
       await workspace.fs.createDirectory(Uri.joinPath(destination, '..'))
       await workspace.fs.writeFile(temporary, encoder.encode(contents))
+      await workspace.fs.rename(temporary, destination, { overwrite: true })
+    },
+    writeBinary: async (relativePath, contents) => {
+      const destination = resolveArtifactUri(directory, relativePath)
+      const temporary = destination.with({ path: `${destination.path}.pending` })
+
+      await workspace.fs.createDirectory(Uri.joinPath(destination, '..'))
+      await workspace.fs.writeFile(temporary, contents)
       await workspace.fs.rename(temporary, destination, { overwrite: true })
     },
   })

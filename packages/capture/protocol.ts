@@ -11,17 +11,8 @@ const RECORDER_UI_ATTRIBUTE = 'data-thousandeyes-recorder-ui'
 const SELECTOR_GENERATOR_NAME = '__thousandEyesRecorderGenerateSelector'
 const STOP_BINDING_NAME = '__thousandEyesRecorderStop'
 
-interface CapturedChangeEvent {
-  kind: 'change'
-}
-
 interface CapturedClickEvent {
   kind: 'click'
-}
-
-interface CapturedInputEvent {
-  inputType: string
-  kind: 'input'
 }
 
 interface CapturedKeydownEvent {
@@ -53,6 +44,6 @@ interface SerializedInteraction {
   targetRef?: string
 }
 
-type CapturedInteractionEvent = CapturedChangeEvent | CapturedClickEvent | CapturedInputEvent | CapturedKeydownEvent
+type CapturedInteractionEvent = CapturedClickEvent | CapturedKeydownEvent
 type CapturedAriaSelectorStep = AriaLocatorStep
 type CapturedSelector = CapturedAriaSelector | CapturedCssSelector | CapturedTestIdSelector

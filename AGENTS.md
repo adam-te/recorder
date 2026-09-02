@@ -10,6 +10,7 @@
 - Always use truthy/falsy checks over strict equality when it doesn't change the result
 - Always use early returns for negative conditions if applicable
 - Avoid one-off variables; Prefer nesting expressions and functions over many one-off variables
+- Do not add versions, schema numbers etc or otherwise checks to support old versions of data unless specifically asked to
 - Do not edit vendored, generated, or compiled output (these rules do not apply there)
 
 # When Testing
