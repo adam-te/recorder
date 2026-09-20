@@ -8,6 +8,8 @@ const ARIA_DIRECTORY = join(SCRIPT_DIRECTORY, '..')
 const ROOT_DIRECTORY = join(ARIA_DIRECTORY, '..', '..')
 const VENDOR_DIRECTORY = join(ARIA_DIRECTORY, 'vendor', 'playwright')
 const PLAYWRIGHT_LICENSE = join(ARIA_DIRECTORY, 'PLAYWRIGHT-LICENSE')
+const SELECTOR_GENERATOR_SOURCE = 'packages/injected/src/selectorGenerator.ts'
+const TEXT_ALTERNATIVES_DESTINATION = join(VENDOR_DIRECTORY, 'injected', 'selectorGeneratorTextAlternatives.ts')
 const VENDOR_FILES = [
   ['packages/injected/src/ariaSnapshot.ts', 'injected/ariaSnapshot.ts'],
   ['packages/injected/src/ariaSnapshotDistiller.ts', 'injected/ariaSnapshotDistiller.ts'],
@@ -23,16 +25,19 @@ const VENDOR_FILES = [
 ]
 const VENDOR_DESTINATIONS = new Map(VENDOR_FILES.map(([source, destination]) => [withoutExtension(source), destination]))
 const MODIFICATION_NOTICE = '// Modified from the Playwright source only to use local TypeScript import paths.\n'
+const EXTRACTION_NOTICE = '// Extracted from the Playwright selector generator and modified only to export suitableTextAlternatives.\n'
 
 await generate()
 
 async function generate() {
   const playwrightVersion = await readAndValidatePlaywrightVersion()
   const playwrightRawBaseUrl = `https://raw.githubusercontent.com/microsoft/playwright/v${playwrightVersion}`
-  const [license, ...sources] = await Promise.all([download(`${playwrightRawBaseUrl}/LICENSE`), ...VENDOR_FILES.map(([source]) => download(`${playwrightRawBaseUrl}/${source}`))])
+  const [license, selectorGenerator, ...sources] = await Promise.all([download(`${playwrightRawBaseUrl}/LICENSE`), download(`${playwrightRawBaseUrl}/${SELECTOR_GENERATOR_SOURCE}`), ...VENDOR_FILES.map(([source]) => download(`${playwrightRawBaseUrl}/${source}`))])
 
+  await mkdir(dirname(TEXT_ALTERNATIVES_DESTINATION), { recursive: true })
   await Promise.all([
     writeFile(PLAYWRIGHT_LICENSE, license),
+    writeFile(TEXT_ALTERNATIVES_DESTINATION, extractTextAlternatives(selectorGenerator)),
     ...sources.map(async (contents, index) => {
       const [source, destination] = VENDOR_FILES[index]
       const path = join(VENDOR_DIRECTORY, destination)
@@ -42,6 +47,17 @@ async function generate() {
     }),
   ])
   process.stdout.write(`Vendored Playwright ARIA sources from Playwright ${playwrightVersion}\n`)
+}
+
+function extractTextAlternatives(contents) {
+  const source = ts.createSourceFile(SELECTOR_GENERATOR_SOURCE, contents, ts.ScriptTarget.Latest, true)
+  const functions = ['trimWordBoundary', 'suitableTextAlternatives'].map(name => source.statements.find(statement => ts.isFunctionDeclaration(statement) && statement.name?.text === name))
+
+  if (functions.some(value => !value)) {
+    throw new Error('Expected Playwright selector generator text alternative functions')
+  }
+
+  return `${EXTRACTION_NOTICE}${contents.slice(0, source.statements[0].getStart(source))}${functions.map((value, index) => `${index ? 'export ' : ''}${value.getText(source)}`).join('\n\n')}\n`
 }
 
 function rewriteImports(contents, source, destination) {

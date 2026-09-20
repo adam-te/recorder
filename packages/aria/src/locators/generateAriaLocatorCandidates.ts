@@ -1,6 +1,7 @@
 import type { AriaLocatorOptions } from '#aria/src/types/browser.ts'
 import type { AriaLocatorCandidate, AriaLocatorStep } from '#aria/src/types/locators.ts'
 import { beginAriaCaches, endAriaCaches } from '#aria/vendor/playwright/injected/roleUtils.ts'
+import { suitableTextAlternatives } from '#aria/vendor/playwright/injected/selectorGeneratorTextAlternatives.ts'
 
 import { tryTo } from '@te/recorder-utils'
 
@@ -27,7 +28,7 @@ function generateAriaLocatorCandidatesInternal(options: AriaLocatorOptions): Ari
       const name = query.getName(ancestor)
       const role = query.getRole(ancestor)
 
-      return name && role ? targetSteps.flatMap(step => withNecessaryExactness([{ method: 'role', name, role }, step])) : []
+      return name && role ? getRoleSteps(role, name).flatMap(ancestorStep => targetSteps.flatMap(step => withNecessaryExactness([ancestorStep, step]))) : []
     }),
   ]
   const candidate = candidates.find(candidate => uniquelyMatchesTarget(query, options.target, candidate))
@@ -41,11 +42,11 @@ function getTargetSteps(query: AriaQueryContext, element: Element): AriaLocatorS
   const text = query.getText(element)
 
   return [
-    ...(name && role ? [{ method: 'role' as const, name, role }] : []),
-    ...query.getLabels(element).map(text => ({ method: 'label' as const, text })),
+    ...(name && role ? getRoleSteps(role, name) : []),
+    ...query.getLabels(element).flatMap(text => getTextSteps('label', text)),
     ...getAttributeStep('alt'),
     ...getAttributeStep('placeholder'),
-    ...(text ? [{ method: 'text' as const, text }] : []),
+    ...(text ? getTextSteps('text', text) : []),
     ...getAttributeStep('title'),
     ...(role ? [{ method: 'role' as const, role }] : []),
   ]
@@ -53,8 +54,27 @@ function getTargetSteps(query: AriaQueryContext, element: Element): AriaLocatorS
   function getAttributeStep(method: 'alt' | 'placeholder' | 'title'): AriaLocatorStep[] {
     const text = element.getAttribute(method)
 
-    return text ? [{ method, text }] : []
+    return text ? getTextSteps(method, text) : []
   }
+}
+
+function getRoleSteps(role: string, name: string): AriaLocatorStep[] {
+  return getTextAlternatives(name).map(name => ({ method: 'role', name, role }))
+}
+
+function getTextSteps(method: Exclude<AriaLocatorStep['method'], 'role'>, text: string): AriaLocatorStep[] {
+  return getTextAlternatives(text).map(text => ({ method, text }))
+}
+
+function getTextAlternatives(text: string): string[] {
+  return [
+    ...new Set([
+      ...suitableTextAlternatives(text)
+        .toSorted((left, right) => right.scoreBonus - left.scoreBonus || left.text.length - right.text.length)
+        .map(alternative => alternative.text),
+      text,
+    ]),
+  ]
 }
 
 function uniquelyMatchesTarget(query: AriaQueryContext, target: Element, candidate: AriaLocatorCandidate): boolean {

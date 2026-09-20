@@ -141,6 +141,24 @@ const locatorRecordingCases: LocatorRecordingCase[] = [
     name: 'uses text locators',
   },
   {
+    expectedLocator: { kind: 'aria', steps: [{ method: 'text', text: 'Example DomainThis domain is' }] },
+    html: `<div id="target" onclick="document.body.dataset.clicked = 'true'">Example DomainThis domain is for use in documentation examples without needing permission. Avoid use in operations.Learn more</div>`,
+    name: 'prefers Playwright short text alternatives',
+  },
+  {
+    expectedLocator: { kind: 'aria', steps: [{ method: 'text', text: 'Shared opening text remains identical for every item until alpha target details' }] },
+    html: `<div id="target" onclick="document.body.dataset.clicked = 'true'">Shared opening text remains identical for every item until alpha target details continue with more words afterward</div><div>Shared opening text remains identical for every item until beta competing details continue with more words afterward</div>`,
+    name: 'uses a longer Playwright text alternative when the short alternative is ambiguous',
+  },
+  {
+    expectedLocator: {
+      kind: 'aria',
+      steps: [{ method: 'text', text: 'Shared opening text remains identical for every item through a deliberately long common introduction before alpha target ending' }],
+    },
+    html: `<div id="target" onclick="document.body.dataset.clicked = 'true'">Shared opening text remains identical for every item through a deliberately long common introduction before alpha target ending</div><div>Shared opening text remains identical for every item through a deliberately long common introduction before beta competing ending</div>`,
+    name: 'retains full text as a fallback when Playwright alternatives are ambiguous',
+  },
+  {
     expectedLocator: { kind: 'aria', steps: [{ method: 'title', text: 'Target title' }] },
     html: `<div id="target" title="Target title" style="height: 10px; width: 10px" onclick="document.body.dataset.clicked = 'true'"></div>`,
     name: 'uses title locators',
