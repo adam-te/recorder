@@ -1,24 +1,24 @@
 import { randomUUID } from 'node:crypto'
 import { Uri, workspace, type ExtensionContext } from 'vscode'
 
-import type { Recording, RecordingArtifact } from '@te/recorder-recording'
+import type { CapturedRecording, Recording } from '@te/recorder-recording'
 import { tryTo } from '@te/recorder-utils'
 
-import { createWorkspaceRecordingArtifactStore, getRecordingDocumentUri } from './createWorkspaceRecordingArtifactStore.ts'
+import { createWorkspaceRecordingArtifactStore, getStepsDocumentUri } from './createWorkspaceRecordingArtifactStore.ts'
 
 export { createRecordingDraftStore }
 export type { RecordingDraftStore }
 
 function createRecordingDraftStore(args: CreateRecordingDraftStoreArgs): RecordingDraftStore {
-  return { commit, discard, isDraft, load, stage }
+  return { commit, discard, isDraft, loadRecording, stage }
 
-  async function stage(artifact: RecordingArtifact, workspaceUri?: Uri): Promise<Uri> {
+  async function stage(capture: CapturedRecording, workspaceUri?: Uri): Promise<Uri> {
     const draftDirectory = Uri.joinPath(workspaceUri ? Uri.joinPath(workspaceUri, '.thousandeyes-recorder', 'drafts') : getPrivateDraftRoot(), getDraftDirectoryName())
 
     return await tryTo(
       async () => {
-        await createWorkspaceRecordingArtifactStore(draftDirectory).save(artifact)
-        return getRecordingDocumentUri(draftDirectory)
+        await createWorkspaceRecordingArtifactStore(draftDirectory).saveCapture(capture)
+        return getStepsDocumentUri(draftDirectory)
       },
       async error => {
         await cleanupDirectory(draftDirectory)
@@ -31,9 +31,9 @@ function createRecordingDraftStore(args: CreateRecordingDraftStoreArgs): Recordi
     return getDraftRoots().some(root => isDraftDocumentInRoot(documentUri, root))
   }
 
-  async function load(documentUri: Uri): Promise<Recording> {
+  async function loadRecording(documentUri: Uri): Promise<Recording> {
     assertDraft(documentUri)
-    return createWorkspaceRecordingArtifactStore(getRecordingDirectory(documentUri)).load()
+    return createWorkspaceRecordingArtifactStore(getRecordingDirectory(documentUri)).loadRecording()
   }
 
   async function discard(documentUri: Uri): Promise<boolean> {
@@ -51,7 +51,7 @@ function createRecordingDraftStore(args: CreateRecordingDraftStoreArgs): Recordi
     await tryTo(
       async () => {
         const draftStore = createWorkspaceRecordingArtifactStore(draftDirectory)
-        await createWorkspaceRecordingArtifactStore(pendingDirectory).save({ recording: await draftStore.load(), readScreenshot: draftStore.loadScreenshot, readSnapshot: draftStore.loadSnapshot })
+        await createWorkspaceRecordingArtifactStore(pendingDirectory).copyFrom(draftStore)
         await workspace.fs.rename(pendingDirectory, destination, { overwrite: false })
         await workspace.fs.delete(draftDirectory, { recursive: true, useTrash: false })
       },
@@ -61,7 +61,7 @@ function createRecordingDraftStore(args: CreateRecordingDraftStoreArgs): Recordi
       },
     )
 
-    return getRecordingDocumentUri(destination)
+    return getStepsDocumentUri(destination)
   }
 
   function assertDraft(documentUri: Uri): void {
@@ -94,7 +94,7 @@ function isDraftDocumentInRoot(documentUri: Uri, root: Uri): boolean {
 
   const rootPath = root.path.endsWith('/') ? root.path : `${root.path}/`
   const relativePath = documentUri.path.startsWith(rootPath) ? documentUri.path.slice(rootPath.length) : undefined
-  return Boolean(relativePath && /^[^/]+\.recording\/recording\.json$/.test(relativePath))
+  return Boolean(relativePath && /^[^/]+\.recording\/steps\.json$/.test(relativePath))
 }
 
 async function cleanupDirectory(directory: Uri): Promise<void> {
@@ -109,6 +109,6 @@ interface RecordingDraftStore {
   commit: (documentUri: Uri, destination: Uri) => Promise<Uri>
   discard: (documentUri: Uri) => Promise<boolean>
   isDraft: (documentUri: Uri) => boolean
-  load: (documentUri: Uri) => Promise<Recording>
-  stage: (artifact: RecordingArtifact, workspaceUri?: Uri) => Promise<Uri>
+  loadRecording: (documentUri: Uri) => Promise<Recording>
+  stage: (capture: CapturedRecording, workspaceUri?: Uri) => Promise<Uri>
 }

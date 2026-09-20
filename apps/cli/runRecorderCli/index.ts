@@ -8,7 +8,7 @@ import { createInterface } from 'node:readline/promises'
 
 import { createRecorder, type Recorder } from '@te/recorder-capture'
 import { runRecording } from '@te/recorder-execution'
-import type { RecordingArtifact } from '@te/recorder-recording'
+import { getActionSteps, type CapturedRecording } from '@te/recorder-recording'
 import { matchBy, tryTo } from '@te/recorder-utils'
 
 import { parseRecorderCliCommand, type RecorderCliCommand } from './parseRecorderCliCommand.ts'
@@ -52,16 +52,16 @@ async function executeCommand(args: ExecuteCommandArgs): Promise<void> {
       await args.stdout.write(HELP)
     },
     play: async command => {
-      const recording = await createFileRecordingArtifactStore(command.directoryPath).load()
+      const steps = await createFileRecordingArtifactStore(command.directoryPath).loadSteps()
 
-      await runRecording({ recording })
-      await args.stdout.write(`Played ${recording.actions.length} recorded actions.\n`)
+      await runRecording({ steps })
+      await args.stdout.write(`Played ${getActionSteps(steps).length} recorded actions.\n`)
     },
     ui: async command => {
       await (args.args.runRecordingEditor ?? runRecordingEditor)({
         directoryPath: command.directoryPath,
-        onPlay: async recording => {
-          await runRecording({ recording })
+        onPlay: async steps => {
+          await runRecording({ steps })
         },
         stdout: args.stdout,
       })
@@ -82,17 +82,17 @@ async function executeCommand(args: ExecuteCommandArgs): Promise<void> {
       await args.stdout.write('Recording started. Press Enter or click Stop recording in the browser to stop and save.\n')
       await stopRequest.wait(args.args.waitForStop ?? waitForEnter)
 
-      const artifact = await args.recorder.stop()
-      if (!artifact) {
+      const capture = await args.recorder.stop()
+      if (!capture) {
         throw new Error('The recording stopped without producing a recording.')
       }
 
-      await writeRecordingDirectory({ artifact, directoryPath })
+      await writeRecordingDirectory({ capture, directoryPath })
       await args.stdout.write(`Saved recording to ${directoryPath}.\n`)
       await (args.args.runRecordingEditor ?? runRecordingEditor)({
         directoryPath,
-        onPlay: async recordingToPlay => {
-          await runRecording({ recording: recordingToPlay })
+        onPlay: async steps => {
+          await runRecording({ steps })
         },
         stdout: args.stdout,
       })
@@ -185,12 +185,12 @@ async function pathExists(path: string): Promise<boolean> {
   )
 }
 
-async function writeRecordingDirectory(args: { artifact: RecordingArtifact; directoryPath: string }): Promise<void> {
+async function writeRecordingDirectory(args: { capture: CapturedRecording; directoryPath: string }): Promise<void> {
   const pendingDirectory = join(dirname(args.directoryPath), `.${basename(args.directoryPath)}.pending-${randomUUID()}`)
 
   await tryTo(
     async () => {
-      await createFileRecordingArtifactStore(pendingDirectory).save(args.artifact)
+      await createFileRecordingArtifactStore(pendingDirectory).saveCapture(args.capture)
 
       await rename(pendingDirectory, args.directoryPath)
     },

@@ -1,6 +1,6 @@
 import { createRecordingCapture, type RecordingCapture } from '#capture/host/createRecordingCapture.ts'
 
-import type { Recording, RecordingArtifact } from '@te/recorder-recording'
+import type { CapturedRecording } from '@te/recorder-recording'
 import { tryTo } from '@te/recorder-utils'
 import { createBrowserSession, type BrowserSession } from '@te/recorder-utils/playwright'
 
@@ -26,7 +26,6 @@ function createRecorder(args: CreateRecorderArgs = {}): Recorder {
       async () => {
         currentRecording.capture = await createRecordingCapture({
           context: currentBrowserSession.context,
-          onRecordingChanged: args.onRecordingChanged,
           onStopRequested: args.onStopRequested ?? stopFromOverlay,
           page: currentBrowserSession.page,
           startUrl: args.startUrl,
@@ -40,7 +39,7 @@ function createRecorder(args: CreateRecorderArgs = {}): Recorder {
     )
   }
 
-  async function stop(): Promise<RecordingArtifact | undefined> {
+  async function stop(): Promise<CapturedRecording | undefined> {
     const currentCapture = activeRecording?.capture
 
     return await tryTo(
@@ -91,11 +90,10 @@ interface ActiveRecording {
 interface Recorder {
   dispose: () => Promise<void>
   start: (args: StartArgs) => Promise<void>
-  stop: () => Promise<RecordingArtifact | undefined>
+  stop: () => Promise<CapturedRecording | undefined>
 }
 
 interface StartArgs {
-  onRecordingChanged?: (recording: Recording) => Promise<void> | void
   onStopRequested?: () => Promise<void> | void
   startUrl: string
 }

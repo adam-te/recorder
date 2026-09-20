@@ -4,7 +4,7 @@ import { join } from 'node:path'
 import { chromium, type Page } from 'playwright'
 import { describe, expect, test, vi } from 'vitest'
 
-import { createRecording, serializeRecording, serializeRecordingSnapshot, type Recording } from '@te/recorder-recording'
+import { createRecording, deriveRecordingSteps, serializeRecording, serializeRecordingSnapshot, serializeRecordingSteps, type ActionStep, type RawEvent, type Recording, type RecordingSteps } from '@te/recorder-recording'
 import { tryTo } from '@te/recorder-utils'
 
 import { useTemporaryDirectories } from './support/temporaryDirectories.ts'
@@ -69,8 +69,40 @@ describe('runRecordingEditor', () => {
         expect((await download).suggestedFilename()).toBe('example-recording.js')
         expect(await readFile(await (await download).path(), 'utf8')).toContain('await driver.get("https://example.com/dashboard");')
       },
-      [{ kind: 'goto', pageUrl: 'https://example.com', url: 'https://example.com/dashboard' }],
+      { events: [{ kind: 'goto', pageUrl: 'https://example.com', url: 'https://example.com/dashboard' }] },
     )
+  })
+
+  test('edits projected steps without changing raw input events', async () => {
+    const temporaryDirectory = await temporaryDirectories.create()
+
+    await runEditor(
+      temporaryDirectory,
+      async page => {
+        expect(await page.locator('.metadata').textContent()).toContain('1 step')
+        expect(await page.locator('.action-kind').textContent()).toBe('fill')
+        expect(await page.locator('.action-summary').textContent()).toContain('Fill')
+
+        await Promise.all([page.waitForResponse(response => response.url().endsWith('/api/messages')), page.getByRole('button', { name: 'Take screenshot after step 1' }).click()])
+
+        await page.getByRole('tab', { name: 'ThousandEyes JS' }).click()
+        expect(await page.locator('.script-source').textContent()).toContain('await fill(await findElement(By.css("#search")), "hi");')
+      },
+      {
+        events: [
+          { inputValue: 'h', key: 'h', kind: 'key-press', locatorCandidates: [{ kind: 'css', value: '#search' }], pageUrl: 'https://example.com' },
+          { inputValue: 'hi', key: 'i', kind: 'key-press', locatorCandidates: [{ kind: 'css', value: '#search' }], pageUrl: 'https://example.com' },
+        ],
+      },
+    )
+
+    expect(JSON.parse(await readFile(join(temporaryDirectory, 'example.recording', 'recording.json'), 'utf8'))).toMatchObject({
+      events: [
+        { inputValue: 'h', key: 'h', kind: 'key-press' },
+        { inputValue: 'hi', key: 'i', kind: 'key-press' },
+      ],
+    })
+    expect(JSON.parse(await readFile(join(temporaryDirectory, 'example.recording', 'steps.json'), 'utf8'))).toMatchObject([{ kind: 'fill', value: { kind: 'plain-text', value: 'hi' } }, { kind: 'screenshot' }])
   })
 
   test('edits and persists ThousandEyes annotations', async () => {
@@ -84,7 +116,7 @@ describe('runRecordingEditor', () => {
         await Promise.all([page.waitForResponse(response => response.url().endsWith('/api/messages')), page.getByRole('button', { name: 'Take screenshot after step 1' }).click()])
         await page.getByRole('button', { name: 'Start marker at step 1' }).click()
         await Promise.all([page.waitForResponse(response => response.url().endsWith('/api/messages')), page.getByRole('button', { name: 'End marker at step 2' }).click()])
-        expect(await page.getByRole('button', { name: 'Remove screenshot after step 2' }).getAttribute('aria-pressed')).toBe('true')
+        expect(await page.getByRole('button', { name: 'Remove screenshot after step 1' }).getAttribute('aria-pressed')).toBe('true')
         expect((await page.locator('.action-summary').first().boundingBox())?.x).toBe(actionContentX)
 
         await page.getByRole('button', { name: 'Marker 1, steps 1–2', exact: true }).click()
@@ -99,25 +131,30 @@ describe('runRecordingEditor', () => {
         await page.getByRole('tab', { name: 'ThousandEyes JS' }).click()
         expect(await page.locator('.script-source').textContent()).toContain(`  markers.start("Load dashboard");
   await driver.get("https://example.com/dashboard");
+  await driver.takeScreenshot();
   markers.start("Marker 2");
   await driver.navigate().refresh();
   markers.stop("Load dashboard");
-  markers.stop("Marker 2");
-  await driver.takeScreenshot();`)
+  markers.stop("Marker 2");`)
       },
-      [
-        { kind: 'goto', pageUrl: 'https://example.com', url: 'https://example.com/dashboard' },
-        { kind: 'reload', pageUrl: 'https://example.com/dashboard' },
-      ],
+      {
+        events: [{ kind: 'goto', pageUrl: 'https://example.com', url: 'https://example.com/dashboard' }],
+        steps: [
+          { kind: 'goto', pageUrl: 'https://example.com', url: 'https://example.com/dashboard' },
+          { kind: 'reload', pageUrl: 'https://example.com/dashboard' },
+        ],
+      },
     )
 
-    expect(JSON.parse(await readFile(join(temporaryDirectory, 'example.recording', 'recording.json'), 'utf8')).thousandEyes).toStrictEqual({
-      markers: [
-        { end: 2, name: 'Load dashboard', start: 0 },
-        { end: 2, name: 'Marker 2', start: 1 },
-      ],
-      screenshots: [{ at: 1 }],
-    })
+    expect(JSON.parse(await readFile(join(temporaryDirectory, 'example.recording', 'steps.json'), 'utf8'))).toMatchObject([
+      { kind: 'marker-start', name: 'Load dashboard' },
+      { kind: 'goto' },
+      { kind: 'screenshot' },
+      { kind: 'marker-start', name: 'Marker 2' },
+      { kind: 'reload' },
+      { kind: 'marker-end', name: 'Load dashboard' },
+      { kind: 'marker-end', name: 'Marker 2' },
+    ])
   })
 
   test('shows ThousandEyes generation errors', async () => {
@@ -133,11 +170,11 @@ describe('runRecordingEditor', () => {
   })
 })
 
-async function runEditor(temporaryDirectory: string, inspect: (page: Page, url: string) => Promise<void>, actions?: Recording['actions']): Promise<EditorResult> {
+async function runEditor(temporaryDirectory: string, inspect: (page: Page, url: string) => Promise<void>, fixture: RecordingFixture = {}): Promise<EditorResult> {
   const directoryPath = join(temporaryDirectory, 'example.recording')
   const recording: Recording = {
     ...createRecording({ startUrl: 'https://example.com', title: 'Example recording' }),
-    actions: actions ?? [
+    events: fixture.events ?? [
       {
         kind: 'click',
         locatorCandidates: [
@@ -153,11 +190,13 @@ async function runEditor(temporaryDirectory: string, inspect: (page: Page, url: 
       },
     ],
   }
-  const onPlay = vi.fn<(recording: Recording) => Promise<void>>(async () => undefined)
+  const steps = fixture.steps ?? deriveRecordingSteps(recording)
+  const onPlay = vi.fn<(steps: RecordingSteps) => Promise<void>>(async () => undefined)
   const output: string[] = []
 
   await mkdir(join(directoryPath, 'snapshots'), { recursive: true })
   await writeFile(join(directoryPath, 'recording.json'), serializeRecording(recording))
+  await writeFile(join(directoryPath, 'steps.json'), serializeRecordingSteps(steps))
   await writeFile(join(directoryPath, 'snapshots', '0000.png'), Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAusB9Y9Z3e8AAAAASUVORK5CYII=', 'base64'))
   await writeFile(
     join(directoryPath, 'snapshots', '0000.aria.json'),
@@ -195,6 +234,11 @@ async function runEditor(temporaryDirectory: string, inspect: (page: Page, url: 
 }
 
 interface EditorResult {
-  onPlay: ReturnType<typeof vi.fn<(recording: Recording) => Promise<void>>>
+  onPlay: ReturnType<typeof vi.fn<(steps: RecordingSteps) => Promise<void>>>
   output: string[]
+}
+
+interface RecordingFixture {
+  events?: RawEvent[]
+  steps?: ActionStep[]
 }

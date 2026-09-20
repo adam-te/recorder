@@ -17,8 +17,10 @@ interface CapturedClickEvent {
 
 interface CapturedKeydownEvent {
   code: string
+  inputValue?: string
   key: string
   kind: 'keydown'
+  modifiers?: CapturedModifier[]
   repeat: boolean
 }
 
@@ -45,5 +47,6 @@ interface SerializedInteraction {
 }
 
 type CapturedInteractionEvent = CapturedClickEvent | CapturedKeydownEvent
+type CapturedModifier = 'Alt' | 'Control' | 'Meta' | 'Shift'
 type CapturedAriaSelectorStep = AriaLocatorStep
 type CapturedSelector = CapturedAriaSelector | CapturedCssSelector | CapturedTestIdSelector

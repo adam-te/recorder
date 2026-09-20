@@ -35,7 +35,7 @@
         "displayName": "Transaction Recording",
         "selector": [
           {
-            "filenamePattern": "**/*.recording/recording.json"
+            "filenamePattern": "**/*.recording/steps.json"
           }
         ],
         "priority": "default"

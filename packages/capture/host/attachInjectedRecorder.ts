@@ -10,6 +10,7 @@ export type { AttachInjectedRecorderArgs, InjectedRecorder }
 
 async function attachInjectedRecorder(args: AttachInjectedRecorderArgs): Promise<InjectedRecorder> {
   const pendingInteractions = new Set<Promise<void>>()
+  let interactionQueue = Promise.resolve()
   const interactionBinding = await args.context.exposeBinding(INTERACTION_BINDING_NAME, receiveInteraction)
   const stopBinding = await tryTo(
     () => (args.onStopRequested ? args.context.exposeBinding(STOP_BINDING_NAME, args.onStopRequested) : undefined),
@@ -30,9 +31,10 @@ async function attachInjectedRecorder(args: AttachInjectedRecorderArgs): Promise
   return { dispose }
 
   function receiveInteraction(source: { frame: Frame; page: Page }, value: SerializedInteraction): Promise<void> {
-    const interaction = Promise.resolve(args.onInteraction({ ...value, frame: source.frame, page: source.page, pageUrl: source.page.url() }))
+    const interaction = interactionQueue.then(() => args.onInteraction({ ...value, frame: source.frame, page: source.page, pageUrl: source.page.url() }))
     const trackedInteraction = interaction.finally(() => pendingInteractions.delete(trackedInteraction))
 
+    interactionQueue = interaction.catch(() => undefined)
     pendingInteractions.add(trackedInteraction)
     return trackedInteraction
   }

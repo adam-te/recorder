@@ -1,6 +1,6 @@
-import { executeRecordedAction } from '#execution/executeRecordedAction.ts'
+import { executeActionStep } from '#execution/executeActionStep.ts'
 
-import type { RecordedAction, Recording } from '@te/recorder-recording'
+import { getActionSteps, type ActionStep, type RecordingSteps } from '@te/recorder-recording'
 import { tryTo } from '@te/recorder-utils'
 import { createBrowserSession, type BrowserSession } from '@te/recorder-utils/playwright'
 
@@ -9,16 +9,17 @@ export type { ExecutionObserver, ExecutionResult, RunRecordingArgs }
 
 async function runRecording(args: RunRecordingArgs): Promise<ExecutionResult> {
   const session = await (args.createBrowserSession ?? createBrowserSession)()
+  const actions = getActionSteps(args.steps)
 
   return await tryTo(
     async () => {
-      for (const [index, action] of args.recording.actions.entries()) {
+      for (const [index, action] of actions.entries()) {
         await args.observer?.onActionStarted?.({ action, index })
-        await executeRecordedAction({ action, page: session.page, resolveSecret: args.resolveSecret })
+        await executeActionStep({ page: session.page, resolveSecret: args.resolveSecret, step: action })
         await args.observer?.onActionCompleted?.({ action, index })
       }
 
-      return { completedActions: args.recording.actions.length }
+      return { completedActions: actions.length }
     },
     undefined,
     session.close,
@@ -27,14 +28,14 @@ async function runRecording(args: RunRecordingArgs): Promise<ExecutionResult> {
 
 interface RunRecordingArgs {
   createBrowserSession?: () => Promise<BrowserSession>
-  recording: Recording
+  steps: RecordingSteps
   observer?: ExecutionObserver
   resolveSecret?: ResolveSecret
 }
 
 interface ExecutionObserver {
-  onActionCompleted?: (args: { action: RecordedAction; index: number }) => void | Promise<void>
-  onActionStarted?: (args: { action: RecordedAction; index: number }) => void | Promise<void>
+  onActionCompleted?: (args: { action: ActionStep; index: number }) => void | Promise<void>
+  onActionStarted?: (args: { action: ActionStep; index: number }) => void | Promise<void>
 }
 
 interface ExecutionResult {

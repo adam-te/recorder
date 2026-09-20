@@ -2,21 +2,18 @@ import { chromium, type Browser, type BrowserContext, type Page } from 'playwrig
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, test } from 'vitest'
 
 import { runRecording } from '@te/recorder-execution'
-import { createRecording, type RecordedAction, type RecordedLocator, type Recording } from '@te/recorder-recording'
+import type { ActionStep, RecordedLocator, RecordingSteps } from '@te/recorder-recording'
 
 describe('recording execution', () => {
   const browser = useExecutionBrowser()
 
-  test('runs actions from recorded navigation instead of start URL metadata', async () => {
+  test('runs initial navigation and subsequent actions', async () => {
     const page = await browser.run({
       html: `<button data-testid="target" onclick="document.body.dataset.clicked = 'true'">Click</button>`,
-      recording: createTestRecording(
-        [
-          { kind: 'goto', pageUrl: 'about:blank', url: contentUrl },
-          { kind: 'click', locatorCandidates: [{ kind: 'test-id', value: 'target' }], pageUrl: contentUrl },
-        ],
-        'https://metadata.test/not-used',
-      ),
+      steps: createTestSteps([
+        { kind: 'goto', pageUrl: 'about:blank', url: contentUrl },
+        { kind: 'click', locatorCandidates: [{ kind: 'test-id', value: 'target' }], pageUrl: contentUrl },
+      ]),
     })
 
     expect(await page.locator('body').getAttribute('data-clicked')).toBe('true')
@@ -25,7 +22,7 @@ describe('recording execution', () => {
   test('runs key presses', async () => {
     const page = await browser.run({
       html: `<input id="search" onkeydown="document.body.dataset.key = event.key">`,
-      recording: createTestRecording([
+      steps: createTestSteps([
         { kind: 'goto', pageUrl: 'about:blank', url: contentUrl },
         { key: 'Enter', kind: 'press', locatorCandidates: [{ kind: 'css', value: '#search' }], pageUrl: contentUrl },
       ]),
@@ -37,7 +34,7 @@ describe('recording execution', () => {
   test('runs interactions inside frames', async () => {
     const page = await browser.run({
       documents: frameDocuments,
-      recording: createTestRecording([
+      steps: createTestSteps([
         { kind: 'goto', pageUrl: 'about:blank', url: contentUrl },
         { kind: 'click', locatorCandidates: [{ framePath: ['#action-frame'], kind: 'css', value: '#target' }], pageUrl: contentUrl },
       ]),
@@ -49,7 +46,7 @@ describe('recording execution', () => {
   test.each(locatorExecutionCases)('$name', async ({ html, locator }) => {
     const page = await browser.run({
       html,
-      recording: createTestRecording([
+      steps: createTestSteps([
         { kind: 'goto', pageUrl: 'about:blank', url: contentUrl },
         { kind: 'click', locatorCandidates: [locator], pageUrl: contentUrl },
       ]),
@@ -58,16 +55,13 @@ describe('recording execution', () => {
     expect(await page.locator('body').getAttribute('data-clicked')).toBe('true')
   })
 
-  test('runs recordings whose initial navigation redirects', async () => {
+  test('follows redirects from the initial navigation step', async () => {
     const page = await browser.run({
       documents: redirectingStartDocuments,
-      recording: createTestRecording(
-        [
-          { kind: 'goto', pageUrl: 'about:blank', url: 'https://recorder.test/start' },
-          { kind: 'click', locatorCandidates: [{ kind: 'css', value: '#target' }], pageUrl: 'https://recorder.test/after' },
-        ],
-        'https://recorder.test/start',
-      ),
+      steps: createTestSteps([
+        { kind: 'goto', pageUrl: 'about:blank', url: 'https://recorder.test/start' },
+        { kind: 'click', locatorCandidates: [{ kind: 'css', value: '#target' }], pageUrl: 'https://recorder.test/after' },
+      ]),
     })
 
     expect(await page.locator('body').getAttribute('data-clicked')).toBe('true')
@@ -76,7 +70,7 @@ describe('recording execution', () => {
   test('runs subsequent navigation actions', async () => {
     const page = await browser.run({
       documents: navigationDocuments,
-      recording: createTestRecording([
+      steps: createTestSteps([
         { kind: 'goto', pageUrl: 'about:blank', url: contentUrl },
         { kind: 'goto', pageUrl: contentUrl, url: 'https://recorder.test/after' },
       ]),
@@ -188,8 +182,8 @@ const locatorExecutionCases: LocatorExecutionCase[] = [
   },
 ]
 
-function createTestRecording(actions: RecordedAction[], startUrl = contentUrl): Recording {
-  return { ...createRecording({ startUrl, title: 'Execution test' }), actions }
+function createTestSteps(actions: ActionStep[]): RecordingSteps {
+  return actions
 }
 
 function useExecutionBrowser(): ExecutionBrowser {
@@ -219,7 +213,7 @@ function useExecutionBrowser(): ExecutionBrowser {
 
       return route.fulfill({ body: document ?? 'Not found', contentType: 'text/html', status: document ? 200 : 404 })
     })
-    await runRecording({ createBrowserSession: async () => ({ browser: fixture.browser, close: async () => undefined, context: fixture.context, page }), recording: args.recording })
+    await runRecording({ createBrowserSession: async () => ({ browser: fixture.browser, close: async () => undefined, context: fixture.context, page }), steps: args.steps })
 
     return page
   }
@@ -243,5 +237,5 @@ interface LocatorExecutionCase {
 interface RunTestRecordingArgs {
   documents?: Record<string, string>
   html?: string
-  recording: Recording
+  steps: RecordingSteps
 }

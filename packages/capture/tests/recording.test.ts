@@ -4,7 +4,7 @@ import { describe, expect, test } from 'vitest'
 import type { RecordedLocator } from '@te/recorder-recording'
 
 import { useBrowserTestHarness } from './support/browserHarness.ts'
-import { getOnlyAction } from './support/recordingAssertions.ts'
+import { getOnlyEvent } from './support/recordingAssertions.ts'
 
 describe('interaction recording', () => {
   const browser = useBrowserTestHarness()
@@ -17,7 +17,7 @@ describe('interaction recording', () => {
     })
 
     expect(recording).toMatchObject({
-      actions: [
+      events: [
         { kind: 'goto', pageUrl: 'about:blank', url: 'https://recorder.test/content' },
         {
           kind: 'click',
@@ -33,20 +33,34 @@ describe('interaction recording', () => {
     })
   })
 
-  test('records key presses', async () => {
-    const html = `<input id="search" onkeydown="document.body.dataset.key = event.key">`
-    const recording = await browser.record({ html, interact: page => page.locator('#search').press('Enter') })
+  test('records key presses with their resulting editable values', async () => {
+    const html = `<input id="search" value="old" onkeydown="document.body.dataset.key = event.key">`
+    const recording = await browser.record({
+      html,
+      interact: async page => {
+        const search = page.locator('#search')
 
-    expect(recording.actions).toMatchObject([
+        await search.selectText()
+        await search.pressSequentially('new')
+        await search.press('Backspace')
+        await search.press('Enter')
+      },
+    })
+
+    expect(recording.events).toMatchObject([
       { kind: 'goto', url: 'https://recorder.test/content' },
-      { key: 'Enter', kind: 'press', pageUrl: 'https://recorder.test/content' },
+      { inputValue: 'n', key: 'n', kind: 'key-press', pageUrl: 'https://recorder.test/content' },
+      { inputValue: 'ne', key: 'e', kind: 'key-press', pageUrl: 'https://recorder.test/content' },
+      { inputValue: 'new', key: 'w', kind: 'key-press', pageUrl: 'https://recorder.test/content' },
+      { inputValue: 'ne', key: 'Backspace', kind: 'key-press', pageUrl: 'https://recorder.test/content' },
+      { key: 'Enter', kind: 'key-press', pageUrl: 'https://recorder.test/content' },
     ])
   })
 
   test('uses test IDs only when they are unique', async () => {
     const html = `<button data-testid="action" id="target" onclick="document.body.dataset.clicked = 'true'">Save</button><button data-testid="action">Cancel</button>`
     const recording = await browser.record({ html, interact: page => page.locator('#target').click() })
-    const click = getOnlyAction(recording, 'click')
+    const click = getOnlyEvent(recording, 'click')
 
     expect(click.locatorCandidates[0]).toStrictEqual({ kind: 'aria', steps: [{ method: 'role', name: 'Save', role: 'button' }] })
   })
@@ -54,7 +68,7 @@ describe('interaction recording', () => {
   test('leaves non-standard test attributes to CSS selection', async () => {
     const html = `<div data-cy="target" id="target" style="height: 10px; width: 10px" onclick="document.body.dataset.clicked = 'true'"></div>`
     const recording = await browser.record({ html, interact: page => page.locator('#target').click() })
-    const click = getOnlyAction(recording, 'click')
+    const click = getOnlyEvent(recording, 'click')
 
     expect(click.locatorCandidates.slice(0, 2)).toStrictEqual([
       { kind: 'css', value: '#target' },
@@ -69,7 +83,7 @@ describe('interaction recording', () => {
           documents: frameDocuments,
           interact: page => page.frameLocator('#action-frame').locator('#target').click(),
         })
-      ).actions,
+      ).events,
     ).toMatchObject([
       { kind: 'goto', pageUrl: 'about:blank', url: 'https://recorder.test/content' },
       {
@@ -84,23 +98,25 @@ describe('interaction recording', () => {
     ])
   })
 
-  test('returns frame snapshots outside recorded actions', async () => {
-    const artifact = await browser.recordArtifact({
+  test('keeps captured previews outside raw events', async () => {
+    const capture = await browser.recordCapture({
       documents: frameDocuments,
       interact: page => page.frameLocator('#action-frame').locator('#target').click(),
     })
-    const click = getOnlyAction(artifact.recording, 'click')
+    const capturedClick = capture.events.find(({ event }) => event.kind === 'click')
+
+    if (!capturedClick || capturedClick.event.kind !== 'click' || !capturedClick.preview) throw new Error('Expected a captured click preview.')
 
     expect({
-      actionSnapshotKeys: Object.keys(click).filter(key => ['ariaSnapshot', 'targetRef'].includes(key)),
-      renderedSnapshot: renderAriaSnapshot(await artifact.readSnapshot(1)),
-    }).toMatchObject({ actionSnapshotKeys: [], renderedSnapshot: expect.stringMatching(/^- button "Click" \[active\] \[ref=e\d+\]$/) })
-    expect(Array.from((await artifact.readScreenshot(1)).slice(0, 8))).toEqual([137, 80, 78, 71, 13, 10, 26, 10])
+      eventSnapshotKeys: Object.keys(capturedClick.event).filter(key => ['ariaSnapshot', 'targetRef'].includes(key)),
+      renderedSnapshot: renderAriaSnapshot(capturedClick.preview.snapshot),
+    }).toMatchObject({ eventSnapshotKeys: [], renderedSnapshot: expect.stringMatching(/^- button "Click" \[active\] \[ref=e\d+\]$/) })
+    expect(Array.from(capturedClick.preview.screenshot.slice(0, 8))).toEqual([137, 80, 78, 71, 13, 10, 26, 10])
   })
 
   test.each(locatorRecordingCases)('$name', async ({ expectedLocator, html }) => {
     const recording = await browser.record({ html, interact: page => page.locator('#target').click() })
-    const click = getOnlyAction(recording, 'click')
+    const click = getOnlyEvent(recording, 'click')
 
     expect(click.locatorCandidates[0]).toStrictEqual(expectedLocator)
   })
@@ -108,7 +124,7 @@ describe('interaction recording', () => {
   test('does not generate ARIA locators through hidden shadow hosts', async () => {
     const html = `<div id="host" aria-hidden="true"></div><script>document.querySelector('#host').attachShadow({ mode: 'open' }).innerHTML = '<button id="target" onclick="document.body.dataset.clicked = true">Save</button>'</script>`
     const recording = await browser.record({ html, interact: page => page.locator('#target').click() })
-    const click = getOnlyAction(recording, 'click')
+    const click = getOnlyEvent(recording, 'click')
 
     expect(click.locatorCandidates[0]).toMatchObject({ kind: 'css' })
   })

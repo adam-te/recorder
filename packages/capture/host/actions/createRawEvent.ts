@@ -1,27 +1,34 @@
 import { createRecordedLocatorCandidates } from '#capture/host/locators/createRecordedLocatorCandidates.ts'
 import type { CapturedInteraction } from '#capture/host/types.ts'
 
-import { parseRecordingSnapshot, type RecordedAction, type RecordedAriaNode, type RecordedAriaSnapshot } from '@te/recorder-recording'
+import { parseRecordingSnapshot, type RawEvent, type RecordedAriaNode, type RecordedAriaSnapshot } from '@te/recorder-recording'
 import { matchBy } from '@te/recorder-utils'
 
-export { createRecordedAction }
+export { createRawEvent }
 
-async function createRecordedAction(interaction: CapturedInteraction): Promise<RecordedInteraction> {
+async function createRawEvent(interaction: CapturedInteraction): Promise<RawInteraction> {
   return await matchBy(interaction.event, 'kind', {
-    click: event => createClickAction({ ...interaction, event }),
-    keydown: event => createPressAction({ ...interaction, event }),
+    click: event => createClickEvent({ ...interaction, event }),
+    keydown: event => createPressEvent({ ...interaction, event }),
   })
 
-  async function createClickAction(currentInteraction: CapturedClickInteraction): Promise<RecordedInteraction> {
+  async function createClickEvent(currentInteraction: CapturedClickInteraction): Promise<RawInteraction> {
     return {
-      action: { kind: 'click', locatorCandidates: await createRecordedLocatorCandidates(currentInteraction), pageUrl: currentInteraction.pageUrl },
+      event: { kind: 'click', locatorCandidates: await createRecordedLocatorCandidates(currentInteraction), pageUrl: currentInteraction.pageUrl },
       ariaSnapshot: markSnapshotTarget(currentInteraction.ariaSnapshot, currentInteraction.targetRef),
     }
   }
 
-  async function createPressAction(currentInteraction: CapturedKeydownInteraction): Promise<RecordedInteraction> {
+  async function createPressEvent(currentInteraction: CapturedKeydownInteraction): Promise<RawInteraction> {
     return {
-      action: { key: currentInteraction.event.key, kind: 'press', locatorCandidates: await createRecordedLocatorCandidates(currentInteraction), pageUrl: currentInteraction.pageUrl },
+      event: {
+        ...(currentInteraction.event.inputValue !== undefined ? { inputValue: currentInteraction.event.inputValue } : {}),
+        key: currentInteraction.event.key,
+        kind: 'key-press',
+        locatorCandidates: await createRecordedLocatorCandidates(currentInteraction),
+        ...(currentInteraction.event.modifiers?.length ? { modifiers: currentInteraction.event.modifiers } : {}),
+        pageUrl: currentInteraction.pageUrl,
+      },
       ariaSnapshot: markSnapshotTarget(currentInteraction.ariaSnapshot, currentInteraction.targetRef),
     }
   }
@@ -42,7 +49,7 @@ function markSnapshotTarget(snapshot: RecordedAriaSnapshot, targetRef: string | 
 type CapturedClickInteraction = CapturedInteraction & { event: Extract<CapturedInteraction['event'], { kind: 'click' }> }
 type CapturedKeydownInteraction = CapturedInteraction & { event: Extract<CapturedInteraction['event'], { kind: 'keydown' }> }
 
-interface RecordedInteraction {
-  action: RecordedAction
+interface RawInteraction {
   ariaSnapshot: RecordedAriaSnapshot
+  event: RawEvent
 }

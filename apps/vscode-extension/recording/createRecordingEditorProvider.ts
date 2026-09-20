@@ -1,7 +1,7 @@
 import { randomUUID } from 'node:crypto'
 import { commands, env, Range, Uri, ViewColumn, window, workspace, WorkspaceEdit, type Disposable, type ExtensionContext, type TextDocument, type WebviewPanel } from 'vscode'
 
-import { getRecordingScreenshotFileName, parseRecording, serializeRecording, type Recording } from '@te/recorder-recording'
+import { getRecordingScreenshotFileName, parseRecordingSteps, serializeRecordingSteps, validateStepAnnotationUpdate, type Recording, type RecordingSteps } from '@te/recorder-recording'
 import { createRecordingEditorPresenter, type RecordingEditorPresenterEvent, type RecordingEditorPresenterMessage, type RecordingEditorUiMessage } from '@te/recorder-ui/recording-editor/host'
 import { matchBy, tryTo } from '@te/recorder-utils'
 
@@ -18,14 +18,17 @@ function createRecordingEditorProvider(args: CreateRecordingEditorProviderArgs):
 function resolveRecordingEditor(args: ResolveRecordingEditorArgs): void {
   const webviewDirectory = Uri.joinPath(args.context.extensionUri, 'dist', 'webview')
   const recordingDirectory = Uri.joinPath(args.document.uri, '..')
+  const store = createWorkspaceRecordingArtifactStore(recordingDirectory)
   const nonce = randomUUID()
   let decisionInProgress = false
   let disposed = false
+  let initialSteps: RecordingSteps | undefined
 
   const presenter = createRecordingEditorPresenter({
     isPending: () => args.drafts.isDraft(args.document.uri),
-    readRecording,
-    readSnapshot: createWorkspaceRecordingArtifactStore(recordingDirectory).loadSnapshot,
+    readRecording: store.loadRecording,
+    readSteps,
+    readSnapshot: store.loadSnapshot,
     resolveScreenshotUrl: actionIndex => args.panel.webview.asWebviewUri(Uri.joinPath(recordingDirectory, 'snapshots', getRecordingScreenshotFileName(actionIndex))).toString(),
   })
 
@@ -61,7 +64,7 @@ function resolveRecordingEditor(args: ResolveRecordingEditorArgs): void {
         await commands.executeCommand('vscode.openWith', args.document.uri, 'default', ViewColumn.Beside)
       },
       play: async () => {
-        await withErrorMessage(async () => args.onPlay(readRecording()))
+        await withErrorMessage(async () => args.onPlay(readSteps()))
       },
       ready: handlePresenterEvent,
       save: async () => {
@@ -93,10 +96,10 @@ function resolveRecordingEditor(args: ResolveRecordingEditorArgs): void {
         })
       },
       selectAction: handlePresenterEvent,
-      updateThousandEyes: async current => {
+      updateStepAnnotations: async current => {
         await withErrorMessage(async () => {
           const edit = new WorkspaceEdit()
-          edit.replace(args.document.uri, new Range(args.document.positionAt(0), args.document.positionAt(args.document.getText().length)), serializeRecording(parseRecording({ ...readRecording(), thousandEyes: current.thousandEyes })))
+          edit.replace(args.document.uri, new Range(args.document.positionAt(0), args.document.positionAt(args.document.getText().length)), serializeRecordingSteps(validateStepAnnotationUpdate(initialSteps ?? readSteps(), current.steps)))
           if (!(await workspace.applyEdit(edit))) throw new Error('Could not update the recording.')
         })
       },
@@ -132,14 +135,19 @@ function resolveRecordingEditor(args: ResolveRecordingEditorArgs): void {
     )
   }
 
-  function readRecording(): Recording {
-    return parseRecording(JSON.parse(args.document.getText()))
+  function readSteps(): RecordingSteps {
+    const steps = parseRecordingSteps(JSON.parse(args.document.getText()))
+
+    if (!initialSteps) initialSteps = steps
+
+    return validateStepAnnotationUpdate(initialSteps, steps)
   }
 
   async function saveDraft(documentUri: Uri): Promise<Uri | undefined> {
+    readSteps()
     if (!(await args.document.save())) throw new Error('Could not save recording changes.')
 
-    const recording = await args.drafts.load(documentUri)
+    const recording = await args.drafts.loadRecording(documentUri)
     const destination = await window.showSaveDialog({ defaultUri: defaultRecordingUri(recording, documentUri), saveLabel: 'Save Recording' })
     if (!destination) return undefined
 
@@ -202,7 +210,7 @@ function getErrorMessage(error: unknown): string {
 interface CreateRecordingEditorProviderArgs {
   context: ExtensionContext
   drafts: RecordingDraftStore
-  onPlay: (recording?: Recording) => Promise<void>
+  onPlay: (steps?: RecordingSteps) => Promise<void>
 }
 
 interface ResolveRecordingEditorArgs extends CreateRecordingEditorProviderArgs {

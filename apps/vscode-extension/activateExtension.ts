@@ -5,7 +5,7 @@ import { commands, window, workspace, type ExtensionContext, type Uri } from 'vs
 
 import { createRecorder } from '@te/recorder-capture'
 import { runRecording } from '@te/recorder-execution'
-import { parseRecording, RECORDING_DOCUMENT_PATH, type Recording } from '@te/recorder-recording'
+import { getActionSteps, parseRecordingSteps, STEPS_DOCUMENT_PATH, type RecordingSteps } from '@te/recorder-recording'
 import { tryTo } from '@te/recorder-utils'
 
 export { activateExtension }
@@ -67,27 +67,27 @@ function activateExtension(args: ActivateExtensionArgs): ActiveExtension {
     await setRecorderState('stopping')
     await tryTo(
       async () => {
-        const artifact = await recorder.stop()
-        if (!artifact) return
-        await commands.executeCommand('vscode.openWith', await drafts.stage(artifact, getActiveWorkspaceUri()), recordingEditorViewType)
+        const capture = await recorder.stop()
+        if (!capture) return
+        await commands.executeCommand('vscode.openWith', await drafts.stage(capture, getActiveWorkspaceUri()), recordingEditorViewType)
       },
       undefined,
       () => setRecorderState('idle'),
     )
   }
 
-  async function playRecording(recording?: Recording): Promise<void> {
-    if (!recording) {
+  async function playRecording(steps?: RecordingSteps): Promise<void> {
+    if (!steps) {
       const editor = window.activeTextEditor
-      if (!editor || editor.document.uri.path.split('/').at(-1) !== RECORDING_DOCUMENT_PATH) {
-        throw new Error('Open a recording.json file before starting playback.')
+      if (!editor || editor.document.uri.path.split('/').at(-1) !== STEPS_DOCUMENT_PATH) {
+        throw new Error('Open a steps.json file before starting playback.')
       }
 
-      recording = parseRecording(JSON.parse(editor.document.getText()))
+      steps = parseRecordingSteps(JSON.parse(editor.document.getText()))
     }
 
-    await runRecording({ recording })
-    await window.showInformationMessage(`Played ${recording.actions.length} recorded actions.`)
+    await runRecording({ steps })
+    await window.showInformationMessage(`Played ${getActionSteps(steps).length} recorded actions.`)
   }
 
   function getActiveWorkspaceUri(): Uri | undefined {

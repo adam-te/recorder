@@ -1,9 +1,9 @@
-import { appendCapturedInteraction } from '#capture/host/actions/appendCapturedInteraction.ts'
+import { createRawEvent } from '#capture/host/actions/createRawEvent.ts'
 import { installRecordingInstruments } from '#capture/host/installRecordingInstruments.ts'
 import type { CapturedInteraction } from '#capture/host/types.ts'
 import type { BrowserContext, Page } from 'playwright'
 
-import { createRecordingSession, type RecordedAriaSnapshot, type Recording, type RecordingArtifact } from '@te/recorder-recording'
+import type { CapturedPreview, CapturedRawEvent, CapturedRecording, RawEvent, RecordingMetadata } from '@te/recorder-recording'
 import { tryTo } from '@te/recorder-utils'
 
 export { createRecordingCapture }
@@ -11,24 +11,22 @@ export type { CreateRecordingCaptureArgs, RecordingCapture }
 
 async function createRecordingCapture(args: CreateRecordingCaptureArgs): Promise<RecordingCapture> {
   const startUrl = new URL(args.startUrl)
-  const recordingSession = createRecordingSession({ startUrl: args.startUrl, title: startUrl.hostname || args.startUrl })
-  const screenshots = new Map<number, Uint8Array>()
-  const snapshots = new Map<number, RecordedAriaSnapshot>()
+  const metadata: RecordingMetadata = { createdAt: new Date().toISOString(), startUrl: args.startUrl, title: startUrl.hostname || args.startUrl }
+  const capturedEvents: CapturedRawEvent[] = []
+  let completed = false
   let disposed = false
-  let pendingRecordingChange = Promise.resolve()
   const instruments = await installRecordingInstruments({
     context: args.context,
     onInteraction: async interaction => {
       const screenshot = interaction.page.screenshot({ animations: 'disabled', caret: 'hide' })
       await args.onInteraction?.(interaction)
+      const capturedInteraction = await createRawEvent(interaction)
+      const capturedEvent: PendingCapturedRawEvent = { event: capturedInteraction.event }
 
-      const appendedInteraction = await appendCapturedInteraction({ interaction, recordingSession })
-
-      screenshots.set(appendedInteraction.actionIndex, await screenshot)
-      snapshots.set(appendedInteraction.actionIndex, appendedInteraction.ariaSnapshot)
-      await notifyRecordingChanged(appendedInteraction.recording)
+      capturedEvents.push(capturedEvent)
+      capturedEvent.preview = { screenshot: await screenshot, snapshot: capturedInteraction.ariaSnapshot }
     },
-    onNavigation: navigation => notifyRecordingChanged(recordingSession.append({ kind: 'goto', ...navigation })),
+    onNavigation: navigation => appendNavigation({ kind: 'goto', ...navigation }),
     onStopRequested: args.onStopRequested,
     page: args.page,
   })
@@ -52,37 +50,28 @@ async function createRecordingCapture(args: CreateRecordingCaptureArgs): Promise
     if (disposed) return
     disposed = true
     await instruments.dispose()
+    completed = true
   }
 
-  function notifyRecordingChanged(recording: Recording): Promise<void> {
-    pendingRecordingChange = pendingRecordingChange.then(() => args.onRecordingChanged?.(recording))
-
-    return pendingRecordingChange
+  function appendNavigation(event: RawEvent): void {
+    capturedEvents.push({ event })
   }
 
-  function snapshot(): RecordingArtifact {
-    return { readScreenshot, readSnapshot, recording: recordingSession.snapshot() }
+  function snapshot(): CapturedRecording {
+    if (!completed) throw new Error('Cannot snapshot an active recording capture.')
+
+    return { events: capturedEvents.map(event => ({ ...event })), metadata }
   }
+}
 
-  function readScreenshot(actionIndex: number): Uint8Array {
-    const screenshot = screenshots.get(actionIndex)
-
-    if (!screenshot) throw new Error(`Missing screenshot for action ${actionIndex}.`)
-    return screenshot
-  }
-
-  function readSnapshot(actionIndex: number): RecordedAriaSnapshot {
-    const snapshot = snapshots.get(actionIndex)
-
-    if (!snapshot) throw new Error(`Missing ARIA snapshot for action ${actionIndex}.`)
-    return snapshot
-  }
+interface PendingCapturedRawEvent {
+  event: RawEvent
+  preview?: CapturedPreview
 }
 
 interface CreateRecordingCaptureArgs {
   context: BrowserContext
   onInteraction?: (interaction: CapturedInteraction) => Promise<void> | void
-  onRecordingChanged?: (recording: Recording) => Promise<void> | void
   onStopRequested?: () => Promise<void> | void
   page: Page
   startUrl: string
@@ -90,6 +79,6 @@ interface CreateRecordingCaptureArgs {
 
 interface RecordingCapture {
   dispose: () => Promise<void>
-  snapshot: () => RecordingArtifact
+  snapshot: () => CapturedRecording
   start: () => Promise<void>
 }

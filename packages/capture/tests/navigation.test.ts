@@ -1,14 +1,14 @@
 import { describe, expect, test } from 'vitest'
 
 import { useBrowserTestHarness } from './support/browserHarness.ts'
-import { getOnlyAction } from './support/recordingAssertions.ts'
+import { getOnlyEvent } from './support/recordingAssertions.ts'
 
 describe('navigation recording', () => {
   const browser = useBrowserTestHarness()
 
   test('records click-triggered navigation without inspecting the departing document', async () => {
     const documents = { 'https://recorder.test/after': '<p>After</p>', 'https://recorder.test/content': '<a id="target" href="/after">Continue</a>' }
-    const click = getOnlyAction(await browser.record({ documents, interact: page => page.locator('#target').click() }), 'click')
+    const click = getOnlyEvent(await browser.record({ documents, interact: page => page.locator('#target').click() }), 'click')
 
     expect(click.locatorCandidates[0]).toStrictEqual({ kind: 'aria', steps: [{ method: 'role', name: 'Continue', role: 'link' }] })
     expect(click.locatorCandidates).toContainEqual({ kind: 'css', value: '#target' })
@@ -27,7 +27,7 @@ describe('navigation recording', () => {
       },
     })
 
-    expect(recording.actions).toMatchObject([
+    expect(recording.events).toMatchObject([
       { kind: 'goto', pageUrl: 'about:blank', url: 'https://recorder.test/content' },
       { kind: 'click', pageUrl: 'https://recorder.test/content' },
     ])
@@ -37,7 +37,7 @@ describe('navigation recording', () => {
     const recording = await browser.record({ documents: redirectingStartDocuments, interact: page => page.locator('#target').click(), startUrl: 'https://recorder.test/start' })
 
     expect(recording).toMatchObject({
-      actions: [
+      events: [
         { kind: 'goto', pageUrl: 'about:blank', url: 'https://recorder.test/start' },
         { kind: 'click', pageUrl: 'https://recorder.test/after' },
       ],
@@ -52,7 +52,7 @@ describe('navigation recording', () => {
           documents: navigationDocuments,
           interact: page => page.goto('https://recorder.test/after'),
         })
-      ).actions,
+      ).events,
     ).toStrictEqual([
       { kind: 'goto', pageUrl: 'about:blank', url: 'https://recorder.test/content' },
       { kind: 'goto', pageUrl: 'https://recorder.test/content', url: 'https://recorder.test/after' },
@@ -70,7 +70,7 @@ describe('navigation recording', () => {
       },
     })
 
-    expect(recording.actions).toStrictEqual([
+    expect(recording.events).toStrictEqual([
       { kind: 'goto', pageUrl: 'about:blank', url: 'https://recorder.test/content' },
       { kind: 'goto', pageUrl: 'https://recorder.test/content', url: 'https://recorder.test/after' },
     ])

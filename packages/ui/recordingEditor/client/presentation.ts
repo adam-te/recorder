@@ -1,9 +1,9 @@
-import type { RecordedAction, RecordedLocator, RecordedValue } from '@te/recorder-recording'
+import type { ActionStep, RecordedLocator, RecordedValue } from '@te/recorder-recording'
 import { matchBy, tryTo } from '@te/recorder-utils'
 
 export { actionKindLabel, actionProperties, displayUrl, formatDate, summarizeAction }
 
-function summarizeAction(action: RecordedAction): string {
+function summarizeAction(action: ActionStep): string {
   const target = locatorTarget('locatorCandidates' in action ? action.locatorCandidates[0] : undefined)
   return matchBy(action, 'kind', {
     'assert-visible': () => `Verify ${target} is visible`,
@@ -32,7 +32,7 @@ function locatorTarget(locator: RecordedLocator | undefined): string {
   return `“${step.text}”`
 }
 
-function actionProperties(action: RecordedAction): [string, string][] {
+function actionProperties(action: ActionStep): [string, string][] {
   const properties: [string, string][] = []
   if (action.kind === 'fill') properties.push(['Value', formatValue(action.value)])
   if (action.kind === 'click' && action.button) properties.push(['Button', action.button])
@@ -48,7 +48,7 @@ function formatValue(value: RecordedValue): string {
   return value.kind === 'secret' ? `Secret: ${value.name}` : value.value
 }
 
-function actionKindLabel(kind: RecordedAction['kind']): string {
+function actionKindLabel(kind: ActionStep['kind']): string {
   return kind.replaceAll('-', ' ')
 }
 

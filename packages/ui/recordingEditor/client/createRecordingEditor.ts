@@ -17,7 +17,7 @@ function createRecordingEditor({ root, send }: CreateRecordingEditorArgs): Recor
       onSave: () => send({ type: 'save' }),
       onSaveThousandEyes: (source, suggestedFileName) => send({ type: 'saveThousandEyes', source, suggestedFileName }),
       onSelectAction: actionIndex => send({ type: 'selectAction', actionIndex }),
-      onUpdateThousandEyes: thousandEyes => send({ type: 'updateThousandEyes', thousandEyes }),
+      onUpdateStepAnnotations: steps => send({ type: 'updateStepAnnotations', steps }),
     },
     target: root,
   })

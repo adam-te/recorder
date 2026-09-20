@@ -1,4 +1,7 @@
-import { recordingSchema, type RecordedAction, type RecordedValue, type Recording } from '#recording/recording/recordingSchema.ts'
+import type { RecordedValue } from '#recording/shared/recordedDataSchema.ts'
+import type { ActionStep } from '#recording/steps/actionStepSchema.ts'
+import { getActionSteps } from '#recording/steps/recordingSteps.ts'
+import { recordingStepsSchema, type RecordingSteps } from '#recording/steps/recordingStepsSchema.ts'
 
 import { matchBy, tryTo } from '@te/recorder-utils'
 
@@ -6,47 +9,38 @@ import { formatThousandEyesLocator as locator } from './formatThousandEyesLocato
 import { quoteJavaScriptString as quote } from './quoteJavaScriptString.ts'
 import type { ThousandEyesTransactionScript } from './types.ts'
 
-export { generateThousandEyesScript, resolveThousandEyesScreenshotBoundary }
+export { generateThousandEyesScript }
 
-function generateThousandEyesScript(value: Recording): ThousandEyesTransactionScript {
-  const recording = recordingSchema.parse(value)
+function generateThousandEyesScript(value: RecordingSteps): ThousandEyesTransactionScript {
+  const steps = recordingStepsSchema.parse(value)
+  const actions = getActionSteps(steps)
 
   return {
     language: 'javascript',
-    source: `${imports(recording)}runScript();
+    source: `${imports(steps)}runScript();
 
 async function runScript() {
-${renderStatements(recording)
+${renderStatements(steps)
   .map(statement => `  ${statement}`)
   .join('\n')}
-}${helpers(recording.actions)}
+}${helpers(actions)}
 `,
   }
 }
 
-function renderStatements(recording: Recording): string[] {
-  const screenshots = recording.thousandEyes.screenshots.map(screenshot => ({ at: resolveThousandEyesScreenshotBoundary(screenshot.at, recording) }))
+function renderStatements(steps: RecordingSteps): string[] {
+  let actionIndex = 0
 
-  return Array.from({ length: recording.actions.length + 1 }, (_, boundary) => [
-    ...recording.thousandEyes.markers.filter(marker => marker.end === boundary).map(marker => `markers.stop(${quote(marker.name)});`),
-    ...screenshots.filter(screenshot => screenshot.at === boundary).map(() => 'await driver.takeScreenshot();'),
-    ...recording.thousandEyes.markers.filter(marker => marker.start === boundary).map(marker => `markers.start(${quote(marker.name)});`),
-    ...(recording.actions[boundary] ? [renderAction(recording.actions[boundary], boundary)] : []),
-  ]).flat()
+  return steps.map(step => {
+    if (step.kind === 'marker-start') return `markers.start(${quote(step.name)});`
+    if (step.kind === 'marker-end') return `markers.stop(${quote(step.name)});`
+    if (step.kind === 'screenshot') return 'await driver.takeScreenshot();'
+
+    return renderAction(step, actionIndex++)
+  })
 }
 
-function resolveThousandEyesScreenshotBoundary(requestedBoundary: number, recording: Recording): number {
-  let boundary = requestedBoundary
-
-  while (true) {
-    const adjacentMarkers = recording.thousandEyes.markers.filter(marker => marker.start <= boundary && boundary < marker.end)
-    if (!adjacentMarkers.length) return boundary
-
-    boundary = Math.max(...adjacentMarkers.map(marker => marker.end))
-  }
-}
-
-function renderAction(action: RecordedAction, actionIndex: number): string {
+function renderAction(action: ActionStep, actionIndex: number): string {
   return tryTo(
     () =>
       matchBy(action, 'kind', {
@@ -102,9 +96,10 @@ function target(action: LocatedAction): string {
   return locator(action.locatorCandidates[0])
 }
 
-function imports(recording: Recording): string {
-  const seleniumImports = ['By', ...(recording.actions.some(action => action.kind === 'press') ? ['Key'] : []), ...(recording.actions.some(action => action.kind === 'assert-visible') ? ['until'] : [])]
-  const thousandEyesImports = [...(recording.actions.some(action => action.kind === 'fill' && action.value.kind === 'secret') ? ['credentials'] : []), 'driver', ...(recording.thousandEyes.markers.length ? ['markers'] : [])]
+function imports(steps: RecordingSteps): string {
+  const actions = getActionSteps(steps)
+  const seleniumImports = ['By', ...(actions.some(action => action.kind === 'press') ? ['Key'] : []), ...(actions.some(action => action.kind === 'assert-visible') ? ['until'] : [])]
+  const thousandEyesImports = [...(actions.some(action => action.kind === 'fill' && action.value.kind === 'secret') ? ['credentials'] : []), 'driver', ...(steps.some(step => step.kind === 'marker-start') ? ['markers'] : [])]
 
   return `import { ${seleniumImports.join(', ')} } from 'selenium-webdriver';
 import { ${thousandEyesImports.join(', ')} } from 'thousandeyes';
@@ -112,11 +107,11 @@ import { ${thousandEyesImports.join(', ')} } from 'thousandeyes';
 `
 }
 
-function helpers(actions: RecordedAction[]): string {
+function helpers(actions: ActionStep[]): string {
   return [actions.some(isLocatedAction) ? findElementHelper : '', actions.some(action => action.kind === 'fill') ? fillHelper : '', actions.some(action => action.kind === 'check') ? setCheckedHelper : ''].join('')
 }
 
-function isLocatedAction(action: RecordedAction): action is LocatedAction {
+function isLocatedAction(action: ActionStep): action is LocatedAction {
   return 'locatorCandidates' in action
 }
 
@@ -178,7 +173,7 @@ async function setChecked(element, checked) {
   throw new Error('Element did not reach the requested checked state.');
 }`
 
-type LocatedAction = Extract<RecordedAction, { locatorCandidates: unknown }>
-type ClickAction = Extract<RecordedAction, { kind: 'click' }>
-type HoverAction = Extract<RecordedAction, { kind: 'hover' }>
-type PressAction = Extract<RecordedAction, { kind: 'press' }>
+type LocatedAction = Extract<ActionStep, { locatorCandidates: unknown }>
+type ClickAction = Extract<ActionStep, { kind: 'click' }>
+type HoverAction = Extract<ActionStep, { kind: 'hover' }>
+type PressAction = Extract<ActionStep, { kind: 'press' }>

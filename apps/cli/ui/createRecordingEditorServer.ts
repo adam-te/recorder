@@ -36,7 +36,7 @@ async function handleRequest(context: RequestContext): Promise<void> {
       if (request.method === 'GET' && route === root) return send(response, 200, html(root), 'text/html; charset=utf-8')
       if (request.method === 'GET' && route === `${root}recordingEditor.js`) return send(response, 200, await readFile(join(assetDirectory, 'recordingEditor.js')), 'text/javascript; charset=utf-8')
       if (request.method === 'GET' && route === `${root}recordingEditor.css`) return send(response, 200, await readFile(join(assetDirectory, 'recordingEditor.css')), 'text/css; charset=utf-8')
-      if (request.method === 'GET' && route === `${root}recording.json`) return send(response, 200, await context.loadRecordingDocument(), 'application/json; charset=utf-8')
+      if (request.method === 'GET' && route === `${root}steps.json`) return send(response, 200, await context.loadStepsDocument(), 'application/json; charset=utf-8')
 
       const screenshotMatch = request.method === 'GET' ? route.match(new RegExp(`^${root}snapshots/(\\d{4})\\.png$`)) : undefined
       if (screenshotMatch) return send(response, 200, Buffer.from(await context.loadScreenshot(Number(screenshotMatch[1]))), 'image/png')
@@ -72,7 +72,7 @@ function parseMessage(value: unknown): RecordingEditorServerMessage {
   if (!value || typeof value !== 'object' || !('type' in value)) throw new Error('A recording editor message must have a type.')
   if (value.type === 'ready' || value.type === 'play') return { type: value.type }
   if (value.type === 'selectAction' && 'actionIndex' in value && Number.isInteger(value.actionIndex) && (value.actionIndex as number) >= 0) return { type: 'selectAction', actionIndex: value.actionIndex as number }
-  if (value.type === 'updateThousandEyes' && 'thousandEyes' in value) return { type: 'updateThousandEyes', thousandEyes: value.thousandEyes as UpdateThousandEyesMessage['thousandEyes'] }
+  if (value.type === 'updateStepAnnotations' && 'steps' in value) return { type: 'updateStepAnnotations', steps: value.steps as UpdateStepAnnotationsMessage['steps'] }
   throw new Error('Invalid recording editor message.')
 }
 
@@ -126,7 +126,7 @@ function getErrorMessage(error: unknown): string {
 
 interface CreateRecordingEditorServerArgs {
   handleMessage: (message: RecordingEditorServerMessage) => Promise<RecordingEditorServerResponse>
-  loadRecordingDocument: () => Promise<string>
+  loadStepsDocument: () => Promise<string>
   loadScreenshot: (actionIndex: number) => Promise<Uint8Array>
 }
 
@@ -135,8 +135,8 @@ interface RecordingEditorServer {
   url: string
 }
 
-type RecordingEditorServerMessage = Extract<RecordingEditorUiMessage, { type: 'ready' | 'selectAction' | 'updateThousandEyes' }> | { type: 'play' }
-type UpdateThousandEyesMessage = Extract<RecordingEditorUiMessage, { type: 'updateThousandEyes' }>
+type RecordingEditorServerMessage = Extract<RecordingEditorUiMessage, { type: 'ready' | 'selectAction' | 'updateStepAnnotations' }> | { type: 'play' }
+type UpdateStepAnnotationsMessage = Extract<RecordingEditorUiMessage, { type: 'updateStepAnnotations' }>
 
 interface RecordingEditorServerResponse {
   error?: string

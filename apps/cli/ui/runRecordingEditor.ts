@@ -1,7 +1,7 @@
 import { createFileRecordingArtifactStore } from '#cli/recording/createFileRecordingArtifactStore.ts'
 import { chromium } from 'playwright'
 
-import { getRecordingScreenshotFileName, recordingSchema, serializeRecording, type Recording } from '@te/recorder-recording'
+import { getRecordingScreenshotFileName, serializeRecordingSteps, type RecordingSteps } from '@te/recorder-recording'
 import { createRecordingEditorPresenter } from '@te/recorder-ui/recording-editor/host'
 import { matchBy, tryTo } from '@te/recorder-utils'
 
@@ -12,11 +12,12 @@ export type { RunRecordingEditorArgs }
 
 async function runRecordingEditor(args: RunRecordingEditorArgs): Promise<void> {
   const store = createFileRecordingArtifactStore(args.directoryPath)
-  await store.load()
+  await Promise.all([store.loadRecording(), store.loadSteps()])
 
   const presenter = createRecordingEditorPresenter({
     isPending: () => false,
-    readRecording: store.load,
+    readRecording: store.loadRecording,
+    readSteps: store.loadSteps,
     readSnapshot: store.loadSnapshot,
     resolveScreenshotUrl: actionIndex => `./snapshots/${getRecordingScreenshotFileName(actionIndex)}`,
   })
@@ -26,19 +27,19 @@ async function runRecordingEditor(args: RunRecordingEditorArgs): Promise<void> {
         play: async () =>
           await tryTo(
             async () => {
-              await args.onPlay(await store.load())
+              await args.onPlay(await store.loadSteps())
               return {}
             },
             error => ({ error: getErrorMessage(error) }),
           ),
         ready: async () => ({ messages: await presenter.ready() }),
         selectAction: async current => ({ messages: await presenter.selectAction(current.actionIndex) }),
-        updateThousandEyes: async current => {
-          await store.saveRecording(recordingSchema.parse({ ...(await store.load()), thousandEyes: current.thousandEyes }))
+        updateStepAnnotations: async current => {
+          await store.saveStepAnnotations(current.steps)
           return { messages: await presenter.publishRecording() }
         },
       }),
-    loadRecordingDocument: async () => serializeRecording(await store.load()),
+    loadStepsDocument: async () => serializeRecordingSteps(await store.loadSteps()),
     loadScreenshot: store.loadScreenshot,
   })
 
@@ -72,7 +73,7 @@ function getErrorMessage(error: unknown): string {
 
 interface RunRecordingEditorArgs {
   directoryPath: string
-  onPlay: (recording: Recording) => Promise<void>
+  onPlay: (steps: RecordingSteps) => Promise<void>
   openBrowser?: (url: string) => Promise<void>
   stdout: { write: (value: string) => Promise<unknown> | unknown }
 }

@@ -1,8 +1,8 @@
 import { Uri, workspace } from 'vscode'
 
-import { createRecordingArtifactStore, RECORDING_DOCUMENT_PATH, type RecordingArtifactStore } from '@te/recorder-recording'
+import { createRecordingArtifactStore, STEPS_DOCUMENT_PATH, type RecordingArtifactStore } from '@te/recorder-recording'
 
-export { createWorkspaceRecordingArtifactStore, getRecordingDocumentUri }
+export { createWorkspaceRecordingArtifactStore, getStepsDocumentUri }
 
 const encoder = new TextEncoder()
 const decoder = new TextDecoder()
@@ -30,8 +30,8 @@ function createWorkspaceRecordingArtifactStore(directory: Uri): RecordingArtifac
   })
 }
 
-function getRecordingDocumentUri(directory: Uri): Uri {
-  return resolveArtifactUri(directory, RECORDING_DOCUMENT_PATH)
+function getStepsDocumentUri(directory: Uri): Uri {
+  return resolveArtifactUri(directory, STEPS_DOCUMENT_PATH)
 }
 
 function resolveArtifactUri(directory: Uri, relativePath: string): Uri {

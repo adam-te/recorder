@@ -6,7 +6,7 @@ import { chromium } from 'playwright'
 import { afterAll, afterEach, beforeAll, beforeEach } from 'vitest'
 
 import { createRecorder, type Recorder } from '@te/recorder-capture'
-import type { Recording, RecordingArtifact } from '@te/recorder-recording'
+import { parseRecording, type CapturedRecording, type Recording } from '@te/recorder-recording'
 import { tryTo } from '@te/recorder-utils'
 
 export { useBrowserTestHarness }
@@ -56,25 +56,29 @@ function createTestRecorder(args: CreateTestRecorderArgs): Recorder {
   return createRecorder({ createBrowserSession: async () => ({ browser: args.browser, close: async () => undefined, context: args.context, page: args.page }) })
 }
 
-async function recordTest(args: RecordTestArgs): Promise<RecordingArtifact> {
+async function recordTest(args: RecordTestArgs): Promise<CapturedRecording> {
   const page = await createPage({ context: args.fixture.context, documents: args.documents, html: args.html, redirects: args.redirects })
   const recorder = createTestRecorder({ browser: args.fixture.browser, context: args.fixture.context, page })
 
-  await recorder.start({ onRecordingChanged: args.onRecordingChanged, startUrl: args.startUrl })
+  await recorder.start({ startUrl: args.startUrl })
   await args.interact(page)
-  const artifact = await recorder.stop()
+  const capture = await recorder.stop()
 
-  if (!artifact) {
+  if (!capture) {
     throw new Error('Expected the recorder to produce a recording.')
   }
 
-  return artifact
+  return capture
 }
 
 function useBrowserTestHarness(): BrowserTestHarness {
   const fixture = {} as BrowserTestFixture
-  const recordArtifact = (args: BrowserRecordArgs): Promise<RecordingArtifact> => recordTest({ ...args, fixture, startUrl: args.startUrl ?? defaultStartUrl })
-  const record = async (args: BrowserRecordArgs): Promise<Recording> => (await recordArtifact(args)).recording
+  const recordCapture = (args: BrowserRecordArgs): Promise<CapturedRecording> => recordTest({ ...args, fixture, startUrl: args.startUrl ?? defaultStartUrl })
+  const record = async (args: BrowserRecordArgs): Promise<Recording> => {
+    const capture = await recordCapture(args)
+
+    return parseRecording({ ...capture.metadata, events: capture.events.map(({ event }) => event) })
+  }
 
   beforeAll(async () => {
     fixture.browser = await chromium.launch({ headless: true })
@@ -96,7 +100,7 @@ function useBrowserTestHarness(): BrowserTestHarness {
     },
     page: args => createPage({ ...args, context: fixture.context }),
     record,
-    recordArtifact,
+    recordCapture,
   }
 }
 
@@ -141,7 +145,7 @@ interface BrowserTestHarness {
   readonly context: BrowserContext
   page: (args: Omit<CreatePageArgs, 'context'>) => Promise<Page>
   record: (args: BrowserRecordArgs) => Promise<Recording>
-  recordArtifact: (args: BrowserRecordArgs) => Promise<RecordingArtifact>
+  recordCapture: (args: BrowserRecordArgs) => Promise<CapturedRecording>
 }
 
 type BrowserRecordArgs = Omit<RecordTestArgs, 'fixture' | 'startUrl'> & { startUrl?: string }
@@ -151,7 +155,6 @@ interface RecordTestArgs {
   fixture: BrowserTestFixture
   html?: string
   interact: (page: Page) => Promise<unknown>
-  onRecordingChanged?: (recording: Recording) => Promise<void> | void
   redirects?: Record<string, string>
   startUrl: string
 }

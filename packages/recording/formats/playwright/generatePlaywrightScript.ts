@@ -1,4 +1,7 @@
-import { recordingSchema, type RecordedAction, type RecordedValue, type Recording } from '#recording/recording/recordingSchema.ts'
+import type { RecordedValue } from '#recording/shared/recordedDataSchema.ts'
+import type { ActionStep } from '#recording/steps/actionStepSchema.ts'
+import { getActionSteps } from '#recording/steps/recordingSteps.ts'
+import { recordingStepsSchema, type RecordingSteps } from '#recording/steps/recordingStepsSchema.ts'
 
 import { matchBy } from '@te/recorder-utils'
 
@@ -7,17 +10,18 @@ import { quoteTypeScriptString as quote } from './quoteTypeScriptString.ts'
 
 export { generatePlaywrightScript }
 
-function generatePlaywrightScript(value: Recording): string {
-  const recording = recordingSchema.parse(value)
+function generatePlaywrightScript(args: GeneratePlaywrightScriptArgs): string {
+  const actions = getActionSteps(recordingStepsSchema.parse(args.steps))
+
   return `import { test } from 'playwright/test'
 
-test(${quote(recording.title)}, async ({ page }) => {
-${recording.actions.map(action => `  ${renderAction(action)}`).join('\n')}
-})${helpers(recording.actions)}
+test(${quote(args.title)}, async ({ page }) => {
+${actions.map(action => `  ${renderAction(action)}`).join('\n')}
+})${helpers(actions)}
 `
 }
 
-function helpers(actions: RecordedAction[]): string {
+function helpers(actions: ActionStep[]): string {
   if (!actions.some(action => action.kind === 'fill' && action.value.kind === 'secret')) return ''
 
   return `
@@ -33,7 +37,7 @@ function requiredSecret(name: string): string {
 }`
 }
 
-function renderAction(action: RecordedAction): string {
+function renderAction(action: ActionStep): string {
   return matchBy(action, 'kind', {
     'assert-visible': current => `await ${target(current)}.waitFor({ state: "visible" })`,
     check: current => `await ${target(current)}.${current.checked ? 'check' : 'uncheck'}()`,
@@ -84,6 +88,11 @@ const point = ({ x, y }: Position): string => `{ x: ${x}, y: ${y} }`
 const array = (values: string[]): string => `[${values.map(quote).join(', ')}]`
 const optional = <Value>(value: Value | undefined, render: (value: Value) => string): string | undefined => (value ? render(value) : undefined)
 
-type LocatedAction = Extract<RecordedAction, { locatorCandidates: unknown }>
-type ClickAction = Extract<RecordedAction, { kind: 'click' }>
+type LocatedAction = Extract<ActionStep, { locatorCandidates: unknown }>
+type ClickAction = Extract<ActionStep, { kind: 'click' }>
 type Position = NonNullable<ClickAction['position']>
+
+interface GeneratePlaywrightScriptArgs {
+  steps: RecordingSteps
+  title: string
+}

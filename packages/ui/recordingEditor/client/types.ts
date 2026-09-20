@@ -1,6 +1,6 @@
 import type { RecordingEditorHostMessage, RecordingEditorUiMessage } from '#ui/recordingEditor/protocol.ts'
 
-import type { Recording } from '@te/recorder-recording'
+import type { RecordingSteps } from '@te/recorder-recording'
 
 export interface CreateRecordingEditorArgs {
   root: HTMLElement
@@ -16,7 +16,7 @@ export interface RecordingEditorCallbacks {
   onSave: () => void
   onSaveThousandEyes: (source: string, suggestedFileName: string) => void
   onSelectAction: (actionIndex: number) => void
-  onUpdateThousandEyes: (thousandEyes: Recording['thousandEyes']) => void
+  onUpdateStepAnnotations: (steps: RecordingSteps) => void
 }
 
 export interface RecordingEditor {

@@ -1,4 +1,4 @@
-import type { RecordedLocator } from '#recording/recording/recordingSchema.ts'
+import type { RecordedLocator } from '#recording/shared/recordedDataSchema.ts'
 
 import { matchBy } from '@te/recorder-utils'
 

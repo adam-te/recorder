@@ -1,6 +1,6 @@
 import type { RecordingEditorPresenterMessage } from '#ui/recordingEditor/protocol.ts'
 
-import type { RecordedAriaSnapshot, Recording } from '@te/recorder-recording'
+import { getActionSteps, type RecordedAriaSnapshot, type Recording, type RecordingSteps } from '@te/recorder-recording'
 import { tryTo } from '@te/recorder-utils'
 
 import { renderRecordingSnapshot } from './renderRecordingSnapshot.ts'
@@ -22,20 +22,19 @@ function createRecordingEditorPresenter(args: CreateRecordingEditorPresenterArgs
   async function publishRecording(): Promise<RecordingEditorPresenterMessage[]> {
     return await tryTo(
       async () => {
-        const recording = await args.readRecording()
-        selectedActionIndex = Math.min(selectedActionIndex, Math.max(0, recording.actions.length - 1))
+        const [recording, steps] = await Promise.all([args.readRecording(), args.readSteps()])
+        selectedActionIndex = Math.min(selectedActionIndex, Math.max(0, getActionSteps(steps).length - 1))
 
-        return [{ type: 'recording' as const, recording, pending: args.isPending(), selectedActionIndex }, await publishSnapshot(recording)]
+        return [{ type: 'recording' as const, metadata: { createdAt: recording.createdAt, startUrl: recording.startUrl, title: recording.title }, steps, pending: args.isPending(), selectedActionIndex }, await publishSnapshot(steps)]
       },
       error => [{ type: 'error', message: getErrorMessage(error) }],
     )
   }
 
-  async function publishSnapshot(recording?: Recording): Promise<RecordingEditorPresenterMessage> {
+  async function publishSnapshot(steps?: RecordingSteps): Promise<RecordingEditorPresenterMessage> {
     return await tryTo(
       async () => {
-        const currentRecording = recording ?? (await args.readRecording())
-        const action = currentRecording.actions[selectedActionIndex]
+        const action = getActionSteps(steps ?? (await args.readSteps()))[selectedActionIndex]
         if (!action || !('locatorCandidates' in action)) return { type: 'preview', actionIndex: selectedActionIndex }
 
         const snapshot = await tryTo(
@@ -57,13 +56,14 @@ function getErrorMessage(error: unknown): string {
 interface CreateRecordingEditorPresenterArgs {
   isPending: () => boolean
   readRecording: () => Promise<Recording> | Recording
+  readSteps: () => Promise<RecordingSteps> | RecordingSteps
   readSnapshot: (actionIndex: number) => Promise<RecordedAriaSnapshot>
   resolveScreenshotUrl: (actionIndex: number) => string
 }
 
 interface RecordingEditorPresenter {
   publishRecording: () => Promise<RecordingEditorPresenterMessage[]>
-  publishSnapshot: (recording?: Recording) => Promise<RecordingEditorPresenterMessage>
+  publishSnapshot: (steps?: RecordingSteps) => Promise<RecordingEditorPresenterMessage>
   ready: () => Promise<RecordingEditorPresenterMessage[]>
   selectAction: (actionIndex: number) => Promise<RecordingEditorPresenterMessage[]>
 }

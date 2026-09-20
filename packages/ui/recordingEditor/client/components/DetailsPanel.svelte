@@ -1,6 +1,6 @@
 <script lang="ts">
 
-  import type { Recording } from '@te/recorder-recording'
+  import type { ActionStep } from '@te/recorder-recording'
 
   import { actionProperties, summarizeAction } from '#ui/recordingEditor/client/presentation.ts'
   import EmptyState from './EmptyState.svelte'
@@ -12,14 +12,14 @@
 
   interface Props {
     onCopy: (text: string) => void
-    recording: Recording
+    actions: ActionStep[]
     screenshotState: ScreenshotState
     selectedActionIndex: number
     snapshotState: SnapshotState
   }
 
-  let { onCopy, recording, screenshotState, selectedActionIndex, snapshotState }: Props = $props()
-  let action = $derived(recording.actions[selectedActionIndex])
+  let { actions, onCopy, screenshotState, selectedActionIndex, snapshotState }: Props = $props()
+  let action = $derived(actions[selectedActionIndex])
   let properties = $derived(action ? actionProperties(action) : [])
   let inspectorTab = $state<'accessibility' | 'locators'>('locators')
 </script>

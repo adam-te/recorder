@@ -1,4 +1,4 @@
-import { RECORDING_DOCUMENT_PATH } from '@te/recorder-recording'
+import { STEPS_DOCUMENT_PATH } from '@te/recorder-recording'
 import { createRecordingEditor, type RecordingEditorHostMessage, type RecordingEditorUiMessage } from '@te/recorder-ui/recording-editor'
 import { tryTo } from '@te/recorder-utils'
 
@@ -21,7 +21,7 @@ async function sendMessage(message: RecordingEditorUiMessage): Promise<void> {
       }
 
       if (message.type === 'openJson') {
-        window.open(`./${RECORDING_DOCUMENT_PATH}`, '_blank', 'noopener')
+        window.open(`./${STEPS_DOCUMENT_PATH}`, '_blank', 'noopener')
         return
       }
 

@@ -1,26 +1,40 @@
 import { ModuleKind, ScriptTarget, transpileModule } from 'typescript'
 import { describe, expect, test } from 'vitest'
 
-import { generatePlaywrightScript, type RecordedAction, type RecordedLocator, type Recording } from '@te/recorder-recording'
+import { createRecording, deriveRecordingSteps, generatePlaywrightScript, type ActionStep, type RecordedLocator, type Recording, type RecordingSteps } from '@te/recorder-recording'
 
 describe('Playwright script generation', () => {
   test.each(getActionGenerationCases())('generates $name actions', ({ action: recordedAction, expected }) => {
-    expect(generatePlaywrightScript(createRecordingFixture([action(recordedAction)]))).toContain(`  ${expected}\n`)
+    expect(generatePlaywrightScript(createScriptFixture([action(recordedAction)]))).toContain(`  ${expected}\n`)
   })
 
   test('preserves recorded action order', () => {
-    expect(generatePlaywrightScript(createRecordingFixture([action({ kind: 'go-back' }), action({ kind: 'go-forward' })]))).toContain('  await page.goBack()\n  await page.goForward()')
+    expect(generatePlaywrightScript(createScriptFixture([action({ kind: 'go-back' }), action({ kind: 'go-forward' })]))).toContain('  await page.goBack()\n  await page.goForward()')
+  })
+
+  test('generates projected text input steps', () => {
+    const recording: Recording = {
+      ...createRecording({ startUrl: 'https://metadata.example/not-used', title: 'Text input' }),
+      events: [
+        { inputValue: 'h', key: 'h', kind: 'key-press', locatorCandidates: locators(), pageUrl: 'https://example.com/current' },
+        { inputValue: 'hi', key: 'i', kind: 'key-press', locatorCandidates: locators(), pageUrl: 'https://example.com/current' },
+        { key: 'Enter', kind: 'key-press', locatorCandidates: locators(), pageUrl: 'https://example.com/current' },
+      ],
+    }
+
+    expect(generatePlaywrightScript({ steps: deriveRecordingSteps(recording), title: recording.title })).toContain(`  await page.locator("#target").fill("hi")
+  await page.locator("#target").press("Enter")`)
   })
 
   test('generates nested frame locators', () => {
-    const source = generatePlaywrightScript(createRecordingFixture([action({ kind: 'click', locatorCandidates: locators({ framePath: ['#outer', 'iframe[name="inner"]'], kind: 'css', value: '#target' }) })]))
+    const source = generatePlaywrightScript(createScriptFixture([action({ kind: 'click', locatorCandidates: locators({ framePath: ['#outer', 'iframe[name="inner"]'], kind: 'css', value: '#target' }) })]))
 
     expect(source).toContain(String.raw`await page.locator("#outer").contentFrame().locator("iframe[name=\"inner\"]").contentFrame().locator("#target").click()`)
   })
 
   test('generates chained ARIA locators', () => {
     const source = generatePlaywrightScript(
-      createRecordingFixture([
+      createScriptFixture([
         action({
           kind: 'click',
           locatorCandidates: locators({
@@ -38,14 +52,14 @@ describe('Playwright script generation', () => {
   })
 
   test('generates locators from the first candidate', () => {
-    const source = generatePlaywrightScript(createRecordingFixture([action({ kind: 'click', locatorCandidates: locators() })]))
+    const source = generatePlaywrightScript(createScriptFixture([action({ kind: 'click', locatorCandidates: locators() })]))
 
     expect(source).toContain('page.locator("#target").click()')
     expect(source).not.toContain('#fallback')
   })
 
   test('reads secret fills from environment variables without embedding values', () => {
-    const source = generatePlaywrightScript(createRecordingFixture([action({ kind: 'fill', locatorCandidates: locators(), value: { kind: 'secret', name: 'ACCOUNT_PASSWORD' } })]))
+    const source = generatePlaywrightScript(createScriptFixture([action({ kind: 'fill', locatorCandidates: locators(), value: { kind: 'secret', name: 'ACCOUNT_PASSWORD' } })]))
 
     expect(source).toBe(`import { test } from 'playwright/test'
 
@@ -66,14 +80,14 @@ function requiredSecret(name: string): string {
   })
 
   test('escapes strings that would otherwise change the generated source structure', () => {
-    const source = generatePlaywrightScript(createRecordingFixture([action({ kind: 'fill', locatorCandidates: locators({ kind: 'css', value: 'input\n"quoted"' }), value: { kind: 'plain-text', value: 'line one\nline two\u2028line three\u2029' } })], 'Title\n"quoted"'))
+    const source = generatePlaywrightScript(createScriptFixture([action({ kind: 'fill', locatorCandidates: locators({ kind: 'css', value: 'input\n"quoted"' }), value: { kind: 'plain-text', value: 'line one\nline two\u2028line three\u2029' } })], 'Title\n"quoted"'))
 
     expect(source).toContain('test("Title\\n\\"quoted\\"", async ({ page }) => {')
     expect(source).toContain('page.locator("input\\n\\"quoted\\"").fill("line one\\nline two\\u2028line three\\u2029")')
   })
 
   test('generates a valid empty test', () => {
-    const source = generatePlaywrightScript(createRecordingFixture([], 'Empty recording'))
+    const source = generatePlaywrightScript(createScriptFixture([], 'Empty recording'))
 
     expect(source).toBe(`import { test } from 'playwright/test'
 
@@ -84,23 +98,23 @@ test("Empty recording", async ({ page }) => {
   })
 
   test('generates syntactically valid TypeScript', () => {
-    const source = generatePlaywrightScript(createRecordingFixture([action({ kind: 'click', locatorCandidates: locators() })]))
+    const source = generatePlaywrightScript(createScriptFixture([action({ kind: 'click', locatorCandidates: locators() })]))
     const result = transpileModule(source, { compilerOptions: { module: ModuleKind.ESNext, target: ScriptTarget.ESNext }, fileName: 'recording.spec.ts', reportDiagnostics: true })
 
     expect(result.diagnostics).toStrictEqual([])
   })
 
-  test('validates the recording before generating source', () => {
-    expect(() => generatePlaywrightScript({ ...createRecordingFixture([]), startUrl: 'not a URL' } as Recording)).toThrow()
+  test('validates the steps before generating source', () => {
+    expect(() => generatePlaywrightScript({ steps: [{ kind: 'marker-end', name: 'Missing' }], title: 'Invalid steps' })).toThrow()
   })
 })
 
-function action(action: RecordedActionInput): RecordedAction {
-  return { ...action, pageUrl: 'https://example.com/current' } as RecordedAction
+function action(action: ActionStepInput): ActionStep {
+  return { ...action, pageUrl: 'https://example.com/current' } as ActionStep
 }
 
-function createRecordingFixture(actions: RecordedAction[], title = 'Every action'): Recording {
-  return { actions, createdAt: '2026-08-24T12:00:00.000Z', startUrl: 'https://metadata.example/not-used', thousandEyes: { markers: [], screenshots: [] }, title }
+function createScriptFixture(steps: RecordingSteps, title = 'Every action'): { steps: RecordingSteps; title: string } {
+  return { steps, title }
 }
 
 function locators(primary: RecordedLocator = { kind: 'css', value: '#target' }): [RecordedLocator, ...RecordedLocator[]] {
@@ -131,12 +145,12 @@ function getActionGenerationCases(): ActionGenerationCase[] {
   ]
 }
 
-type RecordedActionInput = {
-  [Kind in RecordedAction['kind']]: Omit<Extract<RecordedAction, { kind: Kind }>, 'pageUrl'>
-}[RecordedAction['kind']]
+type ActionStepInput = {
+  [Kind in ActionStep['kind']]: Omit<Extract<ActionStep, { kind: Kind }>, 'pageUrl'>
+}[ActionStep['kind']]
 
 interface ActionGenerationCase {
-  action: RecordedActionInput
+  action: ActionStepInput
   expected: string
   name: string
 }

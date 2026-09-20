@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { generateThousandEyesScript, type Recording } from '@te/recorder-recording'
+  import { generateThousandEyesScript, getActionSteps, type RecordingMetadata, type RecordingSteps } from '@te/recorder-recording'
   import { tryTo } from '@te/recorder-utils'
 
   import ActionList from './components/ActionList.svelte'
@@ -11,8 +11,9 @@
   import type { RecordingEditorHostMessage } from '#ui/recordingEditor/protocol.ts'
   import type { RecordingEditorCallbacks, ScreenshotState, SnapshotState } from './types.ts'
 
-  let { onCopy, onDiscard, onOpenJson, onPlay, onReady, onSave, onSaveThousandEyes, onSelectAction, onUpdateThousandEyes }: RecordingEditorCallbacks = $props()
-  let recording = $state<Recording>()
+  let { onCopy, onDiscard, onOpenJson, onPlay, onReady, onSave, onSaveThousandEyes, onSelectAction, onUpdateStepAnnotations }: RecordingEditorCallbacks = $props()
+  let metadata = $state<RecordingMetadata>()
+  let steps = $state<RecordingSteps>()
   let pending = $state(false)
   let selectedActionIndex = $state(0)
   let screenshotState = $state<ScreenshotState>({ loading: true })
@@ -20,10 +21,11 @@
   let decisionBusy = $state(false)
   let fatalError = $state<string>()
   let view = $state<'steps' | 'thousandeyes'>('steps')
+  let actions = $derived(steps ? getActionSteps(steps) : [])
   let thousandEyesScript = $derived.by(() => {
-    if (!recording) return undefined
+    if (!metadata || !steps) return undefined
 
-    return generateScript(recording)
+    return generateScript(steps)
   })
 
   export function ready(): void {
@@ -33,7 +35,8 @@
   export function receive(message: RecordingEditorHostMessage): void {
     if (message.type === 'recording') {
       fatalError = undefined
-      recording = message.recording
+      metadata = message.metadata
+      steps = message.steps
       pending = message.pending
       selectedActionIndex = message.selectedActionIndex
       screenshotState = { loading: true }
@@ -52,7 +55,7 @@
     selectedActionIndex = actionIndex
     screenshotState = { loading: true }
     snapshotState = { loading: true }
-    onSelectAction(actionIndex)
+    onSelectAction(selectedActionIndex)
   }
 
   function decidePreview(decide: () => void): void {
@@ -60,16 +63,14 @@
     decide()
   }
 
-  function updateThousandEyes(thousandEyes: Recording['thousandEyes']): void {
-    if (!recording) return
-
-    recording = { ...recording, thousandEyes }
-    onUpdateThousandEyes(thousandEyes)
+  function updateStepAnnotations(updatedSteps: RecordingSteps): void {
+    steps = updatedSteps
+    onUpdateStepAnnotations(updatedSteps)
   }
 
-  function generateScript(currentRecording: Recording): { error: string } | { source: string } {
+  function generateScript(currentSteps: RecordingSteps): { error: string } | { source: string } {
     return tryTo(
-      () => ({ source: generateThousandEyesScript(currentRecording).source }),
+      () => ({ source: generateThousandEyesScript(currentSteps).source }),
       error => ({ error: error instanceof Error ? error.message : String(error) }),
     )
   }
@@ -77,16 +78,16 @@
 
 {#if fatalError}
   <EmptyState title="Could not open recording" detail={fatalError} />
-{:else if !recording}
+{:else if !metadata}
   <EmptyState title="Opening recording…" />
 {:else}
   <header class="recording-header">
     <div class="recording-heading">
-      <h1>{recording.title}</h1>
-      <div class="start-url" title={recording.startUrl}>{recording.startUrl}</div>
+      <h1>{metadata.title}</h1>
+      <div class="start-url" title={metadata.startUrl}>{metadata.startUrl}</div>
     </div>
 
-    <div class="metadata">{recording.actions.length} steps · {formatDate(recording.createdAt)}</div>
+    <div class="metadata">{actions.length} {actions.length === 1 ? 'step' : 'steps'} · {formatDate(metadata.createdAt)}</div>
 
     <div class="header-actions">
       {#if pending}
@@ -106,13 +107,13 @@
   </div>
 
   <div role="tabpanel">
-    {#if view === 'steps'}
+    {#if view === 'steps' && steps}
       <div class="editor-body">
-        <ActionList {recording} {selectedActionIndex} onSelect={selectAction} onUpdateThousandEyes={updateThousandEyes} />
-        <DetailsPanel {recording} {screenshotState} {selectedActionIndex} {snapshotState} {onCopy} />
+        <ActionList {steps} {selectedActionIndex} onSelect={selectAction} onUpdateStepAnnotations={updateStepAnnotations} />
+        <DetailsPanel {actions} {screenshotState} {selectedActionIndex} {snapshotState} {onCopy} />
       </div>
     {:else if thousandEyesScript && 'source' in thousandEyesScript}
-      <ThousandEyesPanel source={thousandEyesScript.source} suggestedFileName={scriptFileName(recording.title)} {onCopy} onSave={onSaveThousandEyes} />
+      <ThousandEyesPanel source={thousandEyesScript.source} suggestedFileName={scriptFileName(metadata.title)} {onCopy} onSave={onSaveThousandEyes} />
     {:else}
       <EmptyState title="Could not generate ThousandEyes JS" detail={thousandEyesScript?.error} />
     {/if}
